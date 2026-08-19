@@ -47,6 +47,8 @@ Own backend implementation: API endpoints, service logic, data access, validatio
 
 ## Skills It Uses
 
+- `.claude/skills/superpowers/` — structured implementation workflow.
+- `.claude/skills/ponytail/` — avoid unnecessary service layers and abstractions.
 - `.claude/skills/backend-engineering/`
 - `.claude/skills/healthcare-safety/` (when handling patient data)
 - `.claude/skills/security-engineering/` (when implementing auth or handling sensitive data)

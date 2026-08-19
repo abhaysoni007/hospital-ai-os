@@ -50,6 +50,7 @@ Own AI architecture, agent implementation, prompt engineering, model integration
 
 ## Skills It Uses
 
+- `.claude/skills/superpowers/` — structured AI development and evaluation-driven workflow.
 - `.claude/skills/agent-engineering/`
 - `.claude/skills/ai-evaluation/`
 - `.claude/skills/healthcare-safety/`

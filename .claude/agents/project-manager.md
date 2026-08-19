@@ -49,6 +49,7 @@ Coordinate work execution, scope, dependencies, milestones, and delivery timelin
 
 ## Skills It Uses
 
+- `.claude/skills/superpowers/` — structured planning and task breakdown.
 - `.claude/skills/product-management/`
 
 ## When It Should Be Invoked

@@ -55,6 +55,8 @@ Coordinate architecture and major technical decisions for Hospital AI OS. Ensure
 
 ## Skills It Uses
 
+- `.claude/skills/superpowers/` — structured analysis for architecture decisions.
+- `.claude/skills/ponytail/` — evaluate proposals for unnecessary complexity.
 - `.claude/skills/backend-engineering/`
 - `.claude/skills/database-engineering/`
 - `.claude/skills/security-engineering/`

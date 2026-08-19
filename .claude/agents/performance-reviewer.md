@@ -45,6 +45,7 @@ Identify performance risks, bottlenecks, and optimization opportunities across a
 
 ## Skills It Uses
 
+- `.claude/skills/ponytail/` — resist premature optimization; optimize based on measurement.
 - `.claude/skills/performance/`
 
 ## When It Should Be Invoked

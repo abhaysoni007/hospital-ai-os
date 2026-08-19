@@ -9,10 +9,12 @@ When instructions conflict, the following priority applies (highest first):
 1. **Safety** — Patient safety, clinical safety, system safety
 2. **Security / Privacy** — Data protection, access control, secrets
 3. **Healthcare rules** — Clinical boundaries, regulatory constraints
-4. **Repository architecture** — Established patterns, approved structure
-5. **Engineering rules** — Code quality, testing, observability
-6. **Product requirements** — User needs, acceptance criteria
-7. **Task-specific preferences** — Implementation style, naming conventions
+4. **Core rules** — Universal engineering behavior
+5. **Product rules** — User needs, acceptance criteria
+6. **Meta-skills** — Superpowers (structured methodology), Ponytail (minimal solutions), Caveman (efficient communication)
+7. **Domain skills** — Backend, frontend, database, AI, integration, etc.
+8. **Repository architecture** — Established patterns, approved structure
+9. **Task-specific preferences** — Implementation style, naming conventions
 
 Higher-level rules always override lower-level instructions. When in doubt, apply the higher-priority rule.
 

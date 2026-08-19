@@ -50,6 +50,7 @@ Act as an independent safety gate for all AI features in Hospital AI OS. Ensure 
 
 ## Skills It Uses
 
+- `.claude/skills/superpowers/` — structured review process. Safety always overrides workflow optimization.
 - `.claude/skills/ai-evaluation/`
 - `.claude/skills/healthcare-safety/`
 - `.claude/skills/agent-engineering/`

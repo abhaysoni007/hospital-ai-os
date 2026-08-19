@@ -50,6 +50,8 @@ Own frontend implementation: components, pages, state management, API integratio
 
 ## Skills It Uses
 
+- `.claude/skills/superpowers/` — structured implementation workflow.
+- `.claude/skills/ponytail/` — avoid unnecessary component abstractions.
 - `.claude/skills/frontend-engineering/`
 - `.claude/skills/healthcare-safety/` (when displaying patient data)
 

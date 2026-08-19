@@ -48,6 +48,8 @@ Review code changes for correctness, quality, security, maintainability, and adh
 
 ## Skills It Uses
 
+- `.claude/skills/superpowers/` — structured review against verification criteria.
+- `.claude/skills/ponytail/` — identify over-engineering during review.
 - `.claude/skills/code-review/`
 
 ## When It Should Be Invoked

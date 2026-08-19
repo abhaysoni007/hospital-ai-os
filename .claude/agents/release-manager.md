@@ -49,6 +49,7 @@ Own release readiness, release coordination, and post-release verification for H
 
 ## Skills It Uses
 
+- `.claude/skills/superpowers/` — structured release verification workflow.
 - `.claude/skills/devops/`
 - `.claude/skills/documentation/`
 
