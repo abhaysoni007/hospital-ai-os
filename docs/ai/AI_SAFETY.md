@@ -54,3 +54,22 @@ The system evaluates AI outputs using multiple independent signals:
 - **Clinician Override:** A clinician can edit, reject, or overwrite any AI suggestion at any point with zero system friction.
 - **Rejection Audit:** Rejections are recorded in audit logs to support AI evaluation and quality tracking.
 - **Safety Escalation:** If AI safety validation detects conflicting clinical facts (e.g. drug order conflicting with documented allergy), the system flags the conflict prominently and requires explicit clinician acknowledgment before proceeding.
+
+---
+
+## 4. Deterministic vs AI Safety Boundary
+
+> [!IMPORTANT]
+> **Safety Rule:** Deterministic configured clinical rules are authoritative for critical/panic laboratory-value classification. AI must not serve as the classification mechanism.
+
+This boundary applies system-wide and cannot be overridden by workflow convenience, latency optimization, or AI provider capability claims.
+
+| Function | Authoritative Mechanism | AI Role |
+| :--- | :--- | :--- |
+| **Critical/panic value classification** | Deterministic configured clinical policy rule | Non-authoritative. May assist with contextual summarization only. |
+| **Abnormal trend surfacing** | AI (grounded, human-reviewed) | Permitted with clinician review. |
+| **Drug interaction warning** | Authoritative pharmacological database | AI may surface; human confirms. |
+| **Clinical note drafting** | AI (side-by-side human review) | Permitted with mandatory clinician sign-off. |
+| **Consequential clinical state change** | Human clinician (mandatory) | PROHIBITED from autonomous execution. |
+
+See also: `docs/ai/AI_SYSTEM.md §3` (Deterministic Critical Lab Value Safety Boundary) and `docs/product/PRODUCT_SPEC.md §7` (Critical Lab Value Safety Boundary).

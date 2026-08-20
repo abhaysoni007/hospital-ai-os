@@ -39,7 +39,8 @@ AI capabilities in Hospital AI OS are classified across 6 categories and 5 risk 
    - *Human Involvement:* Grounded source context display; user review of retrieved facts.
 
 4. **CLINICAL DECISION SUPPORT AI (Risk: High / Critical)**
-   - *Purpose:* Flagging abnormal lab trends, surfacing drug interaction warnings, assisting triage.
+   - *Purpose:* Surfacing abnormal lab trends for clinician awareness, assisting triage, and supporting clinical decision-making with contextual information.
+   - *Excluded from AI scope:* Critical/panic laboratory-value **classification** is deterministic and policy-driven. AI does not determine whether a result is a critical/panic value. Configured clinical rules are the authoritative classifier.
    - *Human Involvement:* Explicit clinician review; decision support only (never autonomous action).
 
 5. **CLINICAL PREDICTION AI (Risk: High — Deferred Scope)**
@@ -79,3 +80,21 @@ Every AI-assisted workflow follows a conceptual safety progression:
 - **Chart Retrieval:** Allowed for authorized users with grounded source evidence.
 - **Decision Support:** Allowed strictly as decision support with clinician review.
 - **Consequential Clinical State Changes:** Never executed autonomously.
+
+---
+
+## 3. Deterministic Critical Lab Value Safety Boundary
+
+> [!IMPORTANT]
+> **Hard Safety Rule:** AI is explicitly non-authoritative for critical/panic laboratory-value classification. This is a PROHIBITED AI function.
+
+Configured deterministic clinical policy rules are the sole authoritative mechanism for deciding whether a laboratory result is a critical/panic value. AI capabilities in this domain are strictly limited to:
+
+- Contextual summarization of a result for the reviewing clinician.
+- Surfacing historical lab trends for clinical awareness.
+- Workflow communication support (e.g. formatting notification content).
+- Prioritization assistance based on existing classifications.
+
+AI must not infer, calculate, or assert whether a result crosses a critical/panic threshold. That decision is made entirely by configured clinical rules applied deterministically.
+
+*(Note: Specific clinical threshold values, reference range databases, and rule-engine technology remain DEFERRED to clinical governance and Phase 3 Architecture.)*

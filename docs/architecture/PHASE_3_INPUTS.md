@@ -41,5 +41,5 @@ The following decisions were intentionally deferred from Phase 2 Product Specifi
 - AI request logging, token usage tracking, and latency monitoring infrastructure.
 
 ### 7. Performance & Degradation Strategy
-- Caching architecture, invalidation strategies, and target latency validation (< 300ms UI, < 1500ms Search).
+- Caching architecture, invalidation strategies, and target latency validation. *(Indicative engineering targets from early drafts: < 300ms UI interactions, < 1500ms search responses. These are ENGINEERING TARGETS TO BE VALIDATED during Phase 3 architecture and performance planning — not locked product requirements.)*
 - Degraded mode circuit breaker configuration, health-check polling frequency, and offline queue synchronization mechanics.
