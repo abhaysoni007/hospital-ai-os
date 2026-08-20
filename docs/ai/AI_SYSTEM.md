@@ -27,29 +27,29 @@ AI capabilities in Hospital AI OS are classified across 6 categories and 5 risk 
 ### 1.1 Capability Categories Catalog
 
 1. **ADMINISTRATIVE AI (Risk: Low)**
-   - *Purpose:* Document OCR extraction from ID cards, administrative form pre-filling.
-   - *Human Involvement:* User review of extracted fields.
+   - _Purpose:_ Document OCR extraction from ID cards, administrative form pre-filling.
+   - _Human Involvement:_ User review of extracted fields.
 
 2. **CLINICAL DOCUMENTATION AI (Risk: Medium)**
-   - *Purpose:* Drafting side-by-side SOAP notes, handover summaries, and discharge summaries for eligible encounters.
-   - *Human Involvement:* Mandatory clinician review, editing, and attributable sign-off.
+   - _Purpose:_ Drafting side-by-side SOAP notes, handover summaries, and discharge summaries for eligible encounters.
+   - _Human Involvement:_ Mandatory clinician review, editing, and attributable sign-off.
 
 3. **CLINICAL RETRIEVAL AI (Risk: Medium)**
-   - *Purpose:* Natural language semantic search and chart history summarization.
-   - *Human Involvement:* Grounded source context display; user review of retrieved facts.
+   - _Purpose:_ Natural language semantic search and chart history summarization.
+   - _Human Involvement:_ Grounded source context display; user review of retrieved facts.
 
 4. **CLINICAL DECISION SUPPORT AI (Risk: High / Critical)**
-   - *Purpose:* Surfacing abnormal lab trends for clinician awareness, assisting triage, and supporting clinical decision-making with contextual information.
-   - *Excluded from AI scope:* Critical/panic laboratory-value **classification** is deterministic and policy-driven. AI does not determine whether a result is a critical/panic value. Configured clinical rules are the authoritative classifier.
-   - *Human Involvement:* Explicit clinician review; decision support only (never autonomous action).
+   - _Purpose:_ Surfacing abnormal lab trends for clinician awareness, assisting triage, and supporting clinical decision-making with contextual information.
+   - _Excluded from AI scope:_ Critical/panic laboratory-value **classification** is deterministic and policy-driven. AI does not determine whether a result is a critical/panic value. Configured clinical rules are the authoritative classifier.
+   - _Human Involvement:_ Explicit clinician review; decision support only (never autonomous action).
 
 5. **CLINICAL PREDICTION AI (Risk: High — Deferred Scope)**
-   - *Purpose:* Readmission risk category estimation, ICU deterioration scoring.
-   - *Scope:* Phase 2 (Requires extensive clinical evaluation dataset validation).
+   - _Purpose:_ Readmission risk category estimation, ICU deterioration scoring.
+   - _Scope:_ Phase 2 (Requires extensive clinical evaluation dataset validation).
 
 6. **CLINICAL ACTION AUTOMATION (Risk: Prohibited)**
-   - *Purpose:* Autonomous clinical order placement, prescribing, or patient discharge authorization.
-   - *Scope:* **STRICTLY PROHIBITED.** No automated system may execute clinical state changes without human authority.
+   - _Purpose:_ Autonomous clinical order placement, prescribing, or patient discharge authorization.
+   - _Scope:_ **STRICTLY PROHIBITED.** No automated system may execute clinical state changes without human authority.
 
 ---
 
@@ -76,6 +76,7 @@ Every AI-assisted workflow follows a conceptual safety progression:
 ```
 
 ### 2.1 Clinical AI Boundaries Summary
+
 - **Documentation & Summarization:** Allowed with side-by-side human review.
 - **Chart Retrieval:** Allowed for authorized users with grounded source evidence.
 - **Decision Support:** Allowed strictly as decision support with clinician review.
@@ -97,4 +98,4 @@ Configured deterministic clinical policy rules are the sole authoritative mechan
 
 AI must not infer, calculate, or assert whether a result crosses a critical/panic threshold. That decision is made entirely by configured clinical rules applied deterministically.
 
-*(Note: Specific clinical threshold values, reference range databases, and rule-engine technology remain DEFERRED to clinical governance and Phase 3 Architecture.)*
+_(Note: Specific clinical threshold values, reference range databases, and rule-engine technology remain DEFERRED to clinical governance and Phase 3 Architecture.)_

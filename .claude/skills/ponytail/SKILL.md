@@ -77,42 +77,50 @@ Before writing new code, walk through this ladder from top to bottom. Stop at th
 ## What Ponytail Actively Resists
 
 ### Unnecessary Abstractions
+
 - Abstraction layers with only one implementation and no foreseeable second.
 - Wrapper functions that add no logic, only indirection.
 - Generic solutions for problems that are currently specific.
 
 ### Premature Optimization
+
 - Performance optimization without measured bottleneck evidence.
 - Caching without verified need.
 - Denormalization without query performance data.
 
 ### Duplicate Utilities
+
 - Creating a new date formatter when one exists in `src/shared/`.
 - Creating a new validation helper when the existing one covers the case.
 - Creating a new API client pattern when the established pattern works.
 
 ### Unnecessary Dependencies
+
 - Adding a library for something achievable in 10 lines of straightforward code.
 - Adding a library whose API surface far exceeds the needed functionality.
 - Adding a library with questionable maintenance or security posture.
 
 ### Speculative Architecture
+
 - Microservices for a system that works well as a monolith.
 - Message queues for synchronous workflows.
 - Event sourcing for simple CRUD operations.
 - Plugin systems for features with one known implementation.
 
 ### Over-Engineered Agent Systems
+
 - Multi-agent orchestration for a task achievable by a single function.
 - Complex planning loops for deterministic operations.
 - Tool frameworks for operations that are simple function calls.
 
 ### Excessive Configuration
+
 - Environment variables for values that never change.
 - Feature flags for features that are always on.
 - Configuration files for settings with one valid value.
 
 ### Unnecessary State
+
 - Storing derived data that can be computed.
 - Maintaining caches without invalidation strategy.
 - Keeping historical state that is never queried.
@@ -123,16 +131,16 @@ Before writing new code, walk through this ladder from top to bottom. Stop at th
 
 Ponytail must NEVER override:
 
-| Requirement | Example |
-|-------------|---------|
-| Patient safety | "We don't need this validation" → **Wrong.** If it prevents a medication error, we need it. |
-| Security | "We don't need this auth check" → **Wrong.** If it protects PHI, we need it. |
-| Authorization | "We don't need per-record access control" → **Wrong.** If the data is role-restricted, we need it. |
-| Auditability | "We don't need this log entry" → **Wrong.** If it's a clinical action, we need the audit trail. |
-| Data integrity | "We don't need this constraint" → **Wrong.** If it prevents data corruption, we need it. |
-| Regulatory requirements | "We don't need this field" → **Wrong.** If regulation mandates it, we need it. |
-| Accessibility | "We don't need ARIA labels" → **Wrong.** If it enables assistive technology, we need it. |
-| Required validation | "We don't need to validate AI output" → **Wrong.** AI output must always be validated. |
+| Requirement             | Example                                                                                            |
+| ----------------------- | -------------------------------------------------------------------------------------------------- |
+| Patient safety          | "We don't need this validation" → **Wrong.** If it prevents a medication error, we need it.        |
+| Security                | "We don't need this auth check" → **Wrong.** If it protects PHI, we need it.                       |
+| Authorization           | "We don't need per-record access control" → **Wrong.** If the data is role-restricted, we need it. |
+| Auditability            | "We don't need this log entry" → **Wrong.** If it's a clinical action, we need the audit trail.    |
+| Data integrity          | "We don't need this constraint" → **Wrong.** If it prevents data corruption, we need it.           |
+| Regulatory requirements | "We don't need this field" → **Wrong.** If regulation mandates it, we need it.                     |
+| Accessibility           | "We don't need ARIA labels" → **Wrong.** If it enables assistive technology, we need it.           |
+| Required validation     | "We don't need to validate AI output" → **Wrong.** AI output must always be validated.             |
 
 **A smaller implementation is not automatically better if it creates hidden clinical or security risk.**
 

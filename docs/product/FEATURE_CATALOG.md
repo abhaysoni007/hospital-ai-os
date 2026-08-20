@@ -15,6 +15,7 @@ Trigger → Actor → Context → Inputs → Validation → Decision → AI Assi
 ```
 
 ### 1.1 Workflow WF-01: Patient Registration & EMPI Verification
+
 - **Trigger:** Patient arrives at hospital registration desk.
 - **Actor:** Receptionist / Registration Clerk.
 - **Context:** Demographics registration interface, photo ID scanner.
@@ -28,6 +29,7 @@ Trigger → Actor → Context → Inputs → Validation → Decision → AI Assi
 - **Audit:** Immutable audit event recorded (`PATIENT_REGISTERED`).
 
 ### 1.2 Workflow WF-02: OPD Appointment & Encounter Check-In
+
 - **Trigger:** Patient requests consultation or arrives for scheduled appointment.
 - **Actor:** Receptionist / Front-Desk Staff.
 - **Context:** Doctor OPD schedule interface, department check-in console.
@@ -41,6 +43,7 @@ Trigger → Actor → Context → Inputs → Validation → Decision → AI Assi
 - **Audit:** Immutable audit event recorded (`APPOINTMENT_CHECKED_IN`).
 
 ### 1.3 Workflow WF-03: OPD Consultation & Clinical Note Drafting
+
 - **Trigger:** Doctor opens patient encounter from active queue console.
 - **Actor:** OPD Physician / Doctor.
 - **Context:** Clinical workspace EMR, patient chart panel.
@@ -54,6 +57,7 @@ Trigger → Actor → Context → Inputs → Validation → Decision → AI Assi
 - **Audit:** Immutable audit event recorded (`CLINICAL_NOTE_SIGNED`).
 
 ### 1.4 Workflow WF-04: Diagnostic Lab Ordering & Verification
+
 - **Trigger:** Doctor submits diagnostic test order during consultation.
 - **Actor:** Lab Technician / Pathologist.
 - **Context:** Laboratory workspace queue.
@@ -68,6 +72,7 @@ Trigger → Actor → Context → Inputs → Validation → Decision → AI Assi
 - **Audit:** Immutable audit event recorded (`LAB_RESULT_VERIFIED`).
 
 ### 1.5 Workflow WF-05: Discharge Summary Drafting & Authorization
+
 - **Trigger:** Physician initiates discharge for an eligible encounter.
 - **Actor:** Attending Physician / Doctor.
 - **Context:** Encounter discharge workspace.
@@ -85,10 +90,12 @@ Trigger → Actor → Context → Inputs → Validation → Decision → AI Assi
 ## 2. Hospital Task Model & Notification Model
 
 ### 2.1 Task State Machine
+
 ```text
 CREATED → ASSIGNED → IN_PROGRESS → AWAITING_APPROVAL → COMPLETED / CANCELLED
 ```
 
 ### 2.2 Urgent Notification Model
+
 - **Critical Clinical Alerts:** Dispatched instantly (< 10s target) for panic lab values; requires explicit clinician acknowledgment.
 - **Task Notifications:** Dispatched for pending reviews or shift handovers.

@@ -32,12 +32,14 @@ Provide expert guidance for user experience research, workflow design, informati
 ## Responsibilities
 
 ### User Research
+
 - Understand the user's role, goals, constraints, and environment.
 - Map the current workflow: steps, pain points, workarounds.
 - Identify interruption patterns (hospital staff are frequently interrupted).
 - Consider shift variations (day, night, weekend).
 
 ### Workflow Design
+
 - Design workflows that match users' mental models.
 - Minimize steps for frequent operations.
 - Support interruption recovery (save state, restore context).
@@ -45,12 +47,14 @@ Provide expert guidance for user experience research, workflow design, informati
 - Consider the full workflow lifecycle, not just the happy path.
 
 ### Information Architecture
+
 - Organize information by clinical/operational context, not technical structure.
 - Most important information first.
 - Use progressive disclosure: summary → details on demand.
 - Consistent navigation across the application.
 
 ### Interaction Patterns
+
 - Consistent interaction patterns for similar operations.
 - Explicit confirmation for destructive or high-risk actions.
 - Clear feedback for every user action (success, loading, error).
@@ -58,6 +62,7 @@ Provide expert guidance for user experience research, workflow design, informati
 - Search and filter for large data sets.
 
 ### Healthcare-Specific UX
+
 - Patient identification must be persistent and verifiable during patient-related workflows.
 - Clinical alerts must be prominent and not accidentally dismissible.
 - Data density should serve professional users (not oversimplified).

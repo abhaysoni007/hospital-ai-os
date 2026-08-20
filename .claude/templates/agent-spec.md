@@ -20,9 +20,9 @@
 ## Tools
 
 | Tool Name | Description | Parameters | Side Effects | Permissions Required |
-|-----------|-------------|------------|--------------|---------------------|
-| [tool_1]  | [desc]      | [params]   | [effects]    | [permissions]       |
-| [tool_2]  | [desc]      | [params]   | [effects]    | [permissions]       |
+| --------- | ----------- | ---------- | ------------ | -------------------- |
+| [tool_1]  | [desc]      | [params]   | [effects]    | [permissions]        |
+| [tool_2]  | [desc]      | [params]   | [effects]    | [permissions]        |
 
 ## Permissions
 

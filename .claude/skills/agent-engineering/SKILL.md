@@ -45,20 +45,20 @@ Define how AI agents should be designed, implemented, tested, and operated withi
 
 Every agent must define:
 
-| Attribute | Description |
-|-----------|-------------|
-| **Name** | Unique identifier |
-| **Purpose** | What problem this agent solves |
-| **Scope** | What the agent does and does not do |
-| **Trigger** | What causes the agent to activate |
-| **Tools** | Which tools the agent can use, with their contracts |
-| **Permissions** | What data/operations the agent is authorized for |
-| **Context** | What information the agent receives |
-| **Stopping conditions** | When the agent must stop |
-| **Maximum iterations** | Hard limit on planning/execution loops |
-| **Output format** | Structured output schema |
-| **Failure behavior** | What happens when the agent fails |
-| **Human approval points** | Which actions require human approval |
+| Attribute                 | Description                                         |
+| ------------------------- | --------------------------------------------------- |
+| **Name**                  | Unique identifier                                   |
+| **Purpose**               | What problem this agent solves                      |
+| **Scope**                 | What the agent does and does not do                 |
+| **Trigger**               | What causes the agent to activate                   |
+| **Tools**                 | Which tools the agent can use, with their contracts |
+| **Permissions**           | What data/operations the agent is authorized for    |
+| **Context**               | What information the agent receives                 |
+| **Stopping conditions**   | When the agent must stop                            |
+| **Maximum iterations**    | Hard limit on planning/execution loops              |
+| **Output format**         | Structured output schema                            |
+| **Failure behavior**      | What happens when the agent fails                   |
+| **Human approval points** | Which actions require human approval                |
 
 ### Tool Design
 

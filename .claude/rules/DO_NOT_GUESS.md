@@ -43,6 +43,7 @@ When encountering an unknown, the AI should state:
 - What specific information is needed to proceed.
 
 Example:
+
 > "I could not find the database schema for the appointments table. I checked `docs/architecture/database/`, `src/backend/`, and searched for 'appointment' across the repository. To proceed, I need the approved data model or a reference to the schema definition."
 
 ## Scope

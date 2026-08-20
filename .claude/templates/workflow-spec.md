@@ -6,10 +6,10 @@
 
 ## Agents Involved
 
-| Agent | Responsibility in This Workflow |
-|-------|---------------------------------|
-| [agent_1] | [what they do] |
-| [agent_2] | [what they do] |
+| Agent     | Responsibility in This Workflow |
+| --------- | ------------------------------- |
+| [agent_1] | [what they do]                  |
+| [agent_2] | [what they do]                  |
 
 ## Phases
 

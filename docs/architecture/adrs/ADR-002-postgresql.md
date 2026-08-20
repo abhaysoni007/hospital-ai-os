@@ -14,10 +14,10 @@ Hospital AI OS manages clinical records, patient identities, lab results, audit 
 
 ## Alternatives Considered
 
-| Alternative | Pros | Cons | Reason Rejected |
-|:---|:---|:---|:---|
-| **MongoDB** | Flexible schema; JSONB-like documents | Weaker ACID guarantees; no native referential integrity; vector search requires Atlas-specific features | Clinical data needs relational integrity |
-| **PostgreSQL + dedicated vector DB (Qdrant/Pinecone)** | Optimized vector search | Additional infrastructure; operational complexity; unnecessary at MVP scale | Violates Ponytail (pgvector sufficient for MVP) |
+| Alternative                                            | Pros                                  | Cons                                                                                                    | Reason Rejected                                 |
+| :----------------------------------------------------- | :------------------------------------ | :------------------------------------------------------------------------------------------------------ | :---------------------------------------------- |
+| **MongoDB**                                            | Flexible schema; JSONB-like documents | Weaker ACID guarantees; no native referential integrity; vector search requires Atlas-specific features | Clinical data needs relational integrity        |
+| **PostgreSQL + dedicated vector DB (Qdrant/Pinecone)** | Optimized vector search               | Additional infrastructure; operational complexity; unnecessary at MVP scale                             | Violates Ponytail (pgvector sufficient for MVP) |
 
 ## Consequences
 

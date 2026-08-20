@@ -8,31 +8,32 @@
 
 ## 1. Persona Classification Matrix
 
-| Cluster | Role Name | MVP Classification | Primary Focus |
-| :--- | :--- | :--- | :--- |
-| **Clinical** | Physician / Doctor | **MVP** | Clinical diagnosis, treatment plans, order signing, discharge approval |
-| **Clinical** | Staff Nurse / Ward Nurse | **MVP** | Patient care execution, MAR administration, vital logging, shift handover |
-| **Clinical** | Pharmacist | **MVP** | Prescription review, drug allergy/interaction check, dispensing |
-| **Clinical** | Laboratory Technician | **MVP** | Specimen processing, test result entry, critical value alerts |
-| **Clinical** | Radiologist | Phase 2 | DICOM study interpretation, radiology report authorization |
-| **Operations** | Receptionist / Registration | **MVP** | Patient registration, identity verification, check-in, queueing |
-| **Operations** | Front-Desk Supervisor | **MVP** | OPD queue balancing, appointment overrides, patient flow |
-| **Operations** | Hospital Ops Manager | Phase 2 | Operational bottleneck monitoring, department throughput |
-| **Operations** | Department Coordinator | Phase 2 | Resource allocation, clinic room assignments |
-| **Operations** | Hospital Administrator | **MVP** | System-wide operational settings, staff role management |
-| **Financial** | Billing Clerk | **MVP** | Service charge verification, invoice drafting, payment receipt |
-| **Financial** | Insurance Specialist | Phase 2 | Pre-authorization submission, claim adjudication tracking |
-| **Financial** | Finance Administrator | Phase 2 | Tariff master management, audit reporting, financial locks |
-| **Technical** | System Administrator | **MVP** | User provisioning, environment configuration, system status monitoring |
-| **Technical** | Security Administrator | **MVP** | Access rule management, break-glass audit review, security alerts |
-| **Patient** | Patient | Phase 2 | Appointment requests, viewing verified summary, payment |
-| **Patient** | Authorized Caregiver | Phase 2 | Viewing patient logistics, verified updates, payment |
+| Cluster        | Role Name                   | MVP Classification | Primary Focus                                                             |
+| :------------- | :-------------------------- | :----------------- | :------------------------------------------------------------------------ |
+| **Clinical**   | Physician / Doctor          | **MVP**            | Clinical diagnosis, treatment plans, order signing, discharge approval    |
+| **Clinical**   | Staff Nurse / Ward Nurse    | **MVP**            | Patient care execution, MAR administration, vital logging, shift handover |
+| **Clinical**   | Pharmacist                  | **MVP**            | Prescription review, drug allergy/interaction check, dispensing           |
+| **Clinical**   | Laboratory Technician       | **MVP**            | Specimen processing, test result entry, critical value alerts             |
+| **Clinical**   | Radiologist                 | Phase 2            | DICOM study interpretation, radiology report authorization                |
+| **Operations** | Receptionist / Registration | **MVP**            | Patient registration, identity verification, check-in, queueing           |
+| **Operations** | Front-Desk Supervisor       | **MVP**            | OPD queue balancing, appointment overrides, patient flow                  |
+| **Operations** | Hospital Ops Manager        | Phase 2            | Operational bottleneck monitoring, department throughput                  |
+| **Operations** | Department Coordinator      | Phase 2            | Resource allocation, clinic room assignments                              |
+| **Operations** | Hospital Administrator      | **MVP**            | System-wide operational settings, staff role management                   |
+| **Financial**  | Billing Clerk               | **MVP**            | Service charge verification, invoice drafting, payment receipt            |
+| **Financial**  | Insurance Specialist        | Phase 2            | Pre-authorization submission, claim adjudication tracking                 |
+| **Financial**  | Finance Administrator       | Phase 2            | Tariff master management, audit reporting, financial locks                |
+| **Technical**  | System Administrator        | **MVP**            | User provisioning, environment configuration, system status monitoring    |
+| **Technical**  | Security Administrator      | **MVP**            | Access rule management, break-glass audit review, security alerts         |
+| **Patient**    | Patient                     | Phase 2            | Appointment requests, viewing verified summary, payment                   |
+| **Patient**    | Authorized Caregiver        | Phase 2            | Viewing patient logistics, verified updates, payment                      |
 
 ---
 
 ## 2. Clinical Roles Specification
 
 ### 2.1 Physician / Doctor
+
 - **MVP Status:** **MVP**
 - **Goals:** Deliver high-quality clinical care, minimize administrative documentation burden, avoid diagnostic delays.
 - **Responsibilities:** History taking, clinical examination, ordering lab/diagnostic tests, prescribing medications, drafting progress notes, approving discharge summaries.
@@ -44,6 +45,7 @@
 - **AI Assistance Allowed:** Retrieval search of patient chart, AI note drafting (side-by-side), discharge summary drafting, differential support recommendations.
 
 ### 2.2 Staff Nurse / Ward Nurse
+
 - **MVP Status:** **MVP**
 - **Goals:** Ensure timely medication administration, maintain accurate vitals records, execute physician orders safely.
 - **Responsibilities:** Administering prescribed medications (MAR), logging vitals, completing care tasks, conducting shift handovers.
@@ -55,6 +57,7 @@
 - **AI Assistance Allowed:** Shift handover draft generation, missed task reminders, abnormal vital trend flagging.
 
 ### 2.3 Pharmacist
+
 - **MVP Status:** **MVP**
 - **Goals:** Prevent adverse drug events, verify prescription accuracy, dispense correct medications promptly.
 - **Responsibilities:** Validating physician prescriptions against patient allergies/drug interactions, reservation of inventory, medication dispensing.
@@ -66,6 +69,7 @@
 - **AI Assistance Allowed:** Automated interaction/allergy checking against pharmacological database, dispensing queue prioritization.
 
 ### 2.4 Laboratory Technician
+
 - **MVP Status:** **MVP**
 - **Goals:** Process diagnostic specimens accurately, deliver fast lab test turnaround times.
 - **Responsibilities:** Logging incoming specimens, entering raw test results, flagging panic values.
@@ -81,6 +85,7 @@
 ## 3. Operations Roles Specification
 
 ### 3.1 Receptionist / Registration Clerk
+
 - **MVP Status:** **MVP**
 - **Goals:** Register incoming patients accurately, verify demographic identity, minimize check-in queues.
 - **Responsibilities:** Collecting patient registration details, verifying ID, booking OPD appointments, issuing queue numbers.
@@ -92,6 +97,7 @@
 - **AI Assistance Allowed:** Document OCR extraction from government ID cards, duplicate patient identity detection.
 
 ### 3.2 Hospital Administrator
+
 - **MVP Status:** **MVP**
 - **Goals:** Maintain operational continuity, manage staff privileges, ensure compliance.
 - **Responsibilities:** User role assignments, system-wide department configuration, monitoring throughput.
@@ -106,6 +112,7 @@
 ## 4. Financial & Technical Roles Specification
 
 ### 4.1 Billing Clerk
+
 - **MVP Status:** **MVP**
 - **Goals:** Ensure complete charge capture, issue accurate invoices, receive payments promptly.
 - **Responsibilities:** Reviewing unbilled clinical services, compiling itemized statements, accepting payments.
@@ -117,6 +124,7 @@
 - **AI Assistance Allowed:** Unbilled service detection (cross-referencing executed doctor orders against bill items).
 
 ### 4.2 Security Administrator
+
 - **MVP Status:** **MVP**
 - **Goals:** Enforce data security, support applicable regulatory requirements for the deployment jurisdiction, monitor unauthorized access.
 - **Responsibilities:** Monitoring access logs, auditing break-glass activations, managing security alerts.

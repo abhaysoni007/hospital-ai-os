@@ -10,36 +10,43 @@
 The following decisions were intentionally deferred from Phase 2 Product Specification to Phase 3 Technical Architecture:
 
 ### 1. Application & Container Topology
+
 - Service decomposition model (Monolith vs Modular Monolith vs Microservices).
 - Container orchestration & deployment topology.
 - Frontend application shell & workspace state management pattern.
 
 ### 2. API Design & Data Persistence Strategy
+
 - API paradigm selection (REST vs GraphQL vs gRPC) and status code conventions.
 - Database engine selection (Relational vs Document vs Hybrid) and schema definitions for the 13 conceptual data domains defined in `docs/architecture/DATA_FLOW.md`.
 - Data migration, indexing, and transactional isolation strategies.
 
 ### 3. Encryption & Cryptographic Implementation
+
 - Specific cryptographic algorithms for PHI data encryption at rest (e.g. AES-256 vs alternatives).
 - Specific TLS protocol versions and cipher suites for data in transit.
 - Encryption key management, rotation, and secret vault service selection.
 
 ### 4. Identity, Authentication & Authorization Architecture
+
 - Authentication protocol implementation (OAuth2 / OIDC / JWT vs Session Token).
 - Authorization middleware architecture and API-layer permission enforcement engine.
 - Break-glass technical execution model and automated timer revocation service.
 
 ### 5. AI Orchestration & Provenance Architecture
+
 - AI provider abstraction layer interfaces and model switching adapter design.
 - Retrieval-Augmented Generation (RAG) vector database selection and context assembly pipeline.
 - Provenance tracking architecture (claim-level vs evidence-group metadata binding).
 - Model fallback, circuit breaker, and timeout mechanics (specific retry counts & backoff intervals).
 
 ### 6. Audit & Observability Infrastructure
+
 - Immutability implementation pattern (Write-Once storage, tamper-evident hash chaining).
 - Structured log aggregation, correlation ID propagation, and telemetry pipelines.
 - AI request logging, token usage tracking, and latency monitoring infrastructure.
 
 ### 7. Performance & Degradation Strategy
-- Caching architecture, invalidation strategies, and target latency validation. *(Indicative engineering targets from early drafts: < 300ms UI interactions, < 1500ms search responses. These are ENGINEERING TARGETS TO BE VALIDATED during Phase 3 architecture and performance planning — not locked product requirements.)*
+
+- Caching architecture, invalidation strategies, and target latency validation. _(Indicative engineering targets from early drafts: < 300ms UI interactions, < 1500ms search responses. These are ENGINEERING TARGETS TO BE VALIDATED during Phase 3 architecture and performance planning — not locked product requirements.)_
 - Degraded mode circuit breaker configuration, health-check polling frequency, and offline queue synchronization mechanics.

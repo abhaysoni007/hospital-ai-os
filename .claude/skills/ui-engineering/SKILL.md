@@ -31,18 +31,21 @@ Provide expert guidance for implementing visual design systems, component librar
 ## Responsibilities
 
 ### Design System
+
 - Maintain a centralized design system with documented components.
 - Every component must have: documented API (props), visual variants, states (default, hover, focus, active, disabled, error), usage guidelines.
 - Components must be composable: build complex UIs from simple, reusable parts.
 - The design system must be the single source of truth for visual implementation.
 
 ### Design Tokens
+
 - Define tokens for: colors, typography, spacing, border radius, shadows, breakpoints, z-index, animation timing.
 - Tokens must be used consistently; hardcoded values are prohibited.
 - Tokens must support theming (e.g., light/dark mode, high-contrast mode).
 - Token naming must be semantic (e.g., `color-error`, not `color-red`).
 
 ### Component Implementation
+
 - Match the design specification precisely.
 - Implement all visual states.
 - Use design tokens, not hardcoded values.
@@ -50,12 +53,14 @@ Provide expert guidance for implementing visual design systems, component librar
 - Test at all supported breakpoints.
 
 ### Visual Consistency
+
 - Consistent spacing, typography, and color usage.
 - Consistent icon style and size.
 - Consistent component behavior (buttons, inputs, modals).
 - Consistent layout patterns (page structure, sidebars, headers).
 
 ### Healthcare-Specific Visual Design
+
 - High-priority alerts must be visually prominent.
 - Medication names should follow established display conventions.
 - Numerical clinical values must include units.

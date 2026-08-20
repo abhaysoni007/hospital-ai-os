@@ -33,22 +33,26 @@ Provide expert guidance for designing and implementing test strategies, test pla
 ## Responsibilities
 
 ### Test Strategy Design
+
 - Determine the right mix of test types for each feature: unit, integration, API, component, E2E, AI evaluation, security.
 - Prioritize: more unit tests (fast, focused), fewer E2E tests (slow, broad).
 - Define what each test level validates: unit tests validate logic, integration tests validate boundaries, E2E tests validate workflows.
 
 ### Test Case Design
+
 - Derive test cases from acceptance criteria.
 - For each test case, define: preconditions, inputs, expected output, postconditions.
 - Cover: typical case, boundary cases, error cases, edge cases.
 - Name tests descriptively: `should_reject_order_when_patient_allergy_matches_medication`.
 
 ### Edge Case Identification
+
 - Apply the edge case philosophy (`.claude/rules/EDGE_CASE_PHILOSOPHY.md`).
 - For every feature, systematically consider: missing data, invalid data, concurrent access, permission changes, external system failures, AI uncertainty.
 - Document identified edge cases in the test plan.
 
 ### Healthcare-Specific Testing
+
 - Test that clinical actions require human approval.
 - Test that patient data access is role-restricted.
 - Test that audit logs are created for sensitive operations.
@@ -57,6 +61,7 @@ Provide expert guidance for designing and implementing test strategies, test pla
 - Test wrong-patient-prevention mechanisms.
 
 ### AI Testing
+
 - Follow the ai-evaluation skill for AI-specific testing.
 - Test AI output validation (schema compliance, business rule compliance).
 - Test AI failure modes (timeout, error, hallucination, low confidence).
@@ -64,6 +69,7 @@ Provide expert guidance for designing and implementing test strategies, test pla
 - Test prompt injection resistance.
 
 ### Security Testing
+
 - Test authentication enforcement on protected endpoints.
 - Test authorization enforcement (role-based, resource-based).
 - Test input validation and injection prevention.

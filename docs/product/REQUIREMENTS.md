@@ -12,7 +12,7 @@
 2. **API-Layer Authorization:** Authorization checks must be enforced at the API layer independently of UI state. Minimum necessary access scope strictly applied per role.
 3. **Audit Immutability:** Audit records must be immutable (write-once, read-many) and tamper-evident. Failure of audit infrastructure causes graceful degradation into a safe state.
 
-*(Note: Specific encryption algorithms, TLS protocol versions, and token storage mechanisms are DEFERRED TO PHASE 3 ARCHITECTURE).*
+_(Note: Specific encryption algorithms, TLS protocol versions, and token storage mechanisms are DEFERRED TO PHASE 3 ARCHITECTURE)._
 
 ---
 
@@ -26,12 +26,12 @@
 
 ## 3. Performance & Quality Goals
 
-| Goal Area | Description | Status / Target |
-| :--- | :--- | :--- |
-| **UI Responsiveness** | Fast UI interaction speed for high-speed clinical data entry. | `TARGET — VALIDATE IN PHASE 3 ARCHITECTURE` |
-| **Search Speed** | Rapid patient search and EMPI lookup to prevent reception queues. | `TARGET — VALIDATE IN PHASE 3 ARCHITECTURE` |
-| **AI Note Drafting** | AI note draft generation speed matching clinical interview flow. | `TARGET — VALIDATE IN PHASE 3 ARCHITECTURE` |
-| **Panic Alert Dispatch**| Instant alert dispatch for critical clinical panic lab values. | `TARGET — VALIDATE IN PHASE 3 ARCHITECTURE` |
+| Goal Area                | Description                                                       | Status / Target                             |
+| :----------------------- | :---------------------------------------------------------------- | :------------------------------------------ |
+| **UI Responsiveness**    | Fast UI interaction speed for high-speed clinical data entry.     | `TARGET — VALIDATE IN PHASE 3 ARCHITECTURE` |
+| **Search Speed**         | Rapid patient search and EMPI lookup to prevent reception queues. | `TARGET — VALIDATE IN PHASE 3 ARCHITECTURE` |
+| **AI Note Drafting**     | AI note draft generation speed matching clinical interview flow.  | `TARGET — VALIDATE IN PHASE 3 ARCHITECTURE` |
+| **Panic Alert Dispatch** | Instant alert dispatch for critical clinical panic lab values.    | `TARGET — VALIDATE IN PHASE 3 ARCHITECTURE` |
 
 ---
 

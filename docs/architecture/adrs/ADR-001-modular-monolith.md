@@ -18,10 +18,10 @@ Choose between monolith, modular monolith, and microservices.
 
 ## Alternatives Considered
 
-| Alternative | Pros | Cons | Reason Rejected |
-|:---|:---|:---|:---|
-| **Monolith (unstructured)** | Simplest | Module boundaries not enforced; tangled dependencies; hard to decompose later | Insufficient for 9+ domain modules |
-| **Microservices** | Independent deployment; scaling | Distributed transactions; network latency; operational complexity; team too small | Over-engineered for MVP; ACID guarantees harder |
+| Alternative                 | Pros                            | Cons                                                                              | Reason Rejected                                 |
+| :-------------------------- | :------------------------------ | :-------------------------------------------------------------------------------- | :---------------------------------------------- |
+| **Monolith (unstructured)** | Simplest                        | Module boundaries not enforced; tangled dependencies; hard to decompose later     | Insufficient for 9+ domain modules              |
+| **Microservices**           | Independent deployment; scaling | Distributed transactions; network latency; operational complexity; team too small | Over-engineered for MVP; ACID guarantees harder |
 
 ## Consequences
 

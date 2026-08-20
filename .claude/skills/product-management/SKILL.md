@@ -32,18 +32,21 @@ Provide expert guidance for defining product requirements, user journeys, accept
 ## Responsibilities
 
 ### Requirements Definition
+
 - Define requirements as user problems, not solutions.
 - Each requirement must be traceable to a user persona and workflow.
 - Requirements must be testable: verifiable acceptance criteria.
 - Distinguish between must-have, should-have, and nice-to-have.
 
 ### Acceptance Criteria
+
 - Written in Given/When/Then format or explicit conditions.
 - Must cover: success path, primary error paths, edge cases.
 - Must be specific and measurable (not "the system should be fast").
 - Must be agreed upon before implementation begins.
 
 ### Prioritization
+
 - Patient safety features first.
 - Core workflow enablers second.
 - Operational efficiency improvements third.
@@ -51,11 +54,13 @@ Provide expert guidance for defining product requirements, user journeys, accept
 - Prioritize based on: impact × frequency × safety criticality.
 
 ### Scope Management
+
 - Define in-scope and out-of-scope for every feature.
 - Scope changes require re-evaluation and approval.
 - If scope grows during implementation, stop and re-evaluate.
 
 ### Success Metrics
+
 - Define measurable outcomes for every feature.
 - Baseline before deployment; measure after.
 - Metrics must be specific: time saved, errors prevented, throughput improved.

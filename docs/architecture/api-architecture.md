@@ -8,20 +8,21 @@
 
 ## 1. API Design Principles
 
-| Principle | Application |
-|:---|:---|
-| **REST (JSON)** | All endpoints follow RESTful conventions. See ADR-003. |
-| **Versioned** | All endpoints prefixed with `/api/v1/` |
-| **Authenticated** | All endpoints require JWT unless explicitly public |
-| **Authorized** | RBAC permission checked per endpoint |
-| **Validated** | Request bodies validated with Zod schemas |
-| **Audited** | State-changing operations emit audit events synchronously within a DB transaction boundary |
-| **Consistent errors** | Standard error response format across all endpoints |
-| **No PHI in URLs** | Patient IDs (UUIDs) are allowed; clinical data is never in query params |
+| Principle             | Application                                                                                |
+| :-------------------- | :----------------------------------------------------------------------------------------- |
+| **REST (JSON)**       | All endpoints follow RESTful conventions. See ADR-003.                                     |
+| **Versioned**         | All endpoints prefixed with `/api/v1/`                                                     |
+| **Authenticated**     | All endpoints require JWT unless explicitly public                                         |
+| **Authorized**        | RBAC permission checked per endpoint                                                       |
+| **Validated**         | Request bodies validated with Zod schemas                                                  |
+| **Audited**           | State-changing operations emit audit events synchronously within a DB transaction boundary |
+| **Consistent errors** | Standard error response format across all endpoints                                        |
+| **No PHI in URLs**    | Patient IDs (UUIDs) are allowed; clinical data is never in query params                    |
 
 ### 1.1 Standard Response Envelope
 
 **Success:**
+
 ```json
 {
   "data": { ... },
@@ -30,6 +31,7 @@
 ```
 
 **Error:**
+
 ```json
 {
   "error": {
@@ -43,6 +45,7 @@
 ### 1.2 Pagination
 
 All list endpoints support cursor-based or offset pagination:
+
 - `?page=1&pageSize=20` (offset-based, default)
 - `?cursor=<id>&limit=20` (cursor-based, for real-time data)
 
@@ -57,14 +60,15 @@ All list endpoints support cursor-based or offset pagination:
 
 ### 2.1 Authentication (`/api/v1/auth`)
 
-| Method | Path | Purpose | Auth | Role | Audit Event |
-|:---|:---|:---|:---|:---|:---|
-| POST | `/auth/login` | Authenticate with email + password | **Public** | — | `STAFF_LOGIN` / `STAFF_LOGIN_FAILED` |
-| POST | `/auth/refresh` | Refresh access token | Cookie | — | — |
-| POST | `/auth/logout` | Revoke refresh token | Required | Any | `STAFF_LOGOUT` |
-| GET | `/auth/me` | Get current user profile | Required | Any | — |
+| Method | Path            | Purpose                            | Auth       | Role | Audit Event                          |
+| :----- | :-------------- | :--------------------------------- | :--------- | :--- | :----------------------------------- |
+| POST   | `/auth/login`   | Authenticate with email + password | **Public** | —    | `STAFF_LOGIN` / `STAFF_LOGIN_FAILED` |
+| POST   | `/auth/refresh` | Refresh access token               | Cookie     | —    | —                                    |
+| POST   | `/auth/logout`  | Revoke refresh token               | Required   | Any  | `STAFF_LOGOUT`                       |
+| GET    | `/auth/me`      | Get current user profile           | Required   | Any  | —                                    |
 
 **POST /auth/login**
+
 ```
 Request:  { email: string, password: string }
 Response: { data: { accessToken: string, user: { id, email, role, department } } }
@@ -75,16 +79,17 @@ Errors:   401 INVALID_CREDENTIALS, 429 RATE_LIMITED
 
 ### 2.2 Patients (`/api/v1/patients`)
 
-| Method | Path | Purpose | Auth | Permission | Audit Event |
-|:---|:---|:---|:---|:---|:---|
-| POST | `/patients` | Register new patient | Required | `patient:create` | `PATIENT_REGISTERED` |
-| GET | `/patients` | Search/list patients | Required | `patient:read` | — |
-| GET | `/patients/:id` | Get patient details | Required | `patient:read` | `PATIENT_ACCESSED` |
-| PATCH | `/patients/:id` | Update demographics | Required | `patient:update` | `PATIENT_UPDATED` |
-| POST | `/patients/:id/identities` | Upload identity document | Required | `patient:create` | `IDENTITY_UPLOADED` |
-| PATCH | `/patients/:id/identities/:identityId` | Verify identity | Required | `patient:verify_identity` | `IDENTITY_VERIFIED` |
+| Method | Path                                   | Purpose                  | Auth     | Permission                | Audit Event          |
+| :----- | :------------------------------------- | :----------------------- | :------- | :------------------------ | :------------------- |
+| POST   | `/patients`                            | Register new patient     | Required | `patient:create`          | `PATIENT_REGISTERED` |
+| GET    | `/patients`                            | Search/list patients     | Required | `patient:read`            | —                    |
+| GET    | `/patients/:id`                        | Get patient details      | Required | `patient:read`            | `PATIENT_ACCESSED`   |
+| PATCH  | `/patients/:id`                        | Update demographics      | Required | `patient:update`          | `PATIENT_UPDATED`    |
+| POST   | `/patients/:id/identities`             | Upload identity document | Required | `patient:create`          | `IDENTITY_UPLOADED`  |
+| PATCH  | `/patients/:id/identities/:identityId` | Verify identity          | Required | `patient:verify_identity` | `IDENTITY_VERIFIED`  |
 
 **POST /patients**
+
 ```
 Request: {
   firstName: string, lastName: string, dateOfBirth: string (ISO date),
@@ -99,6 +104,7 @@ Errors: 400 VALIDATION_ERROR, 409 DUPLICATE_PATIENT (potential match found)
 ```
 
 **GET /patients**
+
 ```
 Query: ?search=<name|mrn|phone>&page=1&pageSize=20
 Response: { data: [ { id, mrn, firstName, lastName, dateOfBirth, gender, status } ], meta: { page, pageSize, total } }
@@ -109,14 +115,15 @@ Search: Trigram fuzzy match on name; exact match on MRN and phone
 
 ### 2.3 Appointments (`/api/v1/appointments`)
 
-| Method | Path | Purpose | Auth | Permission | Audit Event |
-|:---|:---|:---|:---|:---|:---|
-| POST | `/appointments` | Book appointment | Required | `appointment:create` | `APPOINTMENT_BOOKED` |
-| GET | `/appointments` | List appointments | Required | `appointment:read` | — |
-| PATCH | `/appointments/:id/check-in` | Check in patient | Required | `appointment:update` | `APPOINTMENT_CHECKED_IN` |
-| PATCH | `/appointments/:id/cancel` | Cancel appointment | Required | `appointment:cancel` | `APPOINTMENT_CANCELLED` |
+| Method | Path                         | Purpose            | Auth     | Permission           | Audit Event              |
+| :----- | :--------------------------- | :----------------- | :------- | :------------------- | :----------------------- |
+| POST   | `/appointments`              | Book appointment   | Required | `appointment:create` | `APPOINTMENT_BOOKED`     |
+| GET    | `/appointments`              | List appointments  | Required | `appointment:read`   | —                        |
+| PATCH  | `/appointments/:id/check-in` | Check in patient   | Required | `appointment:update` | `APPOINTMENT_CHECKED_IN` |
+| PATCH  | `/appointments/:id/cancel`   | Cancel appointment | Required | `appointment:cancel` | `APPOINTMENT_CANCELLED`  |
 
 **POST /appointments**
+
 ```
 Request: { patientId: UUID, doctorId: UUID, departmentId: UUID, scheduledDate: string (ISO date), scheduledTime: string (HH:mm) }
 Response: { data: { id, patientId, doctorId, scheduledDate, scheduledTime, tokenNumber, status } }
@@ -128,16 +135,17 @@ Errors: 400 VALIDATION_ERROR, 409 SLOT_UNAVAILABLE
 
 ### 2.4 Encounters (`/api/v1/encounters`)
 
-| Method | Path | Purpose | Auth | Permission | Audit Event |
-|:---|:---|:---|:---|:---|:---|
-| POST | `/encounters` | Create encounter (from check-in) | Required | `encounter:create` | `ENCOUNTER_CREATED` |
-| GET | `/encounters` | List encounters | Required | `encounter:read` | — |
-| GET | `/encounters/:id` | Get encounter details | Required | `encounter:read` | — |
-| PATCH | `/encounters/:id/activate` | Start consultation | Required | `encounter:update` | `ENCOUNTER_ACTIVATED` |
-| PATCH | `/encounters/:id/initiate-discharge` | Begin discharge workflow | Required | `encounter:discharge` | `ENCOUNTER_DISCHARGE_INITIATED` |
-| PATCH | `/encounters/:id/authorize-discharge` | Approve discharge | Required | `encounter:discharge` | `DISCHARGE_AUTHORIZED` |
+| Method | Path                                  | Purpose                          | Auth     | Permission            | Audit Event                     |
+| :----- | :------------------------------------ | :------------------------------- | :------- | :-------------------- | :------------------------------ |
+| POST   | `/encounters`                         | Create encounter (from check-in) | Required | `encounter:create`    | `ENCOUNTER_CREATED`             |
+| GET    | `/encounters`                         | List encounters                  | Required | `encounter:read`      | —                               |
+| GET    | `/encounters/:id`                     | Get encounter details            | Required | `encounter:read`      | —                               |
+| PATCH  | `/encounters/:id/activate`            | Start consultation               | Required | `encounter:update`    | `ENCOUNTER_ACTIVATED`           |
+| PATCH  | `/encounters/:id/initiate-discharge`  | Begin discharge workflow         | Required | `encounter:discharge` | `ENCOUNTER_DISCHARGE_INITIATED` |
+| PATCH  | `/encounters/:id/authorize-discharge` | Approve discharge                | Required | `encounter:discharge` | `DISCHARGE_AUTHORIZED`          |
 
 **GET /encounters/:id**
+
 ```
 Response: { data: {
   id, patientId, doctorId, departmentId, encounterType, chiefComplaint, status,
@@ -152,15 +160,16 @@ Response: { data: {
 
 ### 2.5 Clinical Records (`/api/v1/encounters/:encounterId/clinical-records`)
 
-| Method | Path | Purpose | Auth | Permission | Audit Event |
-|:---|:---|:---|:---|:---|:---|
-| POST | `/encounters/:encounterId/clinical-records` | Create clinical record | Required | `clinical_record:write` | `CLINICAL_RECORD_CREATED` |
-| GET | `/encounters/:encounterId/clinical-records` | List records for encounter | Required | `clinical_record:read` | `CLINICAL_RECORD_ACCESSED` |
-| GET | `/encounters/:encounterId/clinical-records/:id` | Get single record | Required | `clinical_record:read` | `CLINICAL_RECORD_ACCESSED` |
-| PATCH | `/encounters/:encounterId/clinical-records/:id` | Update draft record | Required | `clinical_record:write` | — |
-| POST | `/encounters/:encounterId/clinical-records/:id/sign` | Sign a draft | Required | `clinical_record:sign` | `CLINICAL_NOTE_SIGNED` |
+| Method | Path                                                 | Purpose                    | Auth     | Permission              | Audit Event                |
+| :----- | :--------------------------------------------------- | :------------------------- | :------- | :---------------------- | :------------------------- |
+| POST   | `/encounters/:encounterId/clinical-records`          | Create clinical record     | Required | `clinical_record:write` | `CLINICAL_RECORD_CREATED`  |
+| GET    | `/encounters/:encounterId/clinical-records`          | List records for encounter | Required | `clinical_record:read`  | `CLINICAL_RECORD_ACCESSED` |
+| GET    | `/encounters/:encounterId/clinical-records/:id`      | Get single record          | Required | `clinical_record:read`  | `CLINICAL_RECORD_ACCESSED` |
+| PATCH  | `/encounters/:encounterId/clinical-records/:id`      | Update draft record        | Required | `clinical_record:write` | —                          |
+| POST   | `/encounters/:encounterId/clinical-records/:id/sign` | Sign a draft               | Required | `clinical_record:sign`  | `CLINICAL_NOTE_SIGNED`     |
 
 **POST /encounters/:encounterId/clinical-records**
+
 ```
 Request: {
   recordType: "soap"|"progress_note"|"vital_signs"|"discharge_summary",
@@ -176,24 +185,25 @@ Validation: encounterId must exist and be Active; recordType-specific content va
 
 ### 2.6 Diagnostic Orders (`/api/v1/encounters/:encounterId/diagnostic-orders`)
 
-| Method | Path | Purpose | Auth | Permission | Audit Event |
-|:---|:---|:---|:---|:---|:---|
-| POST | `/encounters/:encounterId/diagnostic-orders` | Place lab order | Required | `diagnostic_order:create` | `DIAGNOSTIC_ORDER_CREATED` |
-| GET | `/encounters/:encounterId/diagnostic-orders` | List orders for encounter | Required | `diagnostic_order:read` | — |
-| PATCH | `/diagnostic-orders/:id/collect-sample` | Mark sample collected | Required | `diagnostic_order:update` | `SAMPLE_COLLECTED` |
-| PATCH | `/diagnostic-orders/:id/cancel` | Cancel order | Required | `diagnostic_order:cancel` | `DIAGNOSTIC_ORDER_CANCELLED` |
+| Method | Path                                         | Purpose                   | Auth     | Permission                | Audit Event                  |
+| :----- | :------------------------------------------- | :------------------------ | :------- | :------------------------ | :--------------------------- |
+| POST   | `/encounters/:encounterId/diagnostic-orders` | Place lab order           | Required | `diagnostic_order:create` | `DIAGNOSTIC_ORDER_CREATED`   |
+| GET    | `/encounters/:encounterId/diagnostic-orders` | List orders for encounter | Required | `diagnostic_order:read`   | —                            |
+| PATCH  | `/diagnostic-orders/:id/collect-sample`      | Mark sample collected     | Required | `diagnostic_order:update` | `SAMPLE_COLLECTED`           |
+| PATCH  | `/diagnostic-orders/:id/cancel`              | Cancel order              | Required | `diagnostic_order:cancel` | `DIAGNOSTIC_ORDER_CANCELLED` |
 
 ---
 
 ### 2.7 Diagnostic Results (`/api/v1/diagnostic-orders/:orderId/result`)
 
-| Method | Path | Purpose | Auth | Permission | Audit Event |
-|:---|:---|:---|:---|:---|:---|
-| POST | `/diagnostic-orders/:orderId/result` | Enter lab result | Required | `diagnostic_result:enter` | `LAB_RESULT_ENTERED` |
-| GET | `/diagnostic-orders/:orderId/result` | Get result | Required | `diagnostic_result:read` | — |
-| POST | `/diagnostic-orders/:orderId/result/verify` | Verify result | Required | `diagnostic_result:verify` | `LAB_RESULT_VERIFIED` |
+| Method | Path                                        | Purpose          | Auth     | Permission                 | Audit Event           |
+| :----- | :------------------------------------------ | :--------------- | :------- | :------------------------- | :-------------------- |
+| POST   | `/diagnostic-orders/:orderId/result`        | Enter lab result | Required | `diagnostic_result:enter`  | `LAB_RESULT_ENTERED`  |
+| GET    | `/diagnostic-orders/:orderId/result`        | Get result       | Required | `diagnostic_result:read`   | —                     |
+| POST   | `/diagnostic-orders/:orderId/result/verify` | Verify result    | Required | `diagnostic_result:verify` | `LAB_RESULT_VERIFIED` |
 
 **POST /diagnostic-orders/:orderId/result**
+
 ```
 Request: {
   resultValues: { parameterName: string, value: number, unit: string }[],
@@ -212,15 +222,16 @@ Side effects:
 
 ### 2.8 AI Features (`/api/v1/ai`)
 
-| Method | Path | Purpose | Auth | Permission | Audit Event |
-|:---|:---|:---|:---|:---|:---|
-| POST | `/ai/note-draft` | Generate clinical note draft | Required | `ai_interaction:invoke` | `AI_DRAFT_GENERATED` |
-| POST | `/ai/discharge-draft` | Generate discharge summary draft | Required | `ai_interaction:invoke` | `AI_DRAFT_GENERATED` |
-| POST | `/ai/chart-search` | Search patient chart via AI | Required | `ai_interaction:invoke` | `AI_SEARCH_EXECUTED` |
-| POST | `/ai/ocr` | Extract text from document image | Required | `ai_interaction:invoke` | `AI_DRAFT_GENERATED` |
-| PATCH | `/ai/interactions/:id/action` | Accept/reject AI draft | Required | `ai_interaction:invoke` | `AI_DRAFT_ACCEPTED` / `AI_DRAFT_REJECTED` |
+| Method | Path                          | Purpose                          | Auth     | Permission              | Audit Event                               |
+| :----- | :---------------------------- | :------------------------------- | :------- | :---------------------- | :---------------------------------------- |
+| POST   | `/ai/note-draft`              | Generate clinical note draft     | Required | `ai_interaction:invoke` | `AI_DRAFT_GENERATED`                      |
+| POST   | `/ai/discharge-draft`         | Generate discharge summary draft | Required | `ai_interaction:invoke` | `AI_DRAFT_GENERATED`                      |
+| POST   | `/ai/chart-search`            | Search patient chart via AI      | Required | `ai_interaction:invoke` | `AI_SEARCH_EXECUTED`                      |
+| POST   | `/ai/ocr`                     | Extract text from document image | Required | `ai_interaction:invoke` | `AI_DRAFT_GENERATED`                      |
+| PATCH  | `/ai/interactions/:id/action` | Accept/reject AI draft           | Required | `ai_interaction:invoke` | `AI_DRAFT_ACCEPTED` / `AI_DRAFT_REJECTED` |
 
 **POST /ai/note-draft**
+
 ```
 Request: { encounterId: UUID, recordType: "soap"|"progress_note", instructions?: string }
 Response: { data: { interactionId: UUID, draft: { content: {...} }, groundingStatus, model, latencyMs } }
@@ -232,38 +243,39 @@ Errors: 503 AI_SERVICE_UNAVAILABLE (circuit breaker open)
 
 ### 2.9 Tasks & Notifications (`/api/v1/tasks`, `/api/v1/notifications`)
 
-| Method | Path | Purpose | Auth | Permission |
-|:---|:---|:---|:---|:---|
-| GET | `/tasks` | List my assigned tasks | Required | `task:read` |
-| PATCH | `/tasks/:id/status` | Update task status | Required | `task:update` |
-| GET | `/notifications` | List my notifications | Required | Any |
-| PATCH | `/notifications/:id/acknowledge` | Acknowledge notification | Required | Any |
+| Method | Path                             | Purpose                  | Auth     | Permission    |
+| :----- | :------------------------------- | :----------------------- | :------- | :------------ |
+| GET    | `/tasks`                         | List my assigned tasks   | Required | `task:read`   |
+| PATCH  | `/tasks/:id/status`              | Update task status       | Required | `task:update` |
+| GET    | `/notifications`                 | List my notifications    | Required | Any           |
+| PATCH  | `/notifications/:id/acknowledge` | Acknowledge notification | Required | Any           |
 
 ---
 
 ### 2.10 Administration (`/api/v1/admin`)
 
-| Method | Path | Purpose | Auth | Permission |
-|:---|:---|:---|:---|:---|
-| GET | `/admin/staff` | List all staff | Required | `staff:manage` |
-| POST | `/admin/staff` | Create staff member | Required | `staff:manage` |
-| PATCH | `/admin/staff/:id` | Update staff (role, dept, status) | Required | `staff:manage` |
-| GET | `/admin/departments` | List departments | Required | `staff:manage` |
-| POST | `/admin/departments` | Create department | Required | `staff:manage` |
-| GET | `/admin/audit-events` | Query audit log | Required | `audit_event:read` |
+| Method | Path                  | Purpose                           | Auth     | Permission         |
+| :----- | :-------------------- | :-------------------------------- | :------- | :----------------- |
+| GET    | `/admin/staff`        | List all staff                    | Required | `staff:manage`     |
+| POST   | `/admin/staff`        | Create staff member               | Required | `staff:manage`     |
+| PATCH  | `/admin/staff/:id`    | Update staff (role, dept, status) | Required | `staff:manage`     |
+| GET    | `/admin/departments`  | List departments                  | Required | `staff:manage`     |
+| POST   | `/admin/departments`  | Create department                 | Required | `staff:manage`     |
+| GET    | `/admin/audit-events` | Query audit log                   | Required | `audit_event:read` |
 
 ---
 
 ### 2.11 Break-Glass (`/api/v1/break-glass`)
 
-| Method | Path | Purpose | Auth | Permission | Audit Event |
-|:---|:---|:---|:---|:---|:---|
-| POST | `/break-glass` | Activate emergency access | Required | `break_glass:activate` | `BREAK_GLASS_ACTIVATED` |
-| DELETE | `/break-glass/:id` | Deactivate session | Required | `break_glass:activate` | `BREAK_GLASS_DEACTIVATED` |
-| GET | `/break-glass` | List active sessions (admin) | Required | `break_glass:review` | — |
-| PATCH | `/break-glass/:id/review` | Review a session | Required | `break_glass:review` | `BREAK_GLASS_REVIEWED` |
+| Method | Path                      | Purpose                      | Auth     | Permission             | Audit Event               |
+| :----- | :------------------------ | :--------------------------- | :------- | :--------------------- | :------------------------ |
+| POST   | `/break-glass`            | Activate emergency access    | Required | `break_glass:activate` | `BREAK_GLASS_ACTIVATED`   |
+| DELETE | `/break-glass/:id`        | Deactivate session           | Required | `break_glass:activate` | `BREAK_GLASS_DEACTIVATED` |
+| GET    | `/break-glass`            | List active sessions (admin) | Required | `break_glass:review`   | —                         |
+| PATCH  | `/break-glass/:id/review` | Review a session             | Required | `break_glass:review`   | `BREAK_GLASS_REVIEWED`    |
 
 **POST /break-glass**
+
 ```
 Request: { patientId: UUID, justification: string (min 10 chars) }
 Response: { data: { sessionId: UUID, patientId, grantedScope, activatedAt } }

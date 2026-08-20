@@ -69,23 +69,23 @@ interface GenerationConfig {
 
 ### 2.3 Initial Provider: Google Gemini
 
-| Property | Value |
-|:---|:---|
-| **Default model** | `gemini-2.0-flash` (configurable) |
-| **Structured output** | Native JSON mode with schema |
-| **Embeddings** | `text-embedding-004` |
-| **SDK** | `@google/generative-ai` |
+| Property              | Value                             |
+| :-------------------- | :-------------------------------- |
+| **Default model**     | `gemini-2.0-flash` (configurable) |
+| **Structured output** | Native JSON mode with schema      |
+| **Embeddings**        | `text-embedding-004`              |
+| **SDK**               | `@google/generative-ai`           |
 
 ---
 
 ## 3. AI Capability Map
 
-| Capability | Module Integration | Risk Level | Human Review |
-|:---|:---|:---|:---|
-| **Clinical note draft** (SOAP, progress note) | Clinical → AI → Clinical | High | **Mandatory** — side-by-side review, clinician signs |
-| **Discharge summary draft** | Discharge → AI → Clinical | High | **Mandatory** — physician reviews and authorizes |
-| **Patient chart search** | Clinical → AI → Response | Medium | User evaluates relevance; grounded source links |
-| **Identity document OCR** | Patient → AI → Patient | Low | Registration clerk verifies extracted fields |
+| Capability                                    | Module Integration        | Risk Level | Human Review                                         |
+| :-------------------------------------------- | :------------------------ | :--------- | :--------------------------------------------------- |
+| **Clinical note draft** (SOAP, progress note) | Clinical → AI → Clinical  | High       | **Mandatory** — side-by-side review, clinician signs |
+| **Discharge summary draft**                   | Discharge → AI → Clinical | High       | **Mandatory** — physician reviews and authorizes     |
+| **Patient chart search**                      | Clinical → AI → Response  | Medium     | User evaluates relevance; grounded source links      |
+| **Identity document OCR**                     | Patient → AI → Patient    | Low        | Registration clerk verifies extracted fields         |
 
 ---
 
@@ -116,6 +116,7 @@ Every AI request follows a three-layer prompt structure:
 System instructions are versioned templates stored in the codebase (not database). Each capability has its own system instruction.
 
 **Key safety clauses included in every system instruction:**
+
 - "You are a clinical documentation assistant. You MUST NOT make clinical decisions."
 - "All output is a DRAFT for human review. Label it as AI-generated."
 - "If information is insufficient, say so. Do NOT fabricate clinical information."
@@ -126,25 +127,25 @@ System instructions are versioned templates stored in the codebase (not database
 
 Context for AI requests is assembled by the AI Orchestration Service from data already authorized for the requesting user:
 
-| Capability | Context Included |
-|:---|:---|
-| **Note draft** | Patient demographics, encounter details, vitals history, active medications, allergies, chief complaint, prior notes in this encounter |
-| **Discharge summary** | All encounter clinical records, lab results, medication changes, treatment summary, pending follow-ups |
-| **Chart search** | RAG-retrieved document chunks relevant to the search query (scoped to authorized patient) |
-| **OCR** | Raw document image (no additional clinical context) |
+| Capability            | Context Included                                                                                                                       |
+| :-------------------- | :------------------------------------------------------------------------------------------------------------------------------------- |
+| **Note draft**        | Patient demographics, encounter details, vitals history, active medications, allergies, chief complaint, prior notes in this encounter |
+| **Discharge summary** | All encounter clinical records, lab results, medication changes, treatment summary, pending follow-ups                                 |
+| **Chart search**      | RAG-retrieved document chunks relevant to the search query (scoped to authorized patient)                                              |
+| **OCR**               | Raw document image (no additional clinical context)                                                                                    |
 
 > [!IMPORTANT]
 > Context assembly respects RBAC. The AI receives only data that the requesting user is authorized to see.
 
 ### 4.4 Prompt Injection Mitigation
 
-| Strategy | Implementation |
-|:---|:---|
-| **Delimiter separation** | System instructions and clinical context use explicit delimiters (`[SYSTEM_START]`, `[CLINICAL_CONTEXT_START]`, etc.) |
-| **Input parameterization** | User-provided text is inserted into designated slots, never concatenated with system instructions |
-| **Output validation** | AI output is validated against expected Zod schemas — unexpected structures are rejected |
-| **No tool use** | AI is text-in/text-out only — no function calling, no web browsing, no code execution |
-| **Clinical content boundaries** | Patient-authored content (e.g., complaint text) is marked as `[PATIENT_INPUT]` in context |
+| Strategy                        | Implementation                                                                                                        |
+| :------------------------------ | :-------------------------------------------------------------------------------------------------------------------- |
+| **Delimiter separation**        | System instructions and clinical context use explicit delimiters (`[SYSTEM_START]`, `[CLINICAL_CONTEXT_START]`, etc.) |
+| **Input parameterization**      | User-provided text is inserted into designated slots, never concatenated with system instructions                     |
+| **Output validation**           | AI output is validated against expected Zod schemas — unexpected structures are rejected                              |
+| **No tool use**                 | AI is text-in/text-out only — no function calling, no web browsing, no code execution                                 |
+| **Clinical content boundaries** | Patient-authored content (e.g., complaint text) is marked as `[PATIENT_INPUT]` in context                             |
 
 ---
 
@@ -190,13 +191,13 @@ Clinical Record Saved
 
 ### 5.2 Embedding Strategy
 
-| Property | Value |
-|:---|:---|
-| **What is embedded** | Clinical records (SOAP notes, progress notes), diagnostic results |
-| **Embedding model** | `text-embedding-004` (768 or 1536 dimensions — configurable) |
-| **Chunking** | Per clinical record (each record is a single chunk for MVP — records are typically short) |
-| **Content hashing** | `content_hash` column detects when a record has changed and needs re-embedding |
-| **Scope** | Embeddings are always scoped to a single patient — cross-patient search is prohibited |
+| Property             | Value                                                                                     |
+| :------------------- | :---------------------------------------------------------------------------------------- |
+| **What is embedded** | Clinical records (SOAP notes, progress notes), diagnostic results                         |
+| **Embedding model**  | `text-embedding-004` (768 or 1536 dimensions — configurable)                              |
+| **Chunking**         | Per clinical record (each record is a single chunk for MVP — records are typically short) |
+| **Content hashing**  | `content_hash` column detects when a record has changed and needs re-embedding            |
+| **Scope**            | Embeddings are always scoped to a single patient — cross-patient search is prohibited     |
 
 ### 5.3 Why pgvector (Not a Dedicated Vector DB)
 
@@ -213,15 +214,21 @@ Every AI capability has a defined Zod schema for its output:
 ```typescript
 // Example: Note Draft Output Schema
 const NoteDraftOutputSchema = z.object({
-  sections: z.array(z.object({
-    heading: z.string(),
-    content: z.string(),
-    sourceCitations: z.array(z.object({
-      sourceType: z.string(),
-      sourceId: z.string(),
-      excerpt: z.string(),
-    })).optional(),
-  })),
+  sections: z.array(
+    z.object({
+      heading: z.string(),
+      content: z.string(),
+      sourceCitations: z
+        .array(
+          z.object({
+            sourceType: z.string(),
+            sourceId: z.string(),
+            excerpt: z.string(),
+          }),
+        )
+        .optional(),
+    }),
+  ),
   aiConfidenceNote: z.string().optional(),
   disclaimers: z.array(z.string()),
 });
@@ -258,15 +265,15 @@ As defined in `AI_SAFETY.md §1`:
 UNVERIFIED → GROUNDED → VALIDATED → HUMAN_REVIEWED → APPROVED → COMMITTED → VERIFIED
 ```
 
-| Stage | Actor | What Happens |
-|:---|:---|:---|
-| **UNVERIFIED** | AI Provider | Raw LLM response received |
-| **GROUNDED** | System (deterministic) | Schema validated; source citations verified against real records |
-| **VALIDATED** | System (deterministic) | Business rules checked; structural correctness confirmed |
-| **HUMAN_REVIEWED** | Clinician | Draft presented to user with "AI-Generated" label; user reads, edits if needed |
-| **APPROVED** | Clinician | User explicitly clicks "Sign" or "Accept" |
-| **COMMITTED** | System | Record saved to database; audit event emitted |
-| **VERIFIED** | System | Confirmation displayed to user |
+| Stage              | Actor                  | What Happens                                                                   |
+| :----------------- | :--------------------- | :----------------------------------------------------------------------------- |
+| **UNVERIFIED**     | AI Provider            | Raw LLM response received                                                      |
+| **GROUNDED**       | System (deterministic) | Schema validated; source citations verified against real records               |
+| **VALIDATED**      | System (deterministic) | Business rules checked; structural correctness confirmed                       |
+| **HUMAN_REVIEWED** | Clinician              | Draft presented to user with "AI-Generated" label; user reads, edits if needed |
+| **APPROVED**       | Clinician              | User explicitly clicks "Sign" or "Accept"                                      |
+| **COMMITTED**      | System                 | Record saved to database; audit event emitted                                  |
+| **VERIFIED**       | System                 | Confirmation displayed to user                                                 |
 
 At any stage, the clinician can **reject** the draft. Rejection is a first-class outcome, logged with reason.
 
@@ -276,16 +283,17 @@ At any stage, the clinician can **reject** the draft. Rejection is a first-class
 
 ### 8.1 Circuit Breaker
 
-| Parameter | Value |
-|:---|:---|
-| **Failure threshold** | 3 consecutive failures or >50% failure rate in 60s window |
-| **Open state duration** | 30 seconds (then half-open — single probe request) |
-| **Timeout per request** | 30 seconds (configurable via `AI_TIMEOUT_MS`) |
-| **Monitored failures** | HTTP errors (5xx), timeouts, rate limit (429), malformed responses |
+| Parameter               | Value                                                              |
+| :---------------------- | :----------------------------------------------------------------- |
+| **Failure threshold**   | 3 consecutive failures or >50% failure rate in 60s window          |
+| **Open state duration** | 30 seconds (then half-open — single probe request)                 |
+| **Timeout per request** | 30 seconds (configurable via `AI_TIMEOUT_MS`)                      |
+| **Monitored failures**  | HTTP errors (5xx), timeouts, rate limit (429), malformed responses |
 
 ### 8.2 Fallback Behavior
 
 When the circuit breaker is **open**:
+
 - AI endpoints return `503 AI_SERVICE_UNAVAILABLE`
 - Frontend displays "AI assistance temporarily unavailable" banner
 - **All non-AI workflows remain fully functional** (core product requirement)
@@ -303,19 +311,20 @@ When the circuit breaker is **open**:
 
 ### 9.1 Metrics Tracked
 
-| Metric | Granularity |
-|:---|:---|
-| Request count | Per capability, per model |
-| Latency (p50, p95, p99) | Per capability |
-| Token usage (input + output) | Per request, per user, per day |
-| Error rate | Per capability, per error type |
-| Circuit breaker state changes | Per event |
-| Cache hit rate (embedding lookup) | Per query |
-| User acceptance/rejection rate | Per capability |
+| Metric                            | Granularity                    |
+| :-------------------------------- | :----------------------------- |
+| Request count                     | Per capability, per model      |
+| Latency (p50, p95, p99)           | Per capability                 |
+| Token usage (input + output)      | Per request, per user, per day |
+| Error rate                        | Per capability, per error type |
+| Circuit breaker state changes     | Per event                      |
+| Cache hit rate (embedding lookup) | Per query                      |
+| User acceptance/rejection rate    | Per capability                 |
 
 ### 9.2 AI Interaction Logging
 
 Every AI invocation is logged to the `ai_interactions` table:
+
 - Prompt template version
 - Context summary (no raw PHI — summary metadata only)
 - Model used
@@ -336,12 +345,12 @@ Every AI invocation is logged to the `ai_interactions` table:
 
 ## 10. Deterministic vs AI Boundary Summary
 
-| Function | Mechanism | AI Permitted? |
-|:---|:---|:---|
-| **Critical/panic lab classification** | Deterministic clinical rules | **NO — PROHIBITED** |
-| **Abnormal trend surfacing** | AI (grounded, human-reviewed) | Yes |
-| **Clinical note drafting** | AI (side-by-side human review) | Yes |
-| **Discharge summary drafting** | AI (physician authorization required) | Yes |
-| **Chart search** | AI + RAG (grounded source citations) | Yes |
-| **Document OCR** | AI (human verification of extracted fields) | Yes |
-| **Clinical state changes** | Human clinician only | **NO — PROHIBITED** |
+| Function                              | Mechanism                                   | AI Permitted?       |
+| :------------------------------------ | :------------------------------------------ | :------------------ |
+| **Critical/panic lab classification** | Deterministic clinical rules                | **NO — PROHIBITED** |
+| **Abnormal trend surfacing**          | AI (grounded, human-reviewed)               | Yes                 |
+| **Clinical note drafting**            | AI (side-by-side human review)              | Yes                 |
+| **Discharge summary drafting**        | AI (physician authorization required)       | Yes                 |
+| **Chart search**                      | AI + RAG (grounded source citations)        | Yes                 |
+| **Document OCR**                      | AI (human verification of extracted fields) | Yes                 |
+| **Clinical state changes**            | Human clinician only                        | **NO — PROHIBITED** |
