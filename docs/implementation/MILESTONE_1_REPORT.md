@@ -23,7 +23,7 @@ Canonical repository structure implemented. `apps/backend/` and `apps/frontend/`
 Reverted all accidental formatting changes across `.claude/` and `docs/` directories that were introduced in earlier commits. Added a `.prettierignore` to prevent future formatting pollution of governance documents.
 
 ## Remaining Issues
-None. Infrastructure verified.
+None. Infrastructure verified. See [MILESTONE_1_VERIFICATION.md](./MILESTONE_1_VERIFICATION.md) for full verification details.
 
 ## Next Milestone
 Milestone 2 (Database Schema)
