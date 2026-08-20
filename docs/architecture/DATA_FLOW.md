@@ -55,5 +55,5 @@ DISCHARGE SUMMARY WORKFLOW (For Eligible Encounter)
 ### 2.1 AI Observation & Intervention Points
 1. **At Consultation:** AI observes encounter context → transforms into draft SOAP note for side-by-side doctor review.
 2. **At Chart Search:** AI searches grounded patient records → synthesizes chart history summary with citations.
-3. **At Diagnostics:** AI observes lab result values → detects panic values → dispatches urgent notification.
+3. **At Diagnostics:** Deterministic rules engine (NOT AI) evaluates lab result values → detects panic values → dispatches urgent notification. (AI may surface abnormal trends for human review).
 4. **At Discharge:** AI observes eligible encounter history → transforms into draft discharge summary for clinician sign-off.

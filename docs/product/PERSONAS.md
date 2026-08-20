@@ -118,7 +118,7 @@
 
 ### 4.2 Security Administrator
 - **MVP Status:** **MVP**
-- **Goals:** Enforce data security, maintain HIPAA/DISHA compliance, monitor unauthorized access.
+- **Goals:** Enforce data security, support applicable regulatory requirements for the deployment jurisdiction, monitor unauthorized access.
 - **Responsibilities:** Monitoring access logs, auditing break-glass activations, managing security alerts.
 - **Information Needed:** Complete system audit logs, user login records, permission change events, break-glass logs.
 - **Information Must NOT See:** Unjustified browsing of individual patient clinical notes (auditors view metadata/access logs, not PHI content, unless conducting explicit breach investigation).

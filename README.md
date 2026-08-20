@@ -18,18 +18,28 @@ Hospital AI OS is governed by a strict, authoritative `.claude` system:
 
 ---
 
-## Current Status: Phase 2.1 Complete (Requirements Normalized)
+## Current Status: Phase 3 Complete (Architecture & Implementation Blueprint)
 
-Phase 2.1 requirements normalization, vertical-slice MVP scope tightening, AI evidence verification model, decision log, and Phase 3 architecture input register have been **fully defined and locked**.
+Phase 3 architecture and implementation blueprint has been completed. The system is ready for Phase 4 implementation.
 
-### Key Specification Artifacts
-- **Product Vision & Specification:** [PRODUCT_SPEC.md](file:///c:/Users/yuvra/Downloads/NxtWave/Projects/AI-Med/hospital-ai-os/docs/product/PRODUCT_SPEC.md)
-- **Phase 2.1 Decision Log:** [PHASE_2_1_DECISIONS.md](file:///c:/Users/yuvra/Downloads/NxtWave/Projects/AI-Med/hospital-ai-os/docs/product/PHASE_2_1_DECISIONS.md)
-- **Phase 3 Technical Architecture Inputs:** [PHASE_3_INPUTS.md](file:///c:/Users/yuvra/Downloads/NxtWave/Projects/AI-Med/hospital-ai-os/docs/architecture/PHASE_3_INPUTS.md)
-- **User Personas & Data Access Matrix:** [PERSONAS.md](file:///c:/Users/yuvra/Downloads/NxtWave/Projects/AI-Med/hospital-ai-os/docs/product/PERSONAS.md)
-- **Authorization & Break-Glass Policy:** [AUTHORIZATION.md](file:///c:/Users/yuvra/Downloads/NxtWave/Projects/AI-Med/hospital-ai-os/docs/security/AUTHORIZATION.md)
-- **MVP Workflow Catalog:** [FEATURE_CATALOG.md](file:///c:/Users/yuvra/Downloads/NxtWave/Projects/AI-Med/hospital-ai-os/docs/product/FEATURE_CATALOG.md)
-- **AI Capabilities & Safety Model:** [AI_SYSTEM.md](file:///c:/Users/yuvra/Downloads/NxtWave/Projects/AI-Med/hospital-ai-os/docs/ai/AI_SYSTEM.md) & [AI_SAFETY.md](file:///c:/Users/yuvra/Downloads/NxtWave/Projects/AI-Med/hospital-ai-os/docs/ai/AI_SAFETY.md)
-- **Data Domain Model:** [DATA_FLOW.md](file:///c:/Users/yuvra/Downloads/NxtWave/Projects/AI-Med/hospital-ai-os/docs/architecture/DATA_FLOW.md)
-- **User Stories & Acceptance Criteria:** [REQUIREMENT_TRACEABILITY.md](file:///c:/Users/yuvra/Downloads/NxtWave/Projects/AI-Med/hospital-ai-os/docs/product/REQUIREMENT_TRACEABILITY.md)
-- **Project Status & Roadmap:** [PROJECT_STATUS.md](file:///c:/Users/yuvra/Downloads/NxtWave/Projects/AI-Med/hospital-ai-os/PROJECT_STATUS.md)
+### Architecture Blueprint
+- **System Architecture:** [system-architecture.md](docs/architecture/system-architecture.md) — Modular monolith, module boundaries, failure behavior
+- **Domain Model:** [domain-model.md](docs/architecture/domain-model.md) — 14 entities, relationships, lifecycle, sensitivity
+- **Database Design:** [database-design.md](docs/architecture/database-design.md) — PostgreSQL, 17 tables, indexes, constraints
+- **API Architecture:** [api-architecture.md](docs/architecture/api-architecture.md) — 40+ REST endpoints with contracts
+- **AI Architecture:** [ai-architecture.md](docs/architecture/ai-architecture.md) — Provider abstraction, RAG, safety boundaries
+- **Security Architecture:** [security-architecture.md](docs/architecture/security-architecture.md) — JWT, RBAC, encryption
+- **Frontend Architecture:** [frontend-architecture.md](docs/architecture/frontend-architecture.md) — Next.js, 19 routes, design system
+- **Backend Architecture:** [backend-architecture.md](docs/architecture/backend-architecture.md) — Module structure, middleware, jobs
+- **Implementation Plan:** [implementation-plan.md](docs/architecture/implementation-plan.md) — 23 milestones with dependency graph
+- **Architecture Decision Records:** [adrs/](docs/architecture/adrs/) — 10 ADRs
+
+### Product Specification (Phase 2.1)
+- **Product Vision & Specification:** [PRODUCT_SPEC.md](docs/product/PRODUCT_SPEC.md)
+- **Phase 2.1 Decision Log:** [PHASE_2_1_DECISIONS.md](docs/product/PHASE_2_1_DECISIONS.md)
+- **User Personas & Data Access Matrix:** [PERSONAS.md](docs/product/PERSONAS.md)
+- **MVP Workflow Catalog:** [FEATURE_CATALOG.md](docs/product/FEATURE_CATALOG.md)
+- **AI Capabilities & Safety Model:** [AI_SYSTEM.md](docs/ai/AI_SYSTEM.md) & [AI_SAFETY.md](docs/ai/AI_SAFETY.md)
+- **Data Domain Model:** [DATA_FLOW.md](docs/architecture/DATA_FLOW.md)
+- **Project Status & Roadmap:** [PROJECT_STATUS.md](PROJECT_STATUS.md)
+
