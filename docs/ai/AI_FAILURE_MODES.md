@@ -1,44 +1,36 @@
 # Hospital AI OS — AI Failure Modes & Degraded Operations
 
-> **Status:** LOCKED — Phase 2 Specification  
+> **Status:** NORMALIZED — Phase 2.1 Specification  
 > **Authority:** AI Rules & Healthcare Safety Rules  
-> **Scope:** Handling AI service outages, database disconnections, network degradation, and emergency fallback operations.
+> **Scope:** Product principles for AI failure handling, degraded mode operations, and fail-safe continuity.
 
 ---
 
-## 1. System Failure Matrix & Degraded Behaviors
+## 1. Product Principle for Degraded Operations
 
-The hospital operating system must remain fully operational for core clinical and administrative tasks even when AI components fail completely.
-
-| Failure Scenario | Affected Features | Fallback Behavior | System Impact | Incident Log |
-| :--- | :--- | :--- | :--- | :--- |
-| **Complete AI Outage** | Search, Note Drafting, Summarization | Fallback to traditional manual note entry, keyword search, standard EMR forms. | Low (Features degraded, core workflows active) | High-Priority System Alert |
-| **AI Timeout / High Latency** | AI Search & Note Drafting | Automatic timeout at 5 seconds; display "AI service busy — switch to manual note". | Minimal | Latency Warning Logged |
-| **Database Unavailable** | All System Features | Read-only local cache mode for emergency record viewing; block writes. | Critical | Immediate Critical Alert |
-| **External Integration Fail**| Lab/Pharmacy Gateway | Queue outgoing integration messages for retry; notify user of external delay. | Medium | Integration Error Logged |
-| **Network Degradation** | Client UI Connectivity | Queue offline client actions locally; sync upon reconnection with version checks. | Medium | Network Sync Logged |
-
----
-
-## 2. Emergency Manual Operating Protocol
+> **Core Requirement:** Core hospital workflows (patient registration, clinical documentation, lab review, discharge authorization) must remain fully operational when AI services are unavailable, slow, or degraded.
 
 ```text
-AI Service Failure Detected (3 consecutive timeouts or HTTP 5xx)
-                               ↓
-System Automatically Switches to DEGRADED_MANUAL_MODE
-                               ↓
-UI Banner Displays: "AI Features Temporarily Offline — Core EMR Active"
-                               ↓
-All AI Draft Buttons Disabled → Standard Manual Text Editors Activated
-                               ↓
-Core Clinical Ordering, MAR, Vitals, Dispensing & Billing Continue Manually
-                               ↓
-Zero Data Corruption / Zero Clinical Interruption
-                               ↓
-AI Background Health Checker Polls Service → Restores AI upon 5 Clean Health Checks
+AI Unavailable / Degradation Detected
+                 ↓
+Core Workflows Continue Manually
+                 ↓
+AI-Dependent Features Fail Safely (Disable Draft Buttons)
+                 ↓
+User Informed via Clear UI Notification
+                 ↓
+No Data Loss & No Unauthorized State Changes
+                 ↓
+System Recovery is Observable
 ```
 
-### 2.1 Degraded Mode Principles
-1. **Safety First:** AI failure MUST NEVER cause app crashes, missing records, or unhandled exceptions.
-2. **Uninterrupted Care:** Doctors must be able to document visits manually, prescribe drugs, and review lab results without relying on AI services.
-3. **Data Integrity Preserved:** All manual inputs committed during degraded mode remain authoritative.
+---
+
+## 2. Failure Mode Behavior Rules
+
+1. **Fail Safe:** AI failure must never cause application crashes, missing records, or unhandled exceptions.
+2. **Safe Feature Disabling:** When AI is offline, AI draft generation buttons are safely disabled; standard manual text editors and search bars remain active.
+3. **Data Integrity Preserved:** All manual inputs committed during degraded operations remain fully authoritative.
+4. **User Communication:** The system clearly informs users when AI capabilities are temporarily offline without impeding manual care delivery.
+
+*(Note: Specific timeout values, retry counts, backoff algorithms, and health-check polling frequencies are DEFERRED TO PHASE 3 ARCHITECTURE).*

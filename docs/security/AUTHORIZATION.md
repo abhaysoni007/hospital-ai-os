@@ -1,70 +1,79 @@
 # Hospital AI OS — Authorization & Security Specification
 
-> **Status:** LOCKED — Phase 2 Specification  
+> **Status:** NORMALIZED — Phase 2.1 Specification  
 > **Authority:** Security & Healthcare Safety Rules  
-> **Scope:** Conceptual authorization model, scope hierarchy, data visibility, and emergency break-glass protocol.
+> **Scope:** Conceptual authorization model, scope hierarchy, data visibility, and emergency break-glass policy boundaries.
 
 ---
 
 ## 1. Conceptual Authorization Model
 
-Hospital AI OS enforces a multi-dimensional authorization model:
+Hospital AI OS enforces a multi-dimensional conceptual authorization model:
 
 ```text
-Role (e.g., Doctor, Nurse, Billing Clerk)
-  → Scope (Hospital, Department, Patient, Assigned Patient)
-    → Permissions (Read, Write, Order, Approve, Dispense, Export)
-      → Data Visibility Filters (Demographics, Clinical, Meds, Labs, Billing, Audit)
-        → Action Execution Authority (Direct, Review Required, Approval Mandatory)
+Role (e.g., Doctor, Nurse, Receptionist)
+  + Assignment (Hospital, Department)
+    + Scope (Hospital-wide, Department-level, Patient-level, Assigned Patient)
+      + Permission (Read, Write, Order, Approve, Export)
+        + Approval Authority (Direct Execution, Review Required, Mandatory Approval)
+          + Data Visibility Filters (Demographics, Clinical Notes, Meds, Labs, Audit)
 ```
 
 ### 1.1 Scope Hierarchy Definitions
-1. **System-Wide Scope:** Reserved for System Administrators and Security Administrators for global platform management and security monitoring. Zero direct clinical patient data access.
-2. **Hospital-Wide Scope:** Assigned to Hospital Administrators and Chief Medical Officers for facility-level operational oversight.
-3. **Department-Level Scope:** Assigned to Department Heads, OPD Receptionists, and Pharmacy Leads for department-wide queue and task management.
-4. **Assigned-Patient Scope:** Assigned to Physicians and Ward Nurses actively assigned to an active encounter (OPD consultation, Ward bed, or ER bay). Grants access to full clinical records for the assigned patient.
+1. **System-Wide Scope:** System Administrators and Security Administrators for global platform management and security monitoring. Zero direct clinical patient data access.
+2. **Hospital-Wide Scope:** Hospital Administrators and Department Leads for facility-level operational oversight.
+3. **Department-Level Scope:** Department Heads and Receptionists for department-wide queue and task management.
+4. **Assigned-Patient Scope:** Physicians and Nurses actively assigned to an active encounter. Grants access to clinical records for the assigned patient.
 5. **Emergency Break-Glass Scope:** Temporary elevated access granted upon explicit emergency declaration, enabling clinical record access outside standard assigned scope.
 
 ---
 
-## 2. Data Visibility & Access Boundaries
+## 2. Data Visibility & Security Requirements
 
-| Role | Demographics & Contact | Sensitive Clinical Notes | Medications & MAR | Lab & Diagnostic Results | Billing & Financials | Security & Audit Logs |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **Doctor** | Read / Write | Full Access | Full Access | Full Access | Service Names Only | None |
-| **Nurse** | Read Only | Assigned Patients | Full Access | Full Access | None | None |
-| **Pharmacist** | Read Only | Med-Relevant Notes | Full Access | Med-Relevant Labs | Drug Costs Only | None |
-| **Lab Tech** | Read Only | Order Reason Only | None | Full Access | None | None |
-| **Receptionist**| Full Access | **BLOCKED** | **BLOCKED** | **BLOCKED** | Basic Invoice | None |
-| **Billing Clerk**| Full Access | **BLOCKED** | Dispensed Items | Rendered Services | Full Access | None |
-| **System Admin** | Read Only | **BLOCKED** | **BLOCKED** | **BLOCKED** | None | System Metrics |
-| **Security Admin**| Read Only | **BLOCKED** | **BLOCKED** | **BLOCKED** | None | **FULL ACCESS** |
+> [!IMPORTANT]
+> **Product & Security Requirements:**
+> 1. Protected Health Information (PHI) and Personally Identifiable Information (PII) must be protected in transit and at rest.
+> 2. Authorization checks must be enforced at the API layer independently of UI state.
+> 3. Minimum necessary access scope must be strictly applied per role.
+> 4. All elevated access activations and sensitive data reads must generate immutable, tamper-evident audit records.
+
+| Role | Demographics & Contact | Sensitive Clinical Notes | Active Medications | Lab & Diagnostic Results | Security & Audit Logs |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Doctor** | Read / Write | Full Access | Full Access | Full Access | None |
+| **Nurse** | Read Only | Assigned Patients | Full Access | Full Access | None |
+| **Pharmacist** | Read Only | Med-Relevant Notes | Full Access | Med-Relevant Labs | None |
+| **Lab Tech** | Read Only | Order Reason Only | None | Full Access | None |
+| **Receptionist**| Full Access | **RESTRICTED** | **RESTRICTED** | **RESTRICTED** | None |
+| **Security Admin**| Read Only | **RESTRICTED (Logs Only)**| **RESTRICTED** | **RESTRICTED** | **FULL ACCESS** |
+
+*(Note: Specific encryption algorithms, TLS protocol versions, and token storage mechanisms are DEFERRED TO PHASE 3 ARCHITECTURE).*
 
 ---
 
-## 3. Emergency Break-Glass Access Protocol
+## 3. Emergency Break-Glass Access Policy
 
-In clinical emergencies (e.g., ER trauma patient unable to consent, code blue in unassigned ward), clinicians may activate **Break-Glass Access** to view unassigned patient records.
+In clinical emergencies (e.g., ER trauma patient unable to consent, code blue in unassigned ward), licensed physicians may activate **Break-Glass Access** to view unassigned patient records.
 
 ```text
 Clinician Requests Access to Unassigned Patient
                   ↓
 System Prompts for Mandatory Emergency Justification Reason
                   ↓
-Clinician Selects Category + Enters Clinical Rationale (min 15 chars)
+Clinician Enters Mandatory Clinical Rationale
                   ↓
-System Grants Temporary Elevated Access (Default: Max 4 Hours)
+System Grants Temporary Elevated Access
                   ↓
-Instant Security Alert Dispatched to Security Admin & Department Head
+Instant Security Alert Dispatched to Security Console
                   ↓
-Immutable Audit Event Recorded (Who, Target, Reason, Timestamp, Duration)
+Immutable Audit Event Recorded (Who, Target, Reason, Timestamp)
                   ↓
-Automatic Expiration at 4 Hours + Mandatory Post-Incident Audit Review
+Automated Policy Expiration + Post-Incident Audit Review
 ```
 
-### 3.1 Break-Glass Rules & Boundaries
-- **Who Can Activate:** Licensed Doctors and Charge Nurses only.
-- **Mandatory Inputs:** Clinical emergency justification code (e.g., `UNCONSCIOUS_TRAUMA`, `CODE_BLUE_OVERRIDE`, `CROSS_DEPT_CONSULT_EMERGENCY`) plus free-text explanation.
-- **Audit Logging:** Logs `actor_id`, `patient_id`, `justification`, `timestamp`, `ip_address`, `granted_duration`.
-- **Duration:** Exactly **4 hours maximum**, with automatic revocation upon expiration.
-- **Review:** Security Administrator must review and sign off on all break-glass logs within 24 hours. Unjustified break-glass access triggers administrative disciplinary escalation.
+### 3.1 Break-Glass Policy Parameters
+- **Eligible Roles:** Licensed Physicians and Charge Nurses only.
+- **Mandatory Inputs:** Clinical emergency justification code plus rationale text.
+- **Audit Logging:** Logs `actor_id`, `patient_id`, `justification`, `timestamp`, `granted_scope`.
+- **Security Alert:** Generates instant alert dispatched to Security Administrator.
+- **Expiration Window:** `OPEN — requires security/clinical policy decision` *(Specific expiration duration to be confirmed during facility security policy configuration; deferred from hardcoded defaults).*
+- **Audit Review:** Security Administrator must review and sign off on break-glass audit logs post-incident.

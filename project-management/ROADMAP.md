@@ -1,6 +1,6 @@
 # Hospital AI OS — Product Roadmap
 
-> **Status:** LOCKED — Phase 2 Specification  
+> **Status:** NORMALIZED — Phase 2.1 Specification  
 > **Scope:** Multi-phase product evolution roadmap.
 
 ---
@@ -12,17 +12,17 @@ PHASE 1: OPERATING SYSTEM CORE (COMPLETED)
 ├── .claude governance rules (Core, AI, Healthcare, Security, Product, Engineering)
 └── Multi-agent skills and prompt execution templates locked.
 
-PHASE 2: PRODUCT & WORKFLOW SPECIFICATION LOCK (COMPLETED — CURRENT)
-├── Master Product Specification locked (`docs/product/PRODUCT_SPEC.md`).
+PHASE 2 & 2.1: PRODUCT SPECIFICATION & REQUIREMENTS NORMALIZATION (COMPLETED — CURRENT)
+├── Master Product Specification normalized to Vertical-Slice MVP (`docs/product/PRODUCT_SPEC.md`).
 ├── Personas across 15 roles & RBAC authorization boundaries locked.
-├── 8 core MVP workflows fully specified with Human/AI safety boundaries.
-├── Conceptual Data Domain catalog & Information Flow mapped.
-└── Non-functional requirements, user stories, and acceptance criteria locked.
+├── Evidence & Verification Lifecycle Model established for AI Safety.
+├── Phase 2.1 Decision Log (`docs/product/PHASE_2_1_DECISIONS.md`) locked.
+└── Phase 3 Technical Inputs Register (`docs/architecture/PHASE_3_INPUTS.md`) established.
 
 PHASE 3: SYSTEM ARCHITECTURE & TECHNICAL DESIGN (NEXT PHASE)
 ├── System context diagram & container architecture specification.
 ├── API contract design & OpenAPI domain definitions.
-├── Database entity schemas & migration strategies.
+├── Database entity schemas & data migration strategies for conceptual domains.
 └── Security architecture, secrets management, & infrastructure topology.
 
 PHASE 4: MVP FOUNDATION & CORE ENGINEERING
@@ -30,13 +30,13 @@ PHASE 4: MVP FOUNDATION & CORE ENGINEERING
 ├── Base UI design system components & accessible layout shell.
 └── Core data domain models & API gateway implementation.
 
-PHASE 5: WORKFLOW EXECUTION & AI INTEGRATION
-├── Implementation of 8 MVP workflows (Registration, OPD, Labs, Pharmacy, Billing, Discharge, AI Search).
+PHASE 5: VERTICAL-SLICE WORKFLOW EXECUTION & AI INTEGRATION
+├── Implementation of vertical-slice MVP (Registration, Encounter, EMR, AI Search, Note Draft, Lab, Discharge).
 ├── AI Abstraction layer, prompt contracts, and grounding validators.
 └── Immutable audit logging infrastructure implementation.
 
 PHASE 6: QUALITY VERIFICATION, SAFETY TESTING & GO-LIVE
 ├── End-to-end workflow verification & security threat model review.
 ├── Clinical safety review, fail-safe mode testing, & latency audit.
-└── Phase 2 MVP Definition of Done sign-off & release lock.
+└── Phase 2.1 MVP Definition of Done sign-off & release lock.
 ```

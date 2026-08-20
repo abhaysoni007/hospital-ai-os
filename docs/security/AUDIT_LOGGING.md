@@ -1,68 +1,29 @@
 # Hospital AI OS — Audit Logging Specification
 
-> **Status:** LOCKED — Phase 2 Specification  
+> **Status:** NORMALIZED — Phase 2.1 Specification  
 > **Authority:** Security & Healthcare Safety Rules  
-> **Scope:** Audit event classification, conceptual log schema, immutability, and compliance auditing.
+> **Scope:** Auditable events taxonomy, conceptual log requirements, immutability, and compliance auditing.
 
 ---
 
-## 1. Auditable Event Taxonomy
+## 1. Product Security Requirements for Auditability
 
-Every significant operation within Hospital AI OS produces an immutable audit record. The following operations are strictly auditable:
-
-1. **Patient Data Access (Read):** Viewing patient charts, opening lab results, searching patient records.
-2. **Patient Data Modification (Write):** Updating demographics, recording vitals, writing progress notes.
-3. **Clinical Actions:** Placing lab orders, prescribing drugs, administering MAR doses, authorizing discharge.
-4. **AI Interactions:** Querying AI search, generating note drafts, receiving AI recommendations, accepting/rejecting AI suggestions.
-5. **Security & Administrative Events:** Login success/failure, role assignment changes, system config updates.
-6. **Emergency Events:** Break-glass access declaration, emergency order overrides.
+1. **Mandatory Auditability:** Every significant system action — including patient data reads, clinical note signing, order entry, AI recommendation drafting, AI draft acceptance/rejection, break-glass activation, and role modifications — must generate an audit record.
+2. **Immutability & Tamper-Evidence:** Audit records must be immutable (write-once, read-many) and tamper-evident.
+3. **PHI Protection in Logs:** Audit log streams must record action metadata, timestamps, and resource identifiers without exposing raw unencrypted PHI text in log outputs.
+4. **Audit Fail-Safe:** Failure of the audit infrastructure must degrade the system safely into a protected state rather than permitting un-audited state changes.
 
 ---
 
-## 2. Conceptual Audit Log Schema
+## 2. Conceptual Audit Log Fields
 
-Audit events adhere to this explicit conceptual field structure:
+Audit records capture the following conceptual fields:
 
-```json
-{
-  "audit_id": "aud_987654321",
-  "timestamp": "2026-08-20T09:30:00.000Z",
-  "actor": {
-    "user_id": "usr_doc_101",
-    "role": "ROLE_DOCTOR",
-    "department": "OPD_CARDIOLOGY",
-    "ip_address": "10.0.4.15"
-  },
-  "action": "CLINICAL_NOTE_DRAFT_ACCEPTED",
-  "target": {
-    "resource_type": "PATIENT_ENCOUNTER",
-    "resource_id": "enc_554433",
-    "patient_id": "pat_112233"
-  },
-  "context": {
-    "workflow": "OPD_CONSULTATION",
-    "source_type": "AI_GENERATED_DRAFT",
-    "prompt_version": "v2.1.0",
-    "confidence_score": 0.94
-  },
-  "justification": "Routine consultation note completion",
-  "approval": {
-    "approved_by": "usr_doc_101",
-    "approval_timestamp": "2026-08-20T09:30:00.000Z",
-    "human_modified": true
-  },
-  "state_diff": {
-    "before_summary": "Empty draft",
-    "after_summary": "Verified SOAP note saved"
-  },
-  "result": "SUCCESS"
-}
-```
+- **Actor Context:** User ID, Assigned Role, Department, Access Scope.
+- **Action Description:** Specific action performed (e.g. `CLINICAL_NOTE_SIGNED`, `BREAK_GLASS_ACTIVATED`, `AI_DRAFT_ACCEPTED`).
+- **Target Resource:** Resource Type, Resource Identifier, Patient Identifier.
+- **Provenance & AI Context:** Source Type (Human vs AI), Prompt Version, Grounding Context Reference.
+- **Justification & Approval:** Approval ID, Approver User ID, Mandatory Rationale Text.
+- **Timestamp & Result:** Event Timestamp, Execution Status (Success / Failure).
 
----
-
-## 3. Immutability & Safety Constraints
-
-- **Immutability:** Audit records are write-once, read-many. No user (including System Admin) can alter or delete audit records.
-- **No PHI in Log Payload:** Audit log metadata records the action, resource IDs, and timestamps, but must never contain unencrypted clinical narrative PHI text in plain log streams.
-- **Infrastructure Alerting:** Failure of the audit logging infrastructure causes immediate system degradation into a safe, read-only state for critical operations.
+*(Note: Specific JSON log formatting, hash-chaining algorithms, and database storage backends are DEFERRED TO PHASE 3 ARCHITECTURE).*

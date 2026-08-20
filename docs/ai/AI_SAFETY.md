@@ -1,45 +1,56 @@
-# Hospital AI OS — AI Safety & Grounding Specification
+# Hospital AI OS — AI Safety & Evidence Verification Specification
 
-> **Status:** LOCKED — Phase 2 Specification  
+> **Status:** NORMALIZED — Phase 2.1 Specification  
 > **Authority:** AI Rules & Healthcare Safety Rules  
-> **Scope:** Grounding, citation requirements, uncertainty management, hallucination prevention, and human overrides.
+> **Scope:** Evidence verification lifecycle, grounding, provenance requirements, and clinician override rules.
 
 ---
 
-## 1. Grounding & Citation Requirements
+## 1. Evidence & Verification Lifecycle Model
 
-1. **Source Grounding:** All AI generations that reference patient facts, lab values, vitals, or clinical notes must be grounded against explicit source data in the patient context window.
-2. **Citation Enforcement:** Generated summaries and drafts must cite the exact source document ID and timestamp for every factual claim.
-   - *Example:* "Patient reported chest pain on 2026-08-18 `[Encounter #enc_101]`, with Troponin I at 0.04 ng/mL `[Lab #lab_882]`."
-3. **No Parametric Guessing:** The AI model is strictly prohibited from inferring unstated clinical history or guessing missing lab values.
-
----
-
-## 2. Uncertainty & Hallucination Prevention
+> [!IMPORTANT]
+> **Safety Principle:** A probabilistic model's internal numeric confidence score alone does NOT establish clinical safety or correctness. AI output must pass through an explicit evidence verification lifecycle before influencing business or clinical workflows.
 
 ```text
-Incoming Context Data
-        ↓
-Grounded Prompt Assembly with Explicit Source Delimiters
-        ↓
-Model Inference Execution with Schema Enforcement
-        ↓
-Deterministic Output Validator (Verify IDs, Numeric Ranges & Dates)
-        ↓
-Confidence Score Evaluation
-   ├── High Confidence (>= 0.85) ──→ Present with Standard Citations
-   └── Low Confidence (< 0.85)  ──→ Flag "Low Confidence — Verify Source"
+UNVERIFIED (Raw model output generated from prompt)
+     ↓
+GROUNDED (Factual claims verified against explicit patient context data)
+     ↓
+VALIDATED (Structural & business rule validation passed by deterministic code)
+     ↓
+HUMAN REVIEWED (Side-by-side review by authenticated clinician / staff)
+     ↓
+APPROVED (Explicit, attributable human sign-off committed)
+     ↓
+COMMITTED (State written to system database)
+     ↓
+VERIFIED (Immutable audit event recorded)
 ```
 
-### 2.1 Hallucination Prevention Constraints
-- **Identifier Validation:** AI-generated IDs (patient IDs, order IDs, ICD-10 codes) are validated by deterministic code against the authoritative database. Any non-existent ID causes immediate rejection of the generated response.
-- **Numeric Verification:** AI-generated dosage numbers or lab result values are checked against the source context text; discrepancies trigger validation errors.
-- **Visual Distinction:** AI-generated text must be rendered in a distinct visual container (e.g., subtle purple border with clear "AI Generated Draft" badge) to prevent confusion with signed human clinical records.
+### 1.1 Multi-Signal Safety Verification
+The system evaluates AI outputs using multiple independent signals:
+1. **Source Availability & Completeness:** Ensuring required patient context was available and non-empty during prompt assembly.
+2. **Grounding Traceability:** Verifying that factual claims reference authoritative source records.
+3. **Deterministic Validation:** Validating schema formats, patient IDs, and numerical bounds using deterministic business logic (AI suggests; deterministic code validates).
+4. **Human Review & Approval:** Mandatory clinician/staff sign-off for all clinical note drafts, orders, and discharge summaries.
 
 ---
 
-## 3. Human Override & Escalation Paths
+## 2. AI Provenance & Citation Requirement
 
-- **Clinician Override:** A clinician can reject, edit, or overwrite any AI suggestion with zero system resistance.
-- **Rejection Logging:** Every rejected AI draft or recommendation records the rejection reason in the audit trail to support AI quality evaluation.
-- **Escalation Trigger:** If an AI safety filter detects conflicting clinical data (e.g., drug order conflicting with documented allergy), the system immediately blocks action execution and raises a high-priority alert to the ordering doctor.
+- **Product Requirement:** Material factual claims made by AI about healthcare data must be traceable to authoritative source evidence.
+- **Workflow Presentation Flexibility:** Depending on the workflow UX, provenance may be presented via:
+  - Claim-level provenance links
+  - Evidence-group source citations
+  - Source context review panels
+  - Linked patient record references
+
+*(Note: Specific UI badge rendering, CSS styling, and vector database retrieval mechanics are DEFERRED TO PHASE 3 ARCHITECTURE).*
+
+---
+
+## 3. Human Override & Escalation Rules
+
+- **Clinician Override:** A clinician can edit, reject, or overwrite any AI suggestion at any point with zero system friction.
+- **Rejection Audit:** Rejections are recorded in audit logs to support AI evaluation and quality tracking.
+- **Safety Escalation:** If AI safety validation detects conflicting clinical facts (e.g. drug order conflicting with documented allergy), the system flags the conflict prominently and requires explicit clinician acknowledgment before proceeding.

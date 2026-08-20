@@ -1,18 +1,26 @@
 # Hospital AI OS — Measurable Product Success Metrics
 
-> **Status:** LOCKED — Phase 2 Specification  
+> **Status:** NORMALIZED — Phase 2.1 Specification  
 > **Authority:** Product Management Rules  
-> **Scope:** Measurable operational outcomes and success metrics for Hospital AI OS MVP.
+> **Scope:** Categorized product success metrics and target goals.
 
 ---
 
-## 1. Operational & Clinical Success Metrics
+## 1. Product Success Metric Categories
 
-| Metric Area | Target Goal | Baseline Comparison | Measurement Method |
-| :--- | :--- | :--- | :--- |
-| **Clinician Note Drafting Time** | 50% reduction in documentation time per consultation (Target < 2 mins) | 4-5 mins manual typing in traditional EMR | Timestamp diff between encounter start and signed note |
-| **Discharge Summary Processing** | 60% reduction in discharge processing time (Target < 30 mins total) | 3-4 hours manual drafting & department clearing | Timestamp diff between discharge initiate and clear token |
-| **Unbilled Service Charge Recovery**| > 98% complete charge capture accuracy | 5-8% unbilled service leakage in traditional paper/EMR | Audit comparison of executed orders vs invoiced bill items |
-| **Patient Registration Check-In** | 45-second average registration time per new patient | 2-3 mins manual form typing at desk | Time tracking from ID upload to MRN generation |
-| **AI Draft Acceptance Rate** | > 80% user draft acceptance rate without major rewrite | N/A | Logged ratio of accepted AI drafts vs rejected drafts |
-| **Adverse Medication Alert Rate** | 100% detection of active allergy & drug-drug interaction conflicts | Manual paper script verification gaps | Pharmacological database validation log audit |
+### 1.1 North Star Metric
+- **Workflow Throughput with Human Verification:** Number of clinical encounters documented, lab verified, and discharge summary authorized with zero safety escalations.
+
+### 1.2 Product Metrics
+- **Clinician Documentation Efficiency:** Target reduction in documentation time per consultation (Target metric to be validated during pilot).
+- **AI Draft Acceptance Rate:** Ratio of accepted AI drafts vs rejected drafts without major rewrites (Target > 80%).
+- **Chart Search Time:** Reduction in time required for physicians to locate historical patient clinical facts.
+
+### 1.3 Safety Metrics
+- **Clinician Override Frequency:** Tracking frequency of clinician edits and rejections of AI draft recommendations.
+- **Safety Escalation Frequency:** Rate of panic lab value detection and instant notification acknowledgment.
+- **AI Hallucination Rate:** Target zero un-grounded clinical fact insertions in verified notes.
+
+### 1.4 Operational & Engineering Metrics
+- **Patient Registration Check-In Time:** Streamlined time from ID upload to patient MRN lookup/creation.
+- **System Availability During Degraded Operations:** 100% core manual workflow uptime during AI service disconnections.

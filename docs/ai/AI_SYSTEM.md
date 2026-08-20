@@ -1,87 +1,81 @@
-# Hospital AI OS — AI Capabilities & Action Boundaries Specification
+# Hospital AI OS — AI Capabilities, Risk Tiers & Action Boundaries
 
-> **Status:** LOCKED — Phase 2 Specification  
+> **Status:** NORMALIZED — Phase 2.1 Specification  
 > **Authority:** AI Rules & Healthcare Safety Rules  
-> **Scope:** AI capability taxonomy, action boundary model, authorization boundaries, and AI use case registry.
+> **Scope:** AI capability taxonomy, risk classification tiers, conceptual action boundaries, and clinical boundaries.
 
 ---
 
-## 1. Taxonomy of AI Capabilities
+## 1. AI Capability Taxonomy & Risk Classification
 
-AI in Hospital AI OS is strictly classified into 8 functional capabilities:
+AI capabilities in Hospital AI OS are classified across 6 categories and 5 risk tiers:
 
-| Capability | Description | Example | Clinical Risk Level |
-| :--- | :--- | :--- | :--- |
-| `SEARCH` | Natural language semantic search across grounded patient records. | "Find all past cardiology consults for this patient." | Low |
-| `SUMMARIZE` | Aggregating longitudinal clinical notes into concise summaries. | "Summarize the last 3 inpatient hospitalizations." | Medium |
-| `DRAFT` | Generating preliminary text for human review and editing. | "Draft a progress note based on today's clinical vitals and lab results." | Medium |
-| `RECOMMEND` | Proposing diagnostic, therapeutic, or operational options. | "Suggest potential drug-drug interaction warnings for review." | High |
-| `DETECT` | Flagging anomalies, missed tasks, or workflow delays in real time. | "Detect unreviewed critical lab values pending over 2 hours." | High |
-| `PREDICT` | Estimating operational metrics or clinical risk scores. | "Predict discharge readmission risk category based on chart." | High |
-| `ASSIST` | Pre-filling forms, extracting structured fields from documents. | "Extract patient name and ID from uploaded scan." | Low |
-| `AUTOMATE` | Routing non-clinical tasks automatically according to rules. | "Route completed discharge summary to billing queue." | Low |
+```text
++---------------------------------------------------------------------------------------------------+
+|                                      AI RISK CLASSIFICATION TIERS                                 |
++--------------+-------------------------------------------------------------+----------------------+
+| Risk Tier    | Definition & Characteristics                                | Allowed MVP Scope    |
++--------------+-------------------------------------------------------------+----------------------+
+| LOW          | Administrative extraction, document OCR, non-clinical tasks.| MVP CORE             |
+| MEDIUM       | Clinical documentation & chart retrieval with human review. | MVP CORE             |
+| HIGH         | Clinical decision support, trend detection, risk scoring.   | MVP CORE (Grounded)  |
+| CRITICAL     | High-impact clinical warnings (e.g. drug-allergy conflict). | MVP CORE (Grounded)  |
+| PROHIBITED   | Autonomous clinical order execution, prescribing, or diagnosis.| **STRICTLY PROHIBITED**|
++--------------+-------------------------------------------------------------+----------------------+
+```
+
+### 1.1 Capability Categories Catalog
+
+1. **ADMINISTRATIVE AI (Risk: Low)**
+   - *Purpose:* Document OCR extraction from ID cards, administrative form pre-filling.
+   - *Human Involvement:* User review of extracted fields.
+
+2. **CLINICAL DOCUMENTATION AI (Risk: Medium)**
+   - *Purpose:* Drafting side-by-side SOAP notes, handover summaries, and discharge summaries for eligible encounters.
+   - *Human Involvement:* Mandatory clinician review, editing, and attributable sign-off.
+
+3. **CLINICAL RETRIEVAL AI (Risk: Medium)**
+   - *Purpose:* Natural language semantic search and chart history summarization.
+   - *Human Involvement:* Grounded source context display; user review of retrieved facts.
+
+4. **CLINICAL DECISION SUPPORT AI (Risk: High / Critical)**
+   - *Purpose:* Flagging abnormal lab trends, surfacing drug interaction warnings, assisting triage.
+   - *Human Involvement:* Explicit clinician review; decision support only (never autonomous action).
+
+5. **CLINICAL PREDICTION AI (Risk: High — Deferred Scope)**
+   - *Purpose:* Readmission risk category estimation, ICU deterioration scoring.
+   - *Scope:* Phase 2 (Requires extensive clinical evaluation dataset validation).
+
+6. **CLINICAL ACTION AUTOMATION (Risk: Prohibited)**
+   - *Purpose:* Autonomous clinical order placement, prescribing, or patient discharge authorization.
+   - *Scope:* **STRICTLY PROHIBITED.** No automated system may execute clinical state changes without human authority.
 
 ---
 
-## 2. AI Action Boundary Progression Model
+## 2. Conceptual AI Action Boundary Model
 
-Every AI-assisted operation follows a strict, unidirectional progression:
+Every AI-assisted workflow follows a conceptual safety progression:
 
 ```text
 1. INFORMATION (Authoritative Patient / Operational Data)
        ↓
-2. AI SUGGESTION (Raw model inference based on grounded context)
+2. AI SUGGESTION (Model output based on grounded context)
        ↓
-3. DRAFT (Structured representation presented side-by-side to user)
+3. DRAFT (Structured representation presented for review)
        ↓
-4. RECOMMENDATION (Calculated advice surfaced with source citations)
+4. RECOMMENDATION (Calculated advice with source traceability)
        ↓
 5. PROPOSED ACTION (Staged system state change awaiting authorization)
        ↓
-6. HUMAN APPROVAL (Explicit sign-off by authenticated clinician/user)
+6. HUMAN APPROVAL (Explicit sign-off by authenticated clinician)
        ↓
-7. EXECUTED ACTION (State committed to system database / external system)
+7. EXECUTED ACTION (State committed to database)
        ↓
-8. VERIFIED RESULT (Audited confirmation of execution outcome)
+8. VERIFIED RESULT (Audited confirmation of execution)
 ```
 
-### 2.1 Explicit Boundary Classifications
-
-1. **Safe-ish (Read & Search):**
-   - *Behavior:* AI retrieves, formats, or searches authorized patient data for the active user.
-   - *Authorization:* Automatic for authenticated users with role scope access.
-   - *Example:* Searching past lab records or summarizing an approved discharge summary.
-
-2. **Human Review Required (Drafting):**
-   - *Behavior:* AI pre-fills a clinical note, handover summary, or administrative form.
-   - *Authorization:* Requires user review, editing, and explicit "Accept Draft" click.
-   - *Example:* Side-by-side doctor clinical progress note drafting.
-
-3. **Mandatory Approval Required (Recommendations & Orders):**
-   - *Behavior:* AI recommends medication adjustments, differential diagnoses, or diagnostic orders.
-   - *Authorization:* Requires explicit, attributable clinician sign-off.
-   - *Example:* Drug interaction warning resolution or diagnostic test order recommendation.
-
-4. **Strictly Controlled (System State Execution):**
-   - *Behavior:* AI triggers an actual database state change or external integration workflow.
-   - *Authorization:* **AI CAN NEVER EXECUTE CLINICAL STATE CHANGES AUTONOMOUSLY.** Only non-clinical task routing (e.g., notifying billing clerk of completed discharge) can be automated.
-
----
-
-## 3. Comprehensive AI Use Case Registry
-
-| Use Case Name | Domain | Capability | Risk Level | Human Approval | MVP Status |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **Clinical Chart Summarization** | Clinical | `SUMMARIZE` | Medium | Human Review | **MVP** |
-| **OPD Clinical Note Drafting** | Clinical | `DRAFT` | Medium | Human Review | **MVP** |
-| **Discharge Summary Drafting** | Clinical | `DRAFT` | High | Mandatory Clinician Approval | **MVP** |
-| **Drug-Allergy Interaction Check** | Clinical | `RECOMMEND` | Critical | Mandatory Clinician Approval | **MVP** |
-| **Lab Result Summary Drafting** | Diagnostics | `SUMMARIZE` | Medium | Human Review | **MVP** |
-| **Shift Handover Drafting** | Nursing | `DRAFT` | High | Mandatory Nurse Review | **MVP** |
-| **Unreviewed Critical Lab Alerting**| Operations | `DETECT` | High | None (Alert Dispatch) | **MVP** |
-| **ID Card OCR Data Extraction** | Operations | `ASSIST` | Low | Human Review | **MVP** |
-| **Unbilled Charge Capture Audit** | Billing | `DETECT` | Low | Billing Review | **MVP** |
-| **Radiology Preliminary Impression**| Radiology | `DRAFT` | High | Mandatory Radiologist Approval| Phase 2 |
-| **Readmission Risk Prediction** | Clinical | `PREDICT` | High | Clinician Review | Phase 2 |
-| **ICU Deterioration Scoring** | ICU | `PREDICT` | Critical | Mandatory Clinician Review | Phase 2 |
-| **Insurance Claim Extraction** | Insurance | `ASSIST` | Medium | Specialist Review | Phase 2 |
+### 2.1 Clinical AI Boundaries Summary
+- **Documentation & Summarization:** Allowed with side-by-side human review.
+- **Chart Retrieval:** Allowed for authorized users with grounded source evidence.
+- **Decision Support:** Allowed strictly as decision support with clinician review.
+- **Consequential Clinical State Changes:** Never executed autonomously.
