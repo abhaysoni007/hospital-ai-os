@@ -171,9 +171,30 @@ class AuditWriteError extends AppError { statusCode = 500; } // CRITICAL
 
 No stack traces, internal paths, or database details in client responses.
 
-### 5.3 Audit Write Failure
+### 5.3 Audit Transaction Boundary & Failure
 
-If the Audit module fails to write an audit event, the originating operation **must be rolled back**. An unaudited clinical or security action is unacceptable. This is enforced by wrapping business operations and audit writes in a database transaction.
+If the Audit module fails to write an audit event, the originating operation **must be rolled back**. An unaudited clinical or security action is unacceptable.
+
+**Implementation Contract:**
+All state-changing service methods must accept an optional transaction object (`tx`) and wrap operations accordingly:
+
+```typescript
+// Example Implementation Contract
+await db.transaction(async (tx) => {
+  // 1. Perform business logic
+  const record = await clinicalRepository.create(tx, data);
+  
+  // 2. Emit audit event synchronously within the same transaction
+  await auditService.logEvent(tx, {
+    eventType: 'CLINICAL_RECORD_CREATED',
+    targetId: record.id,
+    ...
+  });
+  
+  return record;
+}); // COMMIT occurs here
+```
+If `auditService.logEvent` throws an `AuditWriteError`, the transaction automatically rolls back. Un-audited state cannot exist.
 
 ---
 
@@ -213,10 +234,16 @@ Other modules call the AI service interface. They do not construct prompts, call
 | `embedding.generate` | embeddings | Low | 2 retries | Generate vector embeddings for new clinical records |
 | `critical-alert.dispatch` | notifications | **Critical** | 5 retries, immediate | Dispatch critical lab value notifications |
 
-### 7.2 Job Processing
+### 7.2 Job Processing & Transactional Outbox
 
+To guarantee no loss of critical jobs (e.g., critical lab notifications) in the event of a Redis failure, the system uses the **Transactional Outbox Pattern**:
+
+1. Business operation and job creation are committed in the same PostgreSQL transaction (e.g., written to a `jobs_outbox` or directly to `notifications` with a 'pending' status).
+2. A background process (or change data capture) polls the table and pushes the job to BullMQ (Redis).
+3. If Redis goes down, jobs remain safely stored in PostgreSQL. Once Redis recovers, the outbox processor resumes pushing jobs to the queue.
+
+Other job details:
 - Workers run in the same application process (modular monolith)
-- Redis connection used for job queue only (not caching in MVP — PostgreSQL handles reads)
 - Dead letter queue for failed jobs after retry exhaustion
 - Job status visible in admin dashboard (future)
 - All job executions logged with correlation ID

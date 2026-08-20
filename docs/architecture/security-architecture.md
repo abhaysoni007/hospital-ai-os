@@ -259,5 +259,49 @@ Break-glass provides emergency access to patient records outside normal authoriz
 
 - All dependencies pinned to exact versions in lockfile
 - `npm audit` run in CI pipeline — builds fail on critical vulnerabilities
-- Dependency update review includes changelog and security advisory check
 - Minimal dependency footprint per Ponytail discipline
+
+---
+
+## 9. Audit Hash Chain Integrity
+
+To ensure tamper-evident audit logs, the system uses a strict cryptographic hash chain on the `audit_events` table.
+
+### 9.1 Hash Chain Definition
+
+- **Algorithm:** SHA-256
+- **Serialization:** Canonical JSON (keys sorted alphabetically, no whitespace).
+- **Genesis Event:** The first event in the system (sequence `1`) uses a hardcoded zero-hash for `previous_hash`: `0000000000000000000000000000000000000000000000000000000000000000`.
+- **Chain Calculation:** For event N:
+  ```text
+  event_data = {
+    sequence_number: N,
+    event_type: "...",
+    actor_id: "...",
+    ... (all fields except previous_hash, record_hash, created_at)
+  }
+  canonical_string = canonicalize(event_data)
+  previous_hash = hash(event N-1)
+  record_hash = SHA256(canonical_string + previous_hash)
+  ```
+
+### 9.2 Concurrency Handling
+
+- Generation of the hash requires strict sequential ordering.
+- **Mechanism:** The application relies on PostgreSQL's `sequence_number BIGSERIAL` and row-level locks or an advisory lock (`pg_advisory_xact_lock`) during the transaction to ensure that the read of the previous hash and the insertion of the new hash are atomic and strictly ordered.
+
+---
+
+## 10. Sensitive Data & PHI Handling Matrix
+
+> "Technical control supporting compliance requirements; legal/regulatory compliance requires separate verification."
+
+| Data Category | Definition | Allowed in Logs? | Allowed in URLs? | AI Provider Visibility |
+|:---|:---|:---:|:---:|:---|
+| **PHI (Clinical Content)** | Diagnoses, SOAP notes, lab results | **NO** | **NO** | Yes (via temporary context, not retained) |
+| **PII (Identity)** | Names, DOB, phone, address, identity numbers | **NO** | **NO** | Patient name in context |
+| **Resource IDs** | UUIDs (`patient_id`, `encounter_id`) | Yes | Yes | Yes (for grounding links) |
+| **Metadata** | Timestamps, status, interaction type | Yes | Yes | Yes |
+| **AI Raw Responses** | The raw JSON/text from the LLM | **NO** | **NO** | N/A (originates from provider) |
+
+*Note: Logs sanitize all request/response bodies by default, preserving only safe metadata and UUIDs.*

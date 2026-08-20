@@ -110,19 +110,19 @@ Hospital AI OS is structured as a **modular monolith**: a single deployable appl
 
 ---
 
-## 3. Domain Module Catalog
+## 3. Domain Module Catalog & Data Ownership
 
-| Module | Responsibility | Owns Data Domains | Dependencies |
+| Module | Responsibility | Owns Database Tables | Dependencies |
 |:---|:---|:---|:---|
-| **Patient** | Patient registration, identity verification, EMPI, duplicate detection | Patient, Identity | Auth, Audit |
-| **Encounter** | Appointment scheduling, encounter lifecycle, check-in/discharge state | Appointment, Encounter | Patient, Auth, Audit |
-| **Clinical** | Clinical workspace, progress notes, vitals, clinical record management | Clinical Record | Patient, Encounter, Auth, Audit, AI |
-| **Lab** | Diagnostic order management, specimen tracking, result entry, verification, critical value rules | Diagnostic Order, Diagnostic Result | Patient, Encounter, Clinical, Auth, Audit, Task |
-| **Discharge** | Discharge summary drafting, authorization workflow | (uses Encounter, Clinical Record, Diagnostic Result) | Encounter, Clinical, Lab, Auth, Audit, AI |
-| **AI** | LLM provider abstraction, prompt management, RAG pipeline, structured output parsing, evidence grounding | AI Interaction | Auth, Audit |
-| **Auth** | Authentication, authorization, RBAC, session management, break-glass | Staff, (Role/Permission config) | Audit |
-| **Audit** | Immutable audit event recording, hash chain, tamper-evidence | Audit Event | (none — leaf dependency) |
-| **Task** | Task assignment, state machine, urgent notifications | Task, Notification | Auth, Audit |
+| **Patient** | Registration, identity verification, EMPI | `patients`, `identities` | Auth, Audit |
+| **Encounter** | Scheduling, check-in, encounter lifecycle | `appointments`, `encounters` | Patient, Auth, Audit |
+| **Clinical** | Progress notes, vitals, record management | `clinical_records` | Patient, Encounter, Auth, Audit, AI |
+| **Lab** | Lab orders, specimen tracking, result verification | `diagnostic_orders`, `diagnostic_results`, `critical_value_rules` | Patient, Encounter, Clinical, Auth, Audit, Task |
+| **Discharge** | Discharge summary drafting, workflow | (None — aggregates data) | Encounter, Clinical, Lab, Auth, Audit, AI |
+| **AI** | Provider abstraction, RAG pipeline, grounding | `ai_interactions`, `embeddings` | Patient, Encounter, Auth, Audit |
+| **Auth** | Authentication, RBAC, session management | `staff`, `departments`, `refresh_tokens`, `break_glass_sessions` | Audit |
+| **Audit** | Immutable event recording, hash chain | `audit_events` | (none — leaf dependency) |
+| **Task** | Task assignment, urgent notifications | `tasks`, `notifications` | Auth, Audit |
 
 ### 3.1 Module Dependency Graph
 
@@ -141,20 +141,21 @@ Hospital AI OS is structured as a **modular monolith**: a single deployable appl
      │Patient │   │  Task  │   │    AI    │
      └────┬───┘   └────────┘   └─────┬────┘
           │                          │
-     ┌────▼─────┐                    │
-     │Encounter │                    │
-     └────┬─────┘                    │
           │                          │
      ┌────▼─────┐                    │
-     │Clinical  │◄───────────────────┘
+     │Encounter │◄───────────────────┘
      └────┬─────┘
           │
-     ┌────▼───┐
-     │  Lab   │
-     └────┬───┘
-          │
-     ┌────▼──────┐
-     │ Discharge │
+     ┌────▼─────┐
+     │Clinical  │◄───────────────────┐
+     └────┬─────┘                    │
+          │                          │
+     ┌────▼───┐                      │
+     │  Lab   │                      │
+     └────┬───┘                      │
+          │                          │
+     ┌────▼──────┐                   │
+     │ Discharge │───────────────────┘
      └───────────┘
 ```
 
@@ -233,7 +234,7 @@ Lab Tech enters result → Express API → Lab Service
 |:---|:---|:---|:---|
 | **AI Provider** | API timeout, rate limit, outage | Circuit breaker opens; AI features disabled | "AI assistance temporarily unavailable" banner; manual workflows remain active |
 | **PostgreSQL** | Connection failure | Application enters safe shutdown; no data written | "System maintenance" page; all operations halted |
-| **Redis** | Connection failure | Background jobs queue locally in memory (bounded); cache reads fall through to DB | Notification delivery delayed; slight latency increase |
+| **Redis** | Connection failure | Critical jobs (e.g., notifications) are saved synchronously via Transactional Outbox in PostgreSQL; Redis failure only delays dispatch. Zero data loss. | Notification delivery delayed; slight latency increase |
 | **Frontend (Next.js)** | Build error, JS crash | Error boundary catches; fallback UI rendered | Error message with retry option; no data loss |
 | **Background Worker** | Job failure | Dead-letter queue; automatic retry with backoff | Notification delayed; audit record marks retry |
 | **Audit Service** | Write failure | **CRITICAL** — application blocks the originating request (fail-safe) | User sees error; operation is not committed without audit |

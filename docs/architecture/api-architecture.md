@@ -15,7 +15,7 @@
 | **Authenticated** | All endpoints require JWT unless explicitly public |
 | **Authorized** | RBAC permission checked per endpoint |
 | **Validated** | Request bodies validated with Zod schemas |
-| **Audited** | State-changing operations emit audit events |
+| **Audited** | State-changing operations emit audit events synchronously within a DB transaction boundary |
 | **Consistent errors** | Standard error response format across all endpoints |
 | **No PHI in URLs** | Patient IDs (UUIDs) are allowed; clinical data is never in query params |
 
