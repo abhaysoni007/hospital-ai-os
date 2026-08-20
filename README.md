@@ -23,7 +23,6 @@ Hospital AI OS is governed by a strict, authoritative `.claude` system:
 Phase 3 architecture and implementation blueprint has been completed. The system is ready for Phase 4 implementation.
 
 ### Architecture Blueprint
-
 - **System Architecture:** [system-architecture.md](docs/architecture/system-architecture.md) — Modular monolith, module boundaries, failure behavior
 - **Domain Model:** [domain-model.md](docs/architecture/domain-model.md) — 14 entities, relationships, lifecycle, sensitivity
 - **Database Design:** [database-design.md](docs/architecture/database-design.md) — PostgreSQL, 17 tables, indexes, constraints
@@ -36,7 +35,6 @@ Phase 3 architecture and implementation blueprint has been completed. The system
 - **Architecture Decision Records:** [adrs/](docs/architecture/adrs/) — 10 ADRs
 
 ### Product Specification (Phase 2.1)
-
 - **Product Vision & Specification:** [PRODUCT_SPEC.md](docs/product/PRODUCT_SPEC.md)
 - **Phase 2.1 Decision Log:** [PHASE_2_1_DECISIONS.md](docs/product/PHASE_2_1_DECISIONS.md)
 - **User Personas & Data Access Matrix:** [PERSONAS.md](docs/product/PERSONAS.md)
@@ -44,3 +42,4 @@ Phase 3 architecture and implementation blueprint has been completed. The system
 - **AI Capabilities & Safety Model:** [AI_SYSTEM.md](docs/ai/AI_SYSTEM.md) & [AI_SAFETY.md](docs/ai/AI_SAFETY.md)
 - **Data Domain Model:** [DATA_FLOW.md](docs/architecture/DATA_FLOW.md)
 - **Project Status & Roadmap:** [PROJECT_STATUS.md](PROJECT_STATUS.md)
+

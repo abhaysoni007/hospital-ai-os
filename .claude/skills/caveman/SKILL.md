@@ -19,20 +19,20 @@ A meta-level behavioral skill that optimizes agent communication for maximum use
 
 Switch to **full prose with complete context** for:
 
-| Situation                                             | Reason                                                               |
-| ----------------------------------------------------- | -------------------------------------------------------------------- |
-| Security warnings                                     | Compressed security advice could miss critical detail                |
-| Healthcare safety warnings                            | Compressed clinical information could cause patient harm             |
-| Irreversible actions                                  | User must fully understand consequences before proceeding            |
-| Migration risks                                       | Data loss risk demands explicit explanation                          |
-| Production incidents                                  | Incident response requires unambiguous communication                 |
-| Clinical workflows                                    | Clinical context must never be compressed to the point of ambiguity  |
-| Patient safety issues                                 | Any ambiguity could lead to harm                                     |
-| Legal/compliance implications                         | Incomplete compliance guidance creates liability                     |
-| Architectural decisions with significant consequences | Decision rationale must be fully documented                          |
-| User confusion                                        | If the user is confused, add context rather than compressing further |
-| Complex multi-step instructions                       | Steps must be unambiguous and sequentially clear                     |
-| Anything where compression could be misinterpreted    | When in doubt, use full clarity                                      |
+| Situation | Reason |
+|-----------|--------|
+| Security warnings | Compressed security advice could miss critical detail |
+| Healthcare safety warnings | Compressed clinical information could cause patient harm |
+| Irreversible actions | User must fully understand consequences before proceeding |
+| Migration risks | Data loss risk demands explicit explanation |
+| Production incidents | Incident response requires unambiguous communication |
+| Clinical workflows | Clinical context must never be compressed to the point of ambiguity |
+| Patient safety issues | Any ambiguity could lead to harm |
+| Legal/compliance implications | Incomplete compliance guidance creates liability |
+| Architectural decisions with significant consequences | Decision rationale must be fully documented |
+| User confusion | If the user is confused, add context rather than compressing further |
+| Complex multi-step instructions | Steps must be unambiguous and sequentially clear |
+| Anything where compression could be misinterpreted | When in doubt, use full clarity |
 
 ## Default Communication Format
 
@@ -49,7 +49,6 @@ Verification: [how it was verified]
 ### Examples
 
 **Bug fix report (Caveman):**
-
 ```
 Problem: Auth token not refreshed on 401 response.
 Cause: Interceptor catches 401 but doesn't retry the original request after refresh.
@@ -59,7 +58,6 @@ Verified: All auth tests passing, manual test confirmed.
 ```
 
 **Status update (Caveman):**
-
 ```
 Status: Discharge workflow API — 3/5 endpoints complete.
 Done: GET /discharges, GET /discharges/:id, POST /discharges
@@ -68,7 +66,6 @@ Blocked: None.
 ```
 
 **Code review comment (Caveman):**
-
 ```
 Issue: Missing null check on patient.allergies before iteration.
 Risk: Runtime error if allergies is null.
@@ -78,7 +75,6 @@ Fix: Add null check or default to empty array.
 ### Contrast: Full Clarity Mode
 
 **Security warning (NOT Caveman — full clarity):**
-
 ```
 WARNING: The proposed implementation stores the API key in the client-side
 localStorage. This exposes the key to any JavaScript running on the page,
@@ -95,7 +91,6 @@ This is a blocking security issue and must be resolved before merge.
 ```
 
 **Healthcare safety warning (NOT Caveman — full clarity):**
-
 ```
 WARNING: This implementation auto-applies the AI-recommended medication
 dosage without clinician review.
@@ -148,14 +143,14 @@ Regardless of communication mode, the following must always be present:
 
 Caveman encourages using structured formats for scanability:
 
-| Format         | Use For                                           |
-| -------------- | ------------------------------------------------- |
-| Tables         | Comparisons, status summaries, option evaluations |
-| Bullet lists   | Action items, findings, requirements              |
-| Numbered lists | Sequential steps, priority ordering               |
-| Key: Value     | Configuration, status fields, metadata            |
-| Code blocks    | Code, commands, structured data                   |
-| Checklists     | Quality gates, review criteria                    |
+| Format | Use For |
+|--------|---------|
+| Tables | Comparisons, status summaries, option evaluations |
+| Bullet lists | Action items, findings, requirements |
+| Numbered lists | Sequential steps, priority ordering |
+| Key: Value | Configuration, status fields, metadata |
+| Code blocks | Code, commands, structured data |
+| Checklists | Quality gates, review criteria |
 
 ## Decision Rules
 

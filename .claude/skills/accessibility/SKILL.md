@@ -29,14 +29,12 @@ Provide expert guidance for ensuring Hospital AI OS meets accessibility standard
 ## Responsibilities
 
 ### Standards Compliance
-
 - WCAG 2.1 AA is the minimum target.
 - All interactive elements must be keyboard accessible.
 - Focus order must follow logical reading order.
 - Focus must be visible on all interactive elements.
 
 ### Keyboard Navigation
-
 - Tab through all interactive elements in logical order.
 - Enter/Space activates buttons and links.
 - Escape closes modals and dropdowns.
@@ -44,7 +42,6 @@ Provide expert guidance for ensuring Hospital AI OS meets accessibility standard
 - No keyboard traps (user can always navigate away).
 
 ### Screen Reader Compatibility
-
 - All images have meaningful alt text or are marked decorative.
 - Form inputs have associated labels.
 - Error messages are announced.
@@ -53,14 +50,12 @@ Provide expert guidance for ensuring Hospital AI OS meets accessibility standard
 - Landmark regions are used (nav, main, aside, footer).
 
 ### Color and Contrast
-
 - Text contrast: 4.5:1 for normal text, 3:1 for large text.
 - Color is not the sole means of conveying information.
 - Interactive element states (hover, focus, active, disabled) are distinguishable.
 - Verify with color blindness simulation tools.
 
 ### Healthcare-Specific Accessibility
-
 - Clinical alerts must be both visual and auditory/programmatic.
 - Critical information (allergies, alerts) must be accessible to screen readers.
 - Dense data displays (tables, grids) must have appropriate headers and ARIA attributes.

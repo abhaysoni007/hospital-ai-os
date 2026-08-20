@@ -14,11 +14,11 @@ Hospital AI OS requires tamper-evident audit logs per product requirements. Audi
 
 ## Alternatives Considered
 
-| Alternative                             | Pros                      | Cons                                                                                 | Reason Rejected                                          |
-| :-------------------------------------- | :------------------------ | :----------------------------------------------------------------------------------- | :------------------------------------------------------- |
-| **Blockchain/distributed ledger**       | Strongest tamper evidence | Massive complexity; operational overhead; inappropriate for a single-facility system | Over-engineered; Ponytail violation                      |
-| **Write-once storage (S3 Object Lock)** | Cloud-native immutability | External dependency; latency for audit writes; complicates local development         | Hash chain provides sufficient tamper evidence for MVP   |
-| **Audit table without hash chain**      | Simplest                  | No tamper evidence — cannot detect if a record was modified at the database level    | Does not satisfy product requirement for tamper evidence |
+| Alternative | Pros | Cons | Reason Rejected |
+|:---|:---|:---|:---|
+| **Blockchain/distributed ledger** | Strongest tamper evidence | Massive complexity; operational overhead; inappropriate for a single-facility system | Over-engineered; Ponytail violation |
+| **Write-once storage (S3 Object Lock)** | Cloud-native immutability | External dependency; latency for audit writes; complicates local development | Hash chain provides sufficient tamper evidence for MVP |
+| **Audit table without hash chain** | Simplest | No tamper evidence — cannot detect if a record was modified at the database level | Does not satisfy product requirement for tamper evidence |
 
 ## Consequences
 

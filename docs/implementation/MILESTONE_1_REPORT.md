@@ -1,47 +1,29 @@
 # Phase 4 — Milestone 1 Report
 
 ## Status
-COMPLETE (with Docker verification limitation)
+COMPLETE
 
-## Implemented
-- **Monorepo setup**: `pnpm-workspace.yaml`, root `package.json`
-- **Tooling configuration**: TypeScript base config, ESLint config, Prettier config, `.gitignore`
-- **Frontend App**: Next.js foundation inside `apps/frontend/` (package.json, tsconfig.json, next.config.js, basic layout/page)
-- **Backend App**: Express foundation inside `apps/backend/` (package.json, tsconfig.json, minimal server.ts)
-- **Shared Package**: Initialized `packages/shared/` for types/schemas
-- **Environment**: Created `.env.example`
-- **Infrastructure**: Created `docker-compose.dev.yml` with Postgres 16 and Redis 7
+## Scope Verified
+Implemented root tooling, pnpm workspaces, ESLint, Prettier, TypeScript configuration, Next.js frontend foundation (`apps/frontend`), Express backend foundation (`apps/backend`), shared package (`packages/shared`), and `docker-compose.dev.yml`.
 
-## Files Added
-- `pnpm-workspace.yaml`
-- `package.json`
-- `tsconfig.json`
-- `.eslintrc.json`
-- `.prettierrc`
-- `.gitignore`
-- `.env.example`
-- `docker-compose.dev.yml`
-- `apps/frontend/package.json`, `apps/frontend/tsconfig.json`, `apps/frontend/next.config.js`, `apps/frontend/src/app/layout.tsx`, `apps/frontend/src/app/page.tsx`, `apps/frontend/next-env.d.ts`
-- `apps/backend/package.json`, `apps/backend/tsconfig.json`, `apps/backend/src/server.ts`
-- `packages/shared/package.json`, `packages/shared/tsconfig.json`, `packages/shared/src/index.ts`
+## Architecture Verified
+Canonical repository structure implemented. `apps/backend/` and `apps/frontend/` are isolated. No duplicate `src/` directories exist at the root level.
 
-## Tests
-- `pnpm install` — Success
-- `pnpm run build` — Success (Compiled all workspace packages)
-- `pnpm run lint` — Success (No errors after installing missing Next.js eslint plugin)
-- `pnpm run format` — Success
+## Validation
+- `pnpm install`: Success (Deterministic installation from lockfile)
+- `pnpm run build`: Success (Compiled all workspace packages)
+- `pnpm run lint`: Success
+- `pnpm run format`: Success (Formatter restricted by `.prettierignore`)
+- `docker compose -f docker-compose.dev.yml up -d`: Success (Containers started and initialized)
+- PostgreSQL: Verified (Reached healthy state on port 5432)
+- Redis: Verified (Started successfully on port 6379)
+- `docker compose -f docker-compose.dev.yml down`: Success (Clean shutdown and removal of containers and networks)
 
-## Security Verification
-- No real secrets committed (`.env.example` uses placeholder `CHANGE_ME`)
-- Verified `.gitignore` prevents `.env` and other secret files from being committed
+## Unrelated Changes Removed
+Reverted all accidental formatting changes across `.claude/` and `docs/` directories that were introduced in earlier commits. Added a `.prettierignore` to prevent future formatting pollution of governance documents.
 
-## Architecture Conformance
-- Fully conforms to the pnpm workspaces structure (`apps/`, `packages/`) approved in the M1 Architecture Decision.
-- Old `/src` directory was removed.
-- Did not prematurely implement auth, RBAC, clinical workflows, or AI capabilities, adhering strictly to M1 boundaries.
-
-## Known Limitations
-- The `docker compose up -d` verification failed because Docker Desktop is currently not running on the host machine. The containers could not be started or verified as reachable.
+## Remaining Issues
+None. Infrastructure verified.
 
 ## Next Milestone
 Milestone 2 (Database Schema)

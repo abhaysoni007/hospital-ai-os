@@ -14,10 +14,10 @@ Hospital AI OS uses LLM capabilities for clinical note drafting, chart search, d
 
 ## Alternatives Considered
 
-| Alternative                        | Pros                              | Cons                                                                              | Reason Rejected                                       |
-| :--------------------------------- | :-------------------------------- | :-------------------------------------------------------------------------------- | :---------------------------------------------------- |
-| **Direct Gemini SDK integration**  | Simpler initial implementation    | Vendor lock-in; provider switch requires code changes                             | Violates AI rules (provider independence requirement) |
-| **LangChain/LlamaIndex framework** | Rich ecosystem; many integrations | Large dependency; significant abstraction overhead; Ponytail discipline violation | Too much abstraction for 4 AI capabilities            |
+| Alternative | Pros | Cons | Reason Rejected |
+|:---|:---|:---|:---|
+| **Direct Gemini SDK integration** | Simpler initial implementation | Vendor lock-in; provider switch requires code changes | Violates AI rules (provider independence requirement) |
+| **LangChain/LlamaIndex framework** | Rich ecosystem; many integrations | Large dependency; significant abstraction overhead; Ponytail discipline violation | Too much abstraction for 4 AI capabilities |
 
 ## Consequences
 

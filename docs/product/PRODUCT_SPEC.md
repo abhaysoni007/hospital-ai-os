@@ -9,7 +9,6 @@
 ## 1. Product Vision & North Star
 
 ### 1.1 What is Hospital AI OS?
-
 Hospital AI OS is an AI-native hospital operating platform designed to coordinate clinical, administrative, operational, staff, patient, and intelligence workflows across healthcare facilities. It operates as an interconnected orchestration layer above healthcare data repositories, transforming isolated patient data into actionable, safe, human-guided clinical and administrative workflows.
 
 ```text
@@ -31,12 +30,10 @@ HOSPITAL AI OS — SAFE, HIGH-THROUGHPUT HEALTHCARE OPERATIONS
 ```
 
 ### 1.2 MVP Thesis
-
 > **The smallest Hospital AI OS experience that proves the product deserves to exist is a single coherent vertical slice demonstrating grounded AI assistance, human review, safe action, and auditability across an end-to-end patient encounter:**  
 > `Patient Registration → Appointment / Encounter → Doctor Clinical Workspace → AI Chart Search → AI Clinical Note Draft → Diagnostics / Lab → Discharge Summary`
 
 ### 1.3 Staff Experience & AI Operational Boundaries
-
 - **Product Experience:** Hospital staff experience a clean, role-tailored workspace with unified search, priority task lists, context-rich approval cards, and automated handovers.
 - **AI Responsibilities:** Context retrieval, narrative summarization, note drafting, clinical trend extraction, task priority calculation, bottleneck detection, and administrative form preparation.
 - **Human Mandatory Control:** All clinical diagnoses, medication prescriptions, treatment modifications, patient discharge approvals, diagnostic order submissions, and break-glass overrides remain strictly under explicit human authority.
@@ -45,7 +42,7 @@ HOSPITAL AI OS — SAFE, HIGH-THROUGHPUT HEALTHCARE OPERATIONS
 
 ## 2. Scope Matrix & Capability Classification
 
-Applying **Ponytail Scope Discipline** (_build the smallest product that proves core value while preserving safety, security, and auditability_):
+Applying **Ponytail Scope Discipline** (*build the smallest product that proves core value while preserving safety, security, and auditability*):
 
 ```text
 +---------------------------------------------------------------------------------------------------+
@@ -73,16 +70,16 @@ Applying **Ponytail Scope Discipline** (_build the smallest product that proves 
 
 ## 3. Hospital Department Models
 
-| Department            | Major Workflows                                               | Primary Users                | Key Data                                            | AI Opportunities                                  | Safety Considerations                                               |
-| :-------------------- | :------------------------------------------------------------ | :--------------------------- | :-------------------------------------------------- | :------------------------------------------------ | :------------------------------------------------------------------ |
-| **Emergency (ED)**    | Rapid triage, acuity scoring, emergency ordering              | ER Doctor, Triage Nurse      | Vitals, chief complaints, allergy history           | Acuity assistance, handover drafting              | High risk; zero auto-order execution; fast-path human overrides     |
-| **Outpatient (OPD)**  | Appointment scheduling, check-in, consultation, note drafting | OPD Doctor, Receptionist     | Appointment slots, consultation notes               | Note drafting, history summaries                  | AI notes side-by-side only; mandatory doctor review before saving   |
-| **Inpatient (IPD)**   | Ward rounds, progress notes, discharge planning               | IPD Doctor, Ward Nurse       | Daily vitals, progress notes, care plans            | Daily round summary, handover drafting            | Real-time freshness checks; prompt notification of abnormal vitals  |
-| **Pharmacy**          | Prescription review, interaction check, dispensing            | Pharmacist, Pharmacy Tech    | Active prescriptions, drug inventory, allergy lists | Drug interaction warnings, allergy checking       | Pharmacological DB primary truth; AI does not infer drug rules      |
-| **Laboratory**        | Specimen logging, analyzer integration, result verification   | Lab Tech, Pathologist        | Test requests, lab results, reference ranges        | Abnormal trend detection, result summary drafting | Pathologist approval required for verification; panic flags instant |
-| **Billing & Finance** | Charge capture, itemized billing, payment settlement          | Billing Clerk, Finance Admin | Tariff master, service logs, invoice status         | Unbilled item detection                           | Financial lock immutable without supervisor approval                |
-| **Reception / Reg**   | Patient registration, identity verification, check-in         | Receptionist, Front Desk     | Demographics, government IDs                        | ID document OCR extraction, duplicate detection   | Identity verification required before chart creation                |
-| **Administration**    | Staff rostering, department metrics, audit review             | Hospital Admin, Sys Admin    | Access logs, audit events, throughput metrics       | Operational bottleneck reporting                  | System config changes audited; no clinical record access            |
+| Department | Major Workflows | Primary Users | Key Data | AI Opportunities | Safety Considerations |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Emergency (ED)** | Rapid triage, acuity scoring, emergency ordering | ER Doctor, Triage Nurse | Vitals, chief complaints, allergy history | Acuity assistance, handover drafting | High risk; zero auto-order execution; fast-path human overrides |
+| **Outpatient (OPD)** | Appointment scheduling, check-in, consultation, note drafting | OPD Doctor, Receptionist | Appointment slots, consultation notes | Note drafting, history summaries | AI notes side-by-side only; mandatory doctor review before saving |
+| **Inpatient (IPD)** | Ward rounds, progress notes, discharge planning | IPD Doctor, Ward Nurse | Daily vitals, progress notes, care plans | Daily round summary, handover drafting | Real-time freshness checks; prompt notification of abnormal vitals |
+| **Pharmacy** | Prescription review, interaction check, dispensing | Pharmacist, Pharmacy Tech | Active prescriptions, drug inventory, allergy lists | Drug interaction warnings, allergy checking | Pharmacological DB primary truth; AI does not infer drug rules |
+| **Laboratory** | Specimen logging, analyzer integration, result verification | Lab Tech, Pathologist | Test requests, lab results, reference ranges | Abnormal trend detection, result summary drafting | Pathologist approval required for verification; panic flags instant |
+| **Billing & Finance** | Charge capture, itemized billing, payment settlement | Billing Clerk, Finance Admin | Tariff master, service logs, invoice status | Unbilled item detection | Financial lock immutable without supervisor approval |
+| **Reception / Reg** | Patient registration, identity verification, check-in | Receptionist, Front Desk | Demographics, government IDs | ID document OCR extraction, duplicate detection | Identity verification required before chart creation |
+| **Administration** | Staff rostering, department metrics, audit review | Hospital Admin, Sys Admin | Access logs, audit events, throughput metrics | Operational bottleneck reporting | System config changes audited; no clinical record access |
 
 ---
 
@@ -164,7 +161,7 @@ The first product validation and clinical workflow assumptions will be tested ag
 
 **Regulatory Position:** Jurisdiction-specific regulatory and compliance requirements remain deployment-dependent. Applicable regulations must be explicitly identified and mapped before production deployment in any given jurisdiction. No regulatory compliance certification is claimed in this specification.
 
-_(Note: Specific jurisdiction regulatory mapping and compliance verification programs are DEFERRED to deployment planning and legal review.)_
+*(Note: Specific jurisdiction regulatory mapping and compliance verification programs are DEFERRED to deployment planning and legal review.)*
 
 ---
 
@@ -195,4 +192,4 @@ Audit Event Recorded
 
 AI may participate in contextual assistance around this workflow (e.g. surfacing trend history, summarizing result context for the reviewing clinician) but must not replace the authoritative deterministic clinical rule at the classification step.
 
-_(Note: Specific threshold values, reference range databases, and rule engine technology selection are DEFERRED to clinical governance and Phase 3 Architecture.)_
+*(Note: Specific threshold values, reference range databases, and rule engine technology selection are DEFERRED to clinical governance and Phase 3 Architecture.)*

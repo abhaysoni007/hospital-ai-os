@@ -31,14 +31,12 @@ Provide expert guidance for reviewing code changes for correctness, quality, sec
 ## Responsibilities
 
 ### Correctness
-
 - Does the code implement the specified behavior?
 - Does it handle all specified acceptance criteria?
 - Are there logic errors, off-by-one errors, or missed conditions?
 - Does it handle null, undefined, empty, and boundary values?
 
 ### Architecture
-
 - Does the change follow established patterns?
 - Does it maintain separation of concerns?
 - Does it introduce unnecessary complexity?
@@ -46,14 +44,12 @@ Provide expert guidance for reviewing code changes for correctness, quality, sec
 - Is the change in the right module/layer?
 
 ### Error Handling
-
 - Are all error paths handled?
 - Are error messages meaningful and safe (no sensitive data)?
 - Are errors logged with sufficient context?
 - Are external call errors handled (timeout, retry, fallback)?
 
 ### Security
-
 - Is input validated?
 - Is authorization enforced?
 - Are there injection vulnerabilities?
@@ -61,14 +57,12 @@ Provide expert guidance for reviewing code changes for correctness, quality, sec
 - Are secrets hardcoded?
 
 ### Testing
-
 - Are there tests for the change?
 - Do tests cover success and failure paths?
 - Are tests meaningful (not just asserting that code runs)?
 - Are edge cases tested?
 
 ### Maintainability
-
 - Is the code readable without the author explaining it?
 - Are names descriptive and consistent?
 - Is there unnecessary duplication?
@@ -76,13 +70,11 @@ Provide expert guidance for reviewing code changes for correctness, quality, sec
 - Are comments useful (explaining why, not what)?
 
 ### Performance
-
 - Are there obvious performance issues (N+1 queries, unnecessary computation, missing pagination)?
 - Are there missing indexes for new queries?
 - Is caching appropriate?
 
 ### Healthcare Safety
-
 - If the change involves patient data: is access control enforced? Is audit logging present?
 - If the change involves clinical workflows: is human approval enforced where required?
 - If the change involves AI: is output validation present?

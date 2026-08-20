@@ -20,7 +20,6 @@ Role (e.g., Doctor, Nurse, Receptionist)
 ```
 
 ### 1.1 Scope Hierarchy Definitions
-
 1. **System-Wide Scope:** System Administrators and Security Administrators for global platform management and security monitoring. Zero direct clinical patient data access.
 2. **Hospital-Wide Scope:** Hospital Administrators and Department Leads for facility-level operational oversight.
 3. **Department-Level Scope:** Department Heads and Receptionists for department-wide queue and task management.
@@ -33,22 +32,21 @@ Role (e.g., Doctor, Nurse, Receptionist)
 
 > [!IMPORTANT]
 > **Product & Security Requirements:**
->
 > 1. Protected Health Information (PHI) and Personally Identifiable Information (PII) must be protected in transit and at rest.
 > 2. Authorization checks must be enforced at the API layer independently of UI state.
 > 3. Minimum necessary access scope must be strictly applied per role.
 > 4. All elevated access activations and sensitive data reads must generate immutable, tamper-evident audit records.
 
-| Role               | Demographics & Contact | Sensitive Clinical Notes   | Active Medications | Lab & Diagnostic Results | Security & Audit Logs |
-| :----------------- | :--------------------- | :------------------------- | :----------------- | :----------------------- | :-------------------- |
-| **Doctor**         | Read / Write           | Full Access                | Full Access        | Full Access              | None                  |
-| **Nurse**          | Read Only              | Assigned Patients          | Full Access        | Full Access              | None                  |
-| **Pharmacist**     | Read Only              | Med-Relevant Notes         | Full Access        | Med-Relevant Labs        | None                  |
-| **Lab Tech**       | Read Only              | Order Reason Only          | None               | Full Access              | None                  |
-| **Receptionist**   | Full Access            | **RESTRICTED**             | **RESTRICTED**     | **RESTRICTED**           | None                  |
-| **Security Admin** | Read Only              | **RESTRICTED (Logs Only)** | **RESTRICTED**     | **RESTRICTED**           | **FULL ACCESS**       |
+| Role | Demographics & Contact | Sensitive Clinical Notes | Active Medications | Lab & Diagnostic Results | Security & Audit Logs |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Doctor** | Read / Write | Full Access | Full Access | Full Access | None |
+| **Nurse** | Read Only | Assigned Patients | Full Access | Full Access | None |
+| **Pharmacist** | Read Only | Med-Relevant Notes | Full Access | Med-Relevant Labs | None |
+| **Lab Tech** | Read Only | Order Reason Only | None | Full Access | None |
+| **Receptionist**| Full Access | **RESTRICTED** | **RESTRICTED** | **RESTRICTED** | None |
+| **Security Admin**| Read Only | **RESTRICTED (Logs Only)**| **RESTRICTED** | **RESTRICTED** | **FULL ACCESS** |
 
-_(Note: Specific encryption algorithms, TLS protocol versions, and token storage mechanisms are DEFERRED TO PHASE 3 ARCHITECTURE)._
+*(Note: Specific encryption algorithms, TLS protocol versions, and token storage mechanisms are DEFERRED TO PHASE 3 ARCHITECTURE).*
 
 ---
 
@@ -73,10 +71,9 @@ Automated Policy Expiration + Post-Incident Audit Review
 ```
 
 ### 3.1 Break-Glass Policy Parameters
-
 - **Eligible Roles:** Licensed Physicians and Charge Nurses only.
 - **Mandatory Inputs:** Clinical emergency justification code plus rationale text.
 - **Audit Logging:** Logs `actor_id`, `patient_id`, `justification`, `timestamp`, `granted_scope`.
 - **Security Alert:** Generates instant alert dispatched to Security Administrator.
-- **Expiration Window:** `OPEN — requires security/clinical policy decision` _(Specific expiration duration to be confirmed during facility security policy configuration; deferred from hardcoded defaults)._
+- **Expiration Window:** `OPEN — requires security/clinical policy decision` *(Specific expiration duration to be confirmed during facility security policy configuration; deferred from hardcoded defaults).*
 - **Audit Review:** Security Administrator must review and sign off on break-glass audit logs post-incident.

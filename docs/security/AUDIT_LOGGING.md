@@ -26,4 +26,4 @@ Audit records capture the following conceptual fields:
 - **Justification & Approval:** Approval ID, Approver User ID, Mandatory Rationale Text.
 - **Timestamp & Result:** Event Timestamp, Execution Status (Success / Failure).
 
-_(Note: Specific JSON log formatting, hash-chaining algorithms, and database storage backends are DEFERRED TO PHASE 3 ARCHITECTURE)._
+*(Note: Specific JSON log formatting, hash-chaining algorithms, and database storage backends are DEFERRED TO PHASE 3 ARCHITECTURE).*

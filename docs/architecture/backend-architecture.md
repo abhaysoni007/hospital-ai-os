@@ -8,16 +8,16 @@
 
 ## 1. Technology Stack
 
-| Component               | Technology                       | Justification                                                 |
-| :---------------------- | :------------------------------- | :------------------------------------------------------------ |
-| **Runtime**             | Node.js 20 LTS                   | Stable, well-supported, TypeScript-native                     |
-| **Framework**           | Express 4.x                      | Minimal, well-understood, extensible middleware               |
-| **Language**            | TypeScript 5.x (strict mode)     | Type safety, developer experience, shared types with frontend |
-| **Validation**          | Zod                              | TypeScript-first schema validation, inference                 |
-| **ORM / Query Builder** | Drizzle ORM                      | Type-safe, close to SQL, minimal abstraction overhead         |
-| **Background Jobs**     | BullMQ + Redis                   | Reliable job processing, delayed jobs, retries                |
-| **Testing**             | Vitest                           | Fast, TypeScript-native, compatible with Node.js              |
-| **Process Management**  | tsx (dev) / Node.js (production) | Direct TS execution in dev                                    |
+| Component | Technology | Justification |
+|:---|:---|:---|
+| **Runtime** | Node.js 20 LTS | Stable, well-supported, TypeScript-native |
+| **Framework** | Express 4.x | Minimal, well-understood, extensible middleware |
+| **Language** | TypeScript 5.x (strict mode) | Type safety, developer experience, shared types with frontend |
+| **Validation** | Zod | TypeScript-first schema validation, inference |
+| **ORM / Query Builder** | Drizzle ORM | Type-safe, close to SQL, minimal abstraction overhead |
+| **Background Jobs** | BullMQ + Redis | Reliable job processing, delayed jobs, retries |
+| **Testing** | Vitest | Fast, TypeScript-native, compatible with Node.js |
+| **Process Management** | tsx (dev) / Node.js (production) | Direct TS execution in dev |
 
 ---
 
@@ -95,19 +95,18 @@ src/backend/
 
 ### 3.1 Layer Responsibilities
 
-| Layer            | Responsibility                                                     | Must NOT Do                                              |
-| :--------------- | :----------------------------------------------------------------- | :------------------------------------------------------- |
-| **Routes**       | Map HTTP methods/paths to controller functions; apply middleware   | Contain logic                                            |
-| **Middleware**   | Cross-cutting concerns (auth, validation, logging, error handling) | Business logic                                           |
-| **Controllers**  | Parse request, call service, format response                       | Business logic, direct DB access                         |
-| **Services**     | Business rules, workflow orchestration, audit event emission       | HTTP concerns, SQL queries                               |
-| **Repositories** | Database queries, data mapping                                     | Business logic, HTTP concerns                            |
-| **Database**     | Storage, constraints, indexes                                      | Business logic (no stored procedures for business rules) |
+| Layer | Responsibility | Must NOT Do |
+|:---|:---|:---|
+| **Routes** | Map HTTP methods/paths to controller functions; apply middleware | Contain logic |
+| **Middleware** | Cross-cutting concerns (auth, validation, logging, error handling) | Business logic |
+| **Controllers** | Parse request, call service, format response | Business logic, direct DB access |
+| **Services** | Business rules, workflow orchestration, audit event emission | HTTP concerns, SQL queries |
+| **Repositories** | Database queries, data mapping | Business logic, HTTP concerns |
+| **Database** | Storage, constraints, indexes | Business logic (no stored procedures for business rules) |
 
 ### 3.2 Dependency Direction
 
 Dependencies flow **downward only**:
-
 - Controllers depend on Services
 - Services depend on Repositories and other Services (same or lower module)
 - Repositories depend on Database
@@ -146,30 +145,14 @@ abstract class AppError extends Error {
 }
 
 // Specific error types
-class ValidationError extends AppError {
-  statusCode = 400;
-}
-class AuthenticationError extends AppError {
-  statusCode = 401;
-}
-class AuthorizationError extends AppError {
-  statusCode = 403;
-}
-class NotFoundError extends AppError {
-  statusCode = 404;
-}
-class ConflictError extends AppError {
-  statusCode = 409;
-} // optimistic concurrency
-class InternalError extends AppError {
-  statusCode = 500;
-}
-class AIServiceError extends AppError {
-  statusCode = 503;
-}
-class AuditWriteError extends AppError {
-  statusCode = 500;
-} // CRITICAL
+class ValidationError extends AppError { statusCode = 400; }
+class AuthenticationError extends AppError { statusCode = 401; }
+class AuthorizationError extends AppError { statusCode = 403; }
+class NotFoundError extends AppError { statusCode = 404; }
+class ConflictError extends AppError { statusCode = 409; }  // optimistic concurrency
+class InternalError extends AppError { statusCode = 500; }
+class AIServiceError extends AppError { statusCode = 503; }
+class AuditWriteError extends AppError { statusCode = 500; } // CRITICAL
 ```
 
 ### 5.2 Error Response Format
@@ -179,7 +162,9 @@ class AuditWriteError extends AppError {
   "error": {
     "code": "VALIDATION_ERROR",
     "message": "Request validation failed",
-    "details": [{ "field": "date_of_birth", "message": "Must be a valid date in the past" }]
+    "details": [
+      { "field": "date_of_birth", "message": "Must be a valid date in the past" }
+    ]
   }
 }
 ```
@@ -198,18 +183,17 @@ All state-changing service methods must accept an optional transaction object (`
 await db.transaction(async (tx) => {
   // 1. Perform business logic
   const record = await clinicalRepository.create(tx, data);
-
+  
   // 2. Emit audit event synchronously within the same transaction
   await auditService.logEvent(tx, {
     eventType: 'CLINICAL_RECORD_CREATED',
     targetId: record.id,
     ...
   });
-
+  
   return record;
 }); // COMMIT occurs here
 ```
-
 If `auditService.logEvent` throws an `AuditWriteError`, the transaction automatically rolls back. Un-audited state cannot exist.
 
 ---
@@ -228,7 +212,6 @@ interface AIOrchestrationService {
 ```
 
 The AI module internally handles:
-
 1. Context assembly (gathering patient data from other modules via their service interfaces)
 2. Prompt construction (system instructions + context + user query)
 3. Provider adapter selection (Google Gemini, or configured alternative)
@@ -245,11 +228,11 @@ Other modules call the AI service interface. They do not construct prompts, call
 
 ### 7.1 Job Types
 
-| Job                       | Queue         | Priority     | Retry                          | Description                                         |
-| :------------------------ | :------------ | :----------- | :----------------------------- | :-------------------------------------------------- |
-| `notification.dispatch`   | notifications | High         | 3 retries, exponential backoff | Send in-app notifications                           |
-| `embedding.generate`      | embeddings    | Low          | 2 retries                      | Generate vector embeddings for new clinical records |
-| `critical-alert.dispatch` | notifications | **Critical** | 5 retries, immediate           | Dispatch critical lab value notifications           |
+| Job | Queue | Priority | Retry | Description |
+|:---|:---|:---|:---|:---|
+| `notification.dispatch` | notifications | High | 3 retries, exponential backoff | Send in-app notifications |
+| `embedding.generate` | embeddings | Low | 2 retries | Generate vector embeddings for new clinical records |
+| `critical-alert.dispatch` | notifications | **Critical** | 5 retries, immediate | Dispatch critical lab value notifications |
 
 ### 7.2 Job Processing & Transactional Outbox
 
@@ -260,7 +243,6 @@ To guarantee no loss of critical jobs (e.g., critical lab notifications) in the 
 3. If Redis goes down, jobs remain safely stored in PostgreSQL. Once Redis recovers, the outbox processor resumes pushing jobs to the queue.
 
 Other job details:
-
 - Workers run in the same application process (modular monolith)
 - Dead letter queue for failed jobs after retry exhaustion
 - Job status visible in admin dashboard (future)

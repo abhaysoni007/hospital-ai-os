@@ -14,11 +14,11 @@ AI chart search requires vector similarity search over patient clinical records.
 
 ## Alternatives Considered
 
-| Alternative                             | Pros                                 | Cons                                                                  | Reason Rejected                               |
-| :-------------------------------------- | :----------------------------------- | :-------------------------------------------------------------------- | :-------------------------------------------- |
-| **Pinecone**                            | Managed; optimized for vector search | External dependency; additional cost; data residency concerns for PHI | Unnecessary complexity for MVP scale          |
-| **Qdrant**                              | Self-hosted; strong performance      | Additional infrastructure; operational overhead                       | Single-database simplicity preferred          |
-| **No embeddings (keyword search only)** | Simplest                             | Poor semantic search quality for clinical text                        | Chart search quality is a product requirement |
+| Alternative | Pros | Cons | Reason Rejected |
+|:---|:---|:---|:---|
+| **Pinecone** | Managed; optimized for vector search | External dependency; additional cost; data residency concerns for PHI | Unnecessary complexity for MVP scale |
+| **Qdrant** | Self-hosted; strong performance | Additional infrastructure; operational overhead | Single-database simplicity preferred |
+| **No embeddings (keyword search only)** | Simplest | Poor semantic search quality for clinical text | Chart search quality is a product requirement |
 
 ## Consequences
 

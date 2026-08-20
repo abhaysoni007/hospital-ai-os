@@ -31,33 +31,28 @@ Provide expert guidance for creating and maintaining high-quality documentation 
 ## Responsibilities
 
 ### Architecture Documentation
-
 - Use the C4 model: System Context → Container → Component → Code.
 - Keep diagrams synchronized with implementation.
 - Document system boundaries, data flows, and integration points.
 - Document non-obvious constraints and trade-offs.
 
 ### ADRs
-
 - Follow the template in `.claude/templates/adr.md`.
 - Record context, problem, decision, alternatives, consequences, risks.
 - ADRs are immutable once accepted; supersede with new ADRs.
 - Create ADRs at the time of the decision, not retroactively.
 
 ### API Documentation
-
 - Document every endpoint with examples.
 - Keep synchronized with implementation (ideally auto-generated from code).
 - Include authentication, authorization, error responses.
 
 ### Feature Documentation
-
 - Explain purpose, usage, configuration, limitations.
 - Written for the audience (user vs. developer vs. operator).
 - Include edge cases and known limitations.
 
 ### Quality Standards
-
 - Documentation must be accurate (verified against implementation).
 - Documentation must be current (updated when implementation changes).
 - Documentation must be concise (no filler or repeated content).

@@ -14,9 +14,9 @@
 
 ## Data Classification
 
-| Data Element | Classification               | Notes   |
-| ------------ | ---------------------------- | ------- |
-| [element]    | [PHI/PII/Operational/Public] | [notes] |
+| Data Element | Classification | Notes |
+|-------------|---------------|-------|
+| [element]   | [PHI/PII/Operational/Public] | [notes] |
 
 ## Threat Model
 
@@ -26,9 +26,9 @@
 
 ### Threats (STRIDE)
 
-| Threat   | Category      | Likelihood | Impact  | Risk    | Mitigation   |
-| -------- | ------------- | ---------- | ------- | ------- | ------------ |
-| [threat] | [S/T/R/I/D/E] | [H/M/L]    | [H/M/L] | [H/M/L] | [mitigation] |
+| Threat | Category | Likelihood | Impact | Risk | Mitigation |
+|--------|----------|-----------|--------|------|------------|
+| [threat] | [S/T/R/I/D/E] | [H/M/L] | [H/M/L] | [H/M/L] | [mitigation] |
 
 ## Findings
 
@@ -64,6 +64,6 @@ Reference: `.claude/checklists/SECURITY_REVIEW.md`
 
 ## Remediation Tracking
 
-| Finding   | Severity   | Status                | Owner   | Due Date |
-| --------- | ---------- | --------------------- | ------- | -------- |
-| [finding] | [severity] | [open/fixed/accepted] | [owner] | [date]   |
+| Finding | Severity | Status | Owner | Due Date |
+|---------|----------|--------|-------|----------|
+| [finding] | [severity] | [open/fixed/accepted] | [owner] | [date] |

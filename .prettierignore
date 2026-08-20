@@ -1,0 +1,6 @@
+.claude/
+docs/
+project-management/
+.next/
+dist/
+node_modules/

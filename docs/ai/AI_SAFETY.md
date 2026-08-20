@@ -28,9 +28,7 @@ VERIFIED (Immutable audit event recorded)
 ```
 
 ### 1.1 Multi-Signal Safety Verification
-
 The system evaluates AI outputs using multiple independent signals:
-
 1. **Source Availability & Completeness:** Ensuring required patient context was available and non-empty during prompt assembly.
 2. **Grounding Traceability:** Verifying that factual claims reference authoritative source records.
 3. **Deterministic Validation:** Validating schema formats, patient IDs, and numerical bounds using deterministic business logic (AI suggests; deterministic code validates).
@@ -47,7 +45,7 @@ The system evaluates AI outputs using multiple independent signals:
   - Source context review panels
   - Linked patient record references
 
-_(Note: Specific UI badge rendering, CSS styling, and vector database retrieval mechanics are DEFERRED TO PHASE 3 ARCHITECTURE)._
+*(Note: Specific UI badge rendering, CSS styling, and vector database retrieval mechanics are DEFERRED TO PHASE 3 ARCHITECTURE).*
 
 ---
 
@@ -66,12 +64,12 @@ _(Note: Specific UI badge rendering, CSS styling, and vector database retrieval 
 
 This boundary applies system-wide and cannot be overridden by workflow convenience, latency optimization, or AI provider capability claims.
 
-| Function                                | Authoritative Mechanism                       | AI Role                                                           |
-| :-------------------------------------- | :-------------------------------------------- | :---------------------------------------------------------------- |
+| Function | Authoritative Mechanism | AI Role |
+| :--- | :--- | :--- |
 | **Critical/panic value classification** | Deterministic configured clinical policy rule | Non-authoritative. May assist with contextual summarization only. |
-| **Abnormal trend surfacing**            | AI (grounded, human-reviewed)                 | Permitted with clinician review.                                  |
-| **Drug interaction warning**            | Authoritative pharmacological database        | AI may surface; human confirms.                                   |
-| **Clinical note drafting**              | AI (side-by-side human review)                | Permitted with mandatory clinician sign-off.                      |
-| **Consequential clinical state change** | Human clinician (mandatory)                   | PROHIBITED from autonomous execution.                             |
+| **Abnormal trend surfacing** | AI (grounded, human-reviewed) | Permitted with clinician review. |
+| **Drug interaction warning** | Authoritative pharmacological database | AI may surface; human confirms. |
+| **Clinical note drafting** | AI (side-by-side human review) | Permitted with mandatory clinician sign-off. |
+| **Consequential clinical state change** | Human clinician (mandatory) | PROHIBITED from autonomous execution. |
 
 See also: `docs/ai/AI_SYSTEM.md §3` (Deterministic Critical Lab Value Safety Boundary) and `docs/product/PRODUCT_SPEC.md §7` (Critical Lab Value Safety Boundary).

@@ -14,10 +14,10 @@ Hospital AI OS needs a React-based frontend with server-side rendering capabilit
 
 ## Alternatives Considered
 
-| Alternative             | Pros                            | Cons                                                         | Reason Rejected                                                  |
-| :---------------------- | :------------------------------ | :----------------------------------------------------------- | :--------------------------------------------------------------- |
-| **Vite + React Router** | Lighter; faster build; simpler  | No SSR; manual routing configuration; no built-in API routes | SSR provides faster initial page loads for clinical workstations |
-| **Remix**               | Good data loading patterns; SSR | Smaller community; less mature ecosystem                     | Next.js has broader ecosystem and community support              |
+| Alternative | Pros | Cons | Reason Rejected |
+|:---|:---|:---|:---|
+| **Vite + React Router** | Lighter; faster build; simpler | No SSR; manual routing configuration; no built-in API routes | SSR provides faster initial page loads for clinical workstations |
+| **Remix** | Good data loading patterns; SSR | Smaller community; less mature ecosystem | Next.js has broader ecosystem and community support |
 
 ## Consequences
 

@@ -50,12 +50,12 @@ For every healthcare-related feature, evaluate:
 
 Classify features by clinical risk:
 
-| Risk Level   | Description                                                                            | Requirements                                                   |
-| ------------ | -------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
-| **Critical** | Directly affects clinical decisions (medication orders, diagnosis, alerts)             | Human approval, dual validation, real-time audit, safety tests |
-| **High**     | Affects clinical workflow efficiency (scheduling, task management, handover)           | Human review, audit logging, failure handling                  |
-| **Medium**   | Displays clinical information (dashboards, reports, history)                           | Data freshness, access control, audit logging                  |
-| **Low**      | Administrative operations with minimal clinical impact (billing, scheduling logistics) | Standard access control, logging                               |
+| Risk Level | Description | Requirements |
+|-----------|-------------|--------------|
+| **Critical** | Directly affects clinical decisions (medication orders, diagnosis, alerts) | Human approval, dual validation, real-time audit, safety tests |
+| **High** | Affects clinical workflow efficiency (scheduling, task management, handover) | Human review, audit logging, failure handling |
+| **Medium** | Displays clinical information (dashboards, reports, history) | Data freshness, access control, audit logging |
+| **Low** | Administrative operations with minimal clinical impact (billing, scheduling logistics) | Standard access control, logging |
 
 ### Medical Uncertainty Handling
 

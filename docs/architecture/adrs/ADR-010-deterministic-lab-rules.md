@@ -18,11 +18,11 @@ Choose how to implement the deterministic critical value classification.
 
 ## Alternatives Considered
 
-| Alternative                                   | Pros                                                | Cons                                                                                                | Reason Rejected                                                         |
-| :-------------------------------------------- | :-------------------------------------------------- | :-------------------------------------------------------------------------------------------------- | :---------------------------------------------------------------------- |
-| **External rules engine (Drools, OpenRules)** | Sophisticated rule management; complex rule support | Heavy dependency; Java-based; operational overhead; unnecessary for threshold comparisons           | Ponytail discipline — threshold comparison does not need a rules engine |
-| **Database stored procedures**                | Close to data; fast execution                       | Business logic in database violates engineering rules; harder to test; harder to version            | Engineering rules prohibit business logic in stored procedures          |
-| **AI-assisted classification**                | Flexible; handles novel patterns                    | **PROHIBITED by product specification** — AI is non-authoritative for critical value classification | Violates hard healthcare safety boundary                                |
+| Alternative | Pros | Cons | Reason Rejected |
+|:---|:---|:---|:---|
+| **External rules engine (Drools, OpenRules)** | Sophisticated rule management; complex rule support | Heavy dependency; Java-based; operational overhead; unnecessary for threshold comparisons | Ponytail discipline — threshold comparison does not need a rules engine |
+| **Database stored procedures** | Close to data; fast execution | Business logic in database violates engineering rules; harder to test; harder to version | Engineering rules prohibit business logic in stored procedures |
+| **AI-assisted classification** | Flexible; handles novel patterns | **PROHIBITED by product specification** — AI is non-authoritative for critical value classification | Violates hard healthcare safety boundary |
 
 ## Consequences
 

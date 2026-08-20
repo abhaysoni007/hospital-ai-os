@@ -33,4 +33,4 @@ System Recovery is Observable
 3. **Data Integrity Preserved:** All manual inputs committed during degraded operations remain fully authoritative.
 4. **User Communication:** The system clearly informs users when AI capabilities are temporarily offline without impeding manual care delivery.
 
-_(Note: Specific timeout values, retry counts, backoff algorithms, and health-check polling frequencies are DEFERRED TO PHASE 3 ARCHITECTURE)._
+*(Note: Specific timeout values, retry counts, backoff algorithms, and health-check polling frequencies are DEFERRED TO PHASE 3 ARCHITECTURE).*

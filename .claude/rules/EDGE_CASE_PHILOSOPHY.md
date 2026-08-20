@@ -1,3 +1,4 @@
+
 # Edge Case Philosophy
 
 > **Authority Level:** GLOBAL — This rule applies universally to all agents, skills, and workflows.

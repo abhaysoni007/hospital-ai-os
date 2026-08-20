@@ -36,14 +36,14 @@
 
 ### 1.2 Service Definitions
 
-| Service    | Image                      | Purpose                        | Persistence             |
-| :--------- | :------------------------- | :----------------------------- | :---------------------- |
-| `frontend` | Custom (Node.js + Next.js) | Web UI                         | None (stateless)        |
-| `backend`  | Custom (Node.js + Express) | API server                     | None (stateless)        |
-| `worker`   | Same as backend            | BullMQ job processor           | None (stateless)        |
-| `postgres` | `postgres:16-alpine`       | Primary database               | Named volume            |
-| `redis`    | `redis:7-alpine`           | Job queue, cache               | Named volume (optional) |
-| `nginx`    | `nginx:alpine`             | Reverse proxy, TLS termination | Config mount            |
+| Service | Image | Purpose | Persistence |
+|:---|:---|:---|:---|
+| `frontend` | Custom (Node.js + Next.js) | Web UI | None (stateless) |
+| `backend` | Custom (Node.js + Express) | API server | None (stateless) |
+| `worker` | Same as backend | BullMQ job processor | None (stateless) |
+| `postgres` | `postgres:16-alpine` | Primary database | Named volume |
+| `redis` | `redis:7-alpine` | Job queue, cache | Named volume (optional) |
+| `nginx` | `nginx:alpine` | Reverse proxy, TLS termination | Config mount |
 
 ---
 
@@ -60,16 +60,16 @@
 
 ### 2.2 Required Environment Variables
 
-| Variable               | Dev Default                                                    | Production      | Secret? |
-| :--------------------- | :------------------------------------------------------------- | :-------------- | :-----: |
-| `NODE_ENV`             | `development`                                                  | `production`    |   No    |
-| `DATABASE_URL`         | `postgresql://postgres:postgres@localhost:5432/hospital_ai_os` | Managed         | **Yes** |
-| `REDIS_URL`            | `redis://localhost:6379`                                       | Managed         |   No    |
-| `JWT_PRIVATE_KEY_PATH` | `./keys/dev-private.pem`                                       | Managed         | **Yes** |
-| `JWT_PUBLIC_KEY_PATH`  | `./keys/dev-public.pem`                                        | Managed         |   No    |
-| `AI_API_KEY`           | Dev key                                                        | Production key  | **Yes** |
-| `AI_PROVIDER`          | `google-gemini`                                                | `google-gemini` |   No    |
-| `ENCRYPTION_KEY`       | Dev key                                                        | Managed         | **Yes** |
+| Variable | Dev Default | Production | Secret? |
+|:---|:---|:---|:---:|
+| `NODE_ENV` | `development` | `production` | No |
+| `DATABASE_URL` | `postgresql://postgres:postgres@localhost:5432/hospital_ai_os` | Managed | **Yes** |
+| `REDIS_URL` | `redis://localhost:6379` | Managed | No |
+| `JWT_PRIVATE_KEY_PATH` | `./keys/dev-private.pem` | Managed | **Yes** |
+| `JWT_PUBLIC_KEY_PATH` | `./keys/dev-public.pem` | Managed | No |
+| `AI_API_KEY` | Dev key | Production key | **Yes** |
+| `AI_PROVIDER` | `google-gemini` | `google-gemini` | No |
+| `ENCRYPTION_KEY` | Dev key | Managed | **Yes** |
 
 ---
 
@@ -162,11 +162,11 @@ GitHub Actions (repository is on GitHub).
 
 ### 5.2 Backups
 
-| Strategy                               | Frequency  | Retention |
-| :------------------------------------- | :--------- | :-------- |
-| Full database dump (`pg_dump`)         | Daily      | 30 days   |
-| WAL archiving (point-in-time recovery) | Continuous | 7 days    |
-| Off-site backup replication            | Daily      | 90 days   |
+| Strategy | Frequency | Retention |
+|:---|:---|:---|
+| Full database dump (`pg_dump`) | Daily | 30 days |
+| WAL archiving (point-in-time recovery) | Continuous | 7 days |
+| Off-site backup replication | Daily | 90 days |
 
 ### 5.3 Disaster Recovery
 
@@ -178,13 +178,13 @@ GitHub Actions (repository is on GitHub).
 
 ## 6. Monitoring
 
-| Component          | Monitoring                                                    |
-| :----------------- | :------------------------------------------------------------ |
-| **Application**    | Structured JSON logs → log aggregation (stdout in containers) |
-| **Database**       | Connection pool metrics, slow query logging                   |
-| **Redis**          | Connection health, queue depth                                |
-| **Infrastructure** | Container health checks, disk space, memory                   |
-| **AI Provider**    | Latency, error rate, token usage (from ai_interactions table) |
+| Component | Monitoring |
+|:---|:---|
+| **Application** | Structured JSON logs → log aggregation (stdout in containers) |
+| **Database** | Connection pool metrics, slow query logging |
+| **Redis** | Connection health, queue depth |
+| **Infrastructure** | Container health checks, disk space, memory |
+| **AI Provider** | Latency, error rate, token usage (from ai_interactions table) |
 
 Health check endpoint: `GET /api/v1/health` → returns service status, database connectivity, Redis connectivity, AI provider status.
 

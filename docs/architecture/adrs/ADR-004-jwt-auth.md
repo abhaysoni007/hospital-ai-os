@@ -14,10 +14,10 @@ Hospital AI OS needs stateless API authentication with bounded token lifetimes, 
 
 ## Alternatives Considered
 
-| Alternative                              | Pros                            | Cons                                                                        | Reason Rejected                                                                              |
-| :--------------------------------------- | :------------------------------ | :-------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------- |
-| **Session-based (server-side sessions)** | Simple; immediate revocation    | Requires session store (Redis); stateful; harder to scale                   | JWT preferred for stateless API authentication; refresh tokens provide revocation capability |
-| **OAuth2/OIDC with external IdP**        | Delegated identity; SSO support | Added infrastructure; external dependency; overkill for single-facility MVP | Deferred to Phase 2 when external IdP integration may be needed                              |
+| Alternative | Pros | Cons | Reason Rejected |
+|:---|:---|:---|:---|
+| **Session-based (server-side sessions)** | Simple; immediate revocation | Requires session store (Redis); stateful; harder to scale | JWT preferred for stateless API authentication; refresh tokens provide revocation capability |
+| **OAuth2/OIDC with external IdP** | Delegated identity; SSO support | Added infrastructure; external dependency; overkill for single-facility MVP | Deferred to Phase 2 when external IdP integration may be needed |
 
 ## Consequences
 

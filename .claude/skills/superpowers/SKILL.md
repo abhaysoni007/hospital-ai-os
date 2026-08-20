@@ -43,7 +43,6 @@ Before writing any code, fully understand:
 - What constraints apply (healthcare, security, architecture, performance)?
 
 **Actions:**
-
 - Read the task description and acceptance criteria.
 - Inspect related code, documentation, and tests.
 - Identify affected modules, data models, and APIs.
@@ -63,7 +62,6 @@ Before committing to an approach, consider alternatives:
 - Does the Ponytail decision ladder apply (is there a simpler existing solution)?
 
 **Actions:**
-
 - List 2-3 viable approaches (for non-trivial tasks).
 - Identify pros, cons, and risks of each.
 - Select the approach with the best balance of correctness, simplicity, safety, and maintainability.
@@ -92,7 +90,6 @@ Break the work into steps:
 - What checkpoints should exist?
 
 **Actions:**
-
 - Create a task list (mental or written, proportional to task complexity).
 - Identify the order of implementation (dependencies first).
 - Identify verification points between steps.
@@ -108,16 +105,16 @@ Execute the plan incrementally:
 
 **Test-driven development guidance:**
 
-| Task Type                                  | TDD Approach                                                     |
-| ------------------------------------------ | ---------------------------------------------------------------- |
-| Business logic with defined inputs/outputs | Write tests first or alongside                                   |
-| API endpoints with defined contracts       | Write API tests first or alongside                               |
-| Bug fixes                                  | Write the failing test first (reproducing the bug)               |
-| UI components                              | Write component tests alongside                                  |
-| Configuration changes                      | Validate configuration, tests may not apply                      |
-| Documentation                              | No implementation tests needed                                   |
-| Exploratory research                       | Tests come after findings are confirmed                          |
-| AI features                                | Define evaluation criteria first, implementation tests alongside |
+| Task Type | TDD Approach |
+|-----------|-------------|
+| Business logic with defined inputs/outputs | Write tests first or alongside |
+| API endpoints with defined contracts | Write API tests first or alongside |
+| Bug fixes | Write the failing test first (reproducing the bug) |
+| UI components | Write component tests alongside |
+| Configuration changes | Validate configuration, tests may not apply |
+| Documentation | No implementation tests needed |
+| Exploratory research | Tests come after findings are confirmed |
+| AI features | Define evaluation criteria first, implementation tests alongside |
 
 **TDD is a tool, not a dogma.** Use it where it adds value. Do not force unit tests on documentation changes or configuration files. Do not skip tests on business logic because "it's simple."
 

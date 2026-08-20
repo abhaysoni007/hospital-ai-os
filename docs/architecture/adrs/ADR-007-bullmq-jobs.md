@@ -14,11 +14,11 @@ Hospital AI OS needs background job processing for notification dispatch, embedd
 
 ## Alternatives Considered
 
-| Alternative              | Pros                       | Cons                                                       | Reason Rejected                                           |
-| :----------------------- | :------------------------- | :--------------------------------------------------------- | :-------------------------------------------------------- |
-| **Database-polled jobs** | No Redis dependency        | Less reliable; polling overhead; no built-in retry/backoff | Insufficient reliability for critical notifications       |
-| **pg-boss**              | PostgreSQL-native          | Single-threaded; less mature; fewer features               | BullMQ has better TypeScript support and larger community |
-| **RabbitMQ**             | Enterprise-grade messaging | Additional infrastructure; operational complexity          | Over-engineered for MVP job processing needs              |
+| Alternative | Pros | Cons | Reason Rejected |
+|:---|:---|:---|:---|
+| **Database-polled jobs** | No Redis dependency | Less reliable; polling overhead; no built-in retry/backoff | Insufficient reliability for critical notifications |
+| **pg-boss** | PostgreSQL-native | Single-threaded; less mature; fewer features | BullMQ has better TypeScript support and larger community |
+| **RabbitMQ** | Enterprise-grade messaging | Additional infrastructure; operational complexity | Over-engineered for MVP job processing needs |
 
 ## Consequences
 

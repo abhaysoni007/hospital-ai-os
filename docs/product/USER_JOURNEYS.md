@@ -27,7 +27,6 @@
 ## 2. Textual User Flow Maps with Human/AI Boundaries
 
 ### 2.1 Flow 1: Clinical Consultation & AI Note Drafting
-
 ```text
 [Human: Doctor] Opens Active Patient Encounter
         ↓
@@ -45,7 +44,6 @@
 ```
 
 ### 2.2 Flow 2: Grounded AI Chart Search
-
 ```text
 [Human: Authorized User] Enters Natural Language Search Query
         ↓
@@ -61,7 +59,6 @@
 ```
 
 ### 2.3 Flow 3: Discharge Summary Drafting & Authorization
-
 ```text
 [Human: Doctor] Triggers "Initiate Discharge" for Eligible Encounter
         ↓

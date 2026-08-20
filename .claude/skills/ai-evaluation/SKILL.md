@@ -36,61 +36,51 @@ Define how AI functionality is evaluated for correctness, safety, consistency, r
 ### Evaluation Dimensions
 
 #### Correctness
-
 - Does the AI produce the right answer for known inputs?
 - Measure: accuracy, precision, recall, F1 against the evaluation dataset.
 - Threshold: define per-feature; no universal default.
 
 #### Factuality
-
 - Are the facts in the AI output verifiable against source data?
 - Measure: percentage of claims that can be traced to provided context.
 - Healthcare-specific: every clinical fact must be grounded in supplied data, not model parametric knowledge.
 
 #### Groundedness
-
 - Does the AI output stay within the provided context?
 - Measure: percentage of output content attributable to input context.
 - Detect: information that appears in the output but was not in the input context (hallucination indicator).
 
 #### Hallucination Rate
-
 - How often does the AI generate information not supported by the input?
 - Measure: manual or automated review of outputs for unsupported claims.
 - Healthcare-specific: hallucinated patient IDs, medication names, dosages, or diagnosis codes are critical failures.
 
 #### Safety
-
 - Does the AI output comply with healthcare safety rules?
 - Measure: percentage of outputs that pass safety checks (no unauthorized clinical actions, no PHI exposure, no medical misinformation).
 - Any safety failure is a blocking issue regardless of other metrics.
 
 #### Consistency
-
 - Does the AI produce consistent outputs for the same or similar inputs?
 - Measure: variance across multiple runs with identical inputs.
 - Healthcare-specific: clinical recommendations must not fluctuate randomly between runs.
 
 #### Latency
-
 - How long does the AI take to respond?
 - Measure: P50, P95, P99 latency.
 - Threshold: define per-feature based on user workflow requirements.
 
 #### Cost
-
 - What is the per-request cost of the AI operation?
 - Measure: token usage × cost per token.
 - Optimize: prompt length, model selection, caching strategy.
 
 #### Robustness
-
 - How does the AI behave with unexpected, incomplete, or adversarial inputs?
 - Test: empty inputs, extremely long inputs, inputs with injection attempts, inputs with conflicting information.
 - Requirement: graceful degradation, never a crash or unsafe output.
 
 #### Adversarial Inputs
-
 - How does the AI respond to prompt injection, jailbreak attempts, or manipulative inputs?
 - Test: known prompt injection patterns, instructions embedded in user data.
 - Requirement: AI must not follow injected instructions; it must follow system instructions only.

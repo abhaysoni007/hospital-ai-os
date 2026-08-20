@@ -10,11 +10,11 @@
 
 **PostgreSQL 16** with the following extensions:
 
-| Extension  | Purpose                                                       |
-| :--------- | :------------------------------------------------------------ |
+| Extension | Purpose |
+|:---|:---|
 | `pgvector` | Vector similarity search for AI chart search (RAG embeddings) |
-| `pgcrypto` | Cryptographic functions for field-level encryption            |
-| `pg_trgm`  | Trigram indexes for fuzzy patient name search                 |
+| `pgcrypto` | Cryptographic functions for field-level encryption |
+| `pg_trgm` | Trigram indexes for fuzzy patient name search |
 
 See **ADR-002** for the full decision record.
 
@@ -22,16 +22,16 @@ See **ADR-002** for the full decision record.
 
 ## 2. Schema Conventions
 
-| Convention                 | Rule                                                                                                                                     |
-| :------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------- |
-| **Naming**                 | `snake_case` for tables, columns, indexes, constraints                                                                                   |
-| **Primary keys**           | `id UUID DEFAULT gen_random_uuid()` on every table                                                                                       |
-| **Timestamps**             | `created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()`, `updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()`                                         |
-| **Soft deletion**          | `deleted_at TIMESTAMPTZ NULL` — soft-deleted rows excluded by application-layer default queries; hard deletion prohibited for PHI tables |
-| **Enums**                  | PostgreSQL native ENUM types (e.g., `CREATE TYPE encounter_status AS ENUM (...)`)                                                        |
-| **Foreign keys**           | Enforced with `ON DELETE RESTRICT` (never CASCADE for clinical data)                                                                     |
-| **Optimistic concurrency** | `version INTEGER NOT NULL DEFAULT 1` on mutable clinical tables                                                                          |
-| **Audit**                  | Audit table is append-only; no UPDATE or DELETE permitted                                                                                |
+| Convention | Rule |
+|:---|:---|
+| **Naming** | `snake_case` for tables, columns, indexes, constraints |
+| **Primary keys** | `id UUID DEFAULT gen_random_uuid()` on every table |
+| **Timestamps** | `created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()`, `updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()` |
+| **Soft deletion** | `deleted_at TIMESTAMPTZ NULL` — soft-deleted rows excluded by application-layer default queries; hard deletion prohibited for PHI tables |
+| **Enums** | PostgreSQL native ENUM types (e.g., `CREATE TYPE encounter_status AS ENUM (...)`) |
+| **Foreign keys** | Enforced with `ON DELETE RESTRICT` (never CASCADE for clinical data) |
+| **Optimistic concurrency** | `version INTEGER NOT NULL DEFAULT 1` on mutable clinical tables |
+| **Audit** | Audit table is append-only; no UPDATE or DELETE permitted |
 
 ---
 
@@ -63,7 +63,6 @@ CREATE TABLE patients (
 ```
 
 **Indexes:**
-
 - `idx_patients_mrn` — UNIQUE on `mrn`
 - `idx_patients_name_trgm` — GIN trigram on `(first_name, last_name)` for fuzzy search
 - `idx_patients_dob` — B-tree on `date_of_birth`
@@ -89,7 +88,6 @@ CREATE TABLE identities (
 ```
 
 **Indexes:**
-
 - `idx_identities_patient` — B-tree on `patient_id`
 - `idx_identities_status` — B-tree on `verification_status`
 
@@ -117,7 +115,6 @@ CREATE TABLE staff (
 ```
 
 **Indexes:**
-
 - `idx_staff_email` — UNIQUE on `email`
 - `idx_staff_employee_id` — UNIQUE on `employee_id`
 - `idx_staff_role` — B-tree on `role`
@@ -159,7 +156,6 @@ CREATE TABLE appointments (
 ```
 
 **Indexes:**
-
 - `idx_appointments_patient` — B-tree on `patient_id`
 - `idx_appointments_doctor_date` — B-tree on `(doctor_id, scheduled_date)`
 - `idx_appointments_status` — B-tree on `status`
@@ -188,7 +184,6 @@ CREATE TABLE encounters (
 ```
 
 **Indexes:**
-
 - `idx_encounters_patient` — B-tree on `patient_id`
 - `idx_encounters_doctor` — B-tree on `doctor_id`
 - `idx_encounters_status` — B-tree on `status`
@@ -218,7 +213,6 @@ CREATE TABLE clinical_records (
 ```
 
 **Indexes:**
-
 - `idx_clinical_records_encounter` — B-tree on `encounter_id`
 - `idx_clinical_records_patient` — B-tree on `patient_id`
 - `idx_clinical_records_type` — B-tree on `record_type`
@@ -245,7 +239,6 @@ CREATE TABLE diagnostic_orders (
 ```
 
 **Indexes:**
-
 - `idx_diagnostic_orders_encounter` — B-tree on `encounter_id`
 - `idx_diagnostic_orders_patient` — B-tree on `patient_id`
 - `idx_diagnostic_orders_status` — B-tree on `status`
@@ -276,7 +269,6 @@ CREATE TABLE diagnostic_results (
 ```
 
 **Indexes:**
-
 - `idx_diagnostic_results_order` — UNIQUE on `order_id`
 - `idx_diagnostic_results_patient` — B-tree on `patient_id`
 - `idx_diagnostic_results_critical` — B-tree on `is_critical` WHERE `is_critical = TRUE`
@@ -305,7 +297,6 @@ CREATE TABLE critical_value_rules (
 ```
 
 **Indexes:**
-
 - `idx_critical_rules_test_code` — B-tree on `test_code` WHERE `is_active = TRUE`
 
 ---
@@ -332,7 +323,6 @@ CREATE TABLE tasks (
 ```
 
 **Indexes:**
-
 - `idx_tasks_assigned_to` — B-tree on `assigned_to`
 - `idx_tasks_status` — B-tree on `status`
 - `idx_tasks_priority` — B-tree on `priority` WHERE `status NOT IN ('completed', 'cancelled')`
@@ -358,7 +348,6 @@ CREATE TABLE notifications (
 ```
 
 **Indexes:**
-
 - `idx_notifications_recipient` — B-tree on `recipient_id`
 - `idx_notifications_status` — B-tree on `status` WHERE `status != 'acknowledged'`
 - `idx_notifications_priority` — B-tree on `priority` WHERE `priority = 'critical'`
@@ -391,7 +380,6 @@ CREATE TABLE ai_interactions (
 ```
 
 **Indexes:**
-
 - `idx_ai_interactions_initiated_by` — B-tree on `initiated_by`
 - `idx_ai_interactions_patient` — B-tree on `patient_id`
 - `idx_ai_interactions_type` — B-tree on `interaction_type`
@@ -426,7 +414,6 @@ REVOKE UPDATE, DELETE ON audit_events FROM PUBLIC;
 ```
 
 **Indexes:**
-
 - `idx_audit_events_actor` — B-tree on `actor_id`
 - `idx_audit_events_event_type` — B-tree on `event_type`
 - `idx_audit_events_target` — B-tree on `(target_type, target_id)`
@@ -452,7 +439,6 @@ CREATE TABLE embeddings (
 ```
 
 **Indexes:**
-
 - `idx_embeddings_patient` — B-tree on `patient_id`
 - `idx_embeddings_source` — B-tree on `(source_type, source_id)`
 - `idx_embeddings_vector` — IVFFlat or HNSW on `embedding` for similarity search
@@ -475,7 +461,6 @@ CREATE TABLE refresh_tokens (
 ```
 
 **Indexes:**
-
 - `idx_refresh_tokens_staff` — B-tree on `staff_id`
 - `idx_refresh_tokens_hash` — UNIQUE on `token_hash`
 - `idx_refresh_tokens_expires` — B-tree on `expires_at`
@@ -501,7 +486,6 @@ CREATE TABLE break_glass_sessions (
 ```
 
 **Indexes:**
-
 - `idx_break_glass_staff` — B-tree on `staff_id`
 - `idx_break_glass_active` — B-tree on `is_active` WHERE `is_active = TRUE`
 
@@ -540,38 +524,38 @@ CREATE TYPE ai_user_action AS ENUM ('pending', 'accepted', 'rejected', 'edited')
 
 ## 5. Data Integrity Rules
 
-| Rule                                                                      | Enforcement                                                             |
-| :------------------------------------------------------------------------ | :---------------------------------------------------------------------- |
-| Patient cannot be hard-deleted                                            | Application layer + no CASCADE deletes                                  |
-| Clinical records cannot be deleted after signing                          | Application layer constraint; `status = 'signed'` records are immutable |
-| Audit events cannot be updated or deleted                                 | `REVOKE UPDATE, DELETE` on table; application layer enforcement         |
-| Encounter cannot be discharged without all lab results verified           | Application layer pre-condition check                                   |
-| Diagnostic result `is_critical` set only by deterministic rule evaluation | Application layer; field is not directly writable via API               |
-| Optimistic concurrency on encounters and clinical records                 | `version` column checked on UPDATE                                      |
+| Rule | Enforcement |
+|:---|:---|
+| Patient cannot be hard-deleted | Application layer + no CASCADE deletes |
+| Clinical records cannot be deleted after signing | Application layer constraint; `status = 'signed'` records are immutable |
+| Audit events cannot be updated or deleted | `REVOKE UPDATE, DELETE` on table; application layer enforcement |
+| Encounter cannot be discharged without all lab results verified | Application layer pre-condition check |
+| Diagnostic result `is_critical` set only by deterministic rule evaluation | Application layer; field is not directly writable via API |
+| Optimistic concurrency on encounters and clinical records | `version` column checked on UPDATE |
 
 ---
 
 ## 6. Encryption Strategy
 
-| Data Category             | At Rest                                                                   | In Transit |
-| :------------------------ | :------------------------------------------------------------------------ | :--------- |
-| Identity document numbers | Field-level encryption via pgcrypto                                       | TLS        |
-| OCR extracted data        | Application-layer AES encryption before storage                           | TLS        |
-| Password hashes           | bcrypt (not reversible encryption)                                        | TLS        |
-| Clinical record content   | Database-level transparent encryption (PostgreSQL TDE or disk encryption) | TLS        |
-| AI raw responses          | Application-layer encryption                                              | TLS        |
-| All other data            | Disk-level encryption                                                     | TLS        |
+| Data Category | At Rest | In Transit |
+|:---|:---|:---|
+| Identity document numbers | Field-level encryption via pgcrypto | TLS |
+| OCR extracted data | Application-layer AES encryption before storage | TLS |
+| Password hashes | bcrypt (not reversible encryption) | TLS |
+| Clinical record content | Database-level transparent encryption (PostgreSQL TDE or disk encryption) | TLS |
+| AI raw responses | Application-layer encryption | TLS |
+| All other data | Disk-level encryption | TLS |
 
 ---
 
 ## 7. Retention & Soft Deletion
 
-| Table                | Retention Policy                      | Hard Delete Allowed          |
-| :------------------- | :------------------------------------ | :--------------------------- |
-| `patients`           | Retain indefinitely (medical records) | **NO** — soft delete only    |
-| `clinical_records`   | Retain indefinitely                   | **NO**                       |
-| `diagnostic_results` | Retain indefinitely                   | **NO**                       |
-| `audit_events`       | Retain indefinitely                   | **NO**                       |
-| `ai_interactions`    | Configurable (default: 2 years)       | YES (after retention period) |
-| `refresh_tokens`     | Auto-purge expired tokens             | YES                          |
-| `notifications`      | Configurable (default: 90 days)       | YES (after retention period) |
+| Table | Retention Policy | Hard Delete Allowed |
+|:---|:---|:---|
+| `patients` | Retain indefinitely (medical records) | **NO** — soft delete only |
+| `clinical_records` | Retain indefinitely | **NO** |
+| `diagnostic_results` | Retain indefinitely | **NO** |
+| `audit_events` | Retain indefinitely | **NO** |
+| `ai_interactions` | Configurable (default: 2 years) | YES (after retention period) |
+| `refresh_tokens` | Auto-purge expired tokens | YES |
+| `notifications` | Configurable (default: 90 days) | YES (after retention period) |

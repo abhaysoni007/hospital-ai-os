@@ -24,28 +24,27 @@
 
 ### 1.2 JWT Access Token
 
-| Property            | Value                                                         |
-| :------------------ | :------------------------------------------------------------ |
-| **Algorithm**       | RS256 (asymmetric — private key signs, public key verifies)   |
-| **Lifetime**        | 15 minutes                                                    |
-| **Storage**         | In-memory (frontend) — never localStorage                     |
-| **Payload claims**  | `sub` (staff ID), `role`, `department_id`, `iat`, `exp`       |
+| Property | Value |
+|:---|:---|
+| **Algorithm** | RS256 (asymmetric — private key signs, public key verifies) |
+| **Lifetime** | 15 minutes |
+| **Storage** | In-memory (frontend) — never localStorage |
+| **Payload claims** | `sub` (staff ID), `role`, `department_id`, `iat`, `exp` |
 | **No PHI in token** | Token must never contain patient data or clinical information |
 
 ### 1.3 Refresh Token
 
-| Property       | Value                                                                       |
-| :------------- | :-------------------------------------------------------------------------- |
-| **Format**     | Cryptographically random opaque string (256-bit)                            |
-| **Storage**    | httpOnly, Secure, SameSite=Strict cookie + hashed in `refresh_tokens` table |
-| **Lifetime**   | 7 days (configurable)                                                       |
-| **Rotation**   | New refresh token issued on each use; old one invalidated                   |
-| **Revocation** | Immediate on logout, password change, role change, suspicion                |
+| Property | Value |
+|:---|:---|
+| **Format** | Cryptographically random opaque string (256-bit) |
+| **Storage** | httpOnly, Secure, SameSite=Strict cookie + hashed in `refresh_tokens` table |
+| **Lifetime** | 7 days (configurable) |
+| **Rotation** | New refresh token issued on each use; old one invalidated |
+| **Revocation** | Immediate on logout, password change, role change, suspicion |
 
 ### 1.4 MFA Readiness
 
 MFA is not implemented in MVP but the architecture supports it:
-
 - `staff.mfa_enabled` flag in database
 - Auth flow has an extensibility point for TOTP/WebAuthn challenge after password verification
 - MFA enforcement can be required per-role (e.g., mandatory for SecurityAdmin)
@@ -74,34 +73,33 @@ Staff → Role → Permissions → Resource + Action + Scope
 Each permission is a triple: `resource:action:scope`
 
 Example permissions:
-
 - `patient:read:department` — Read patients within own department
 - `clinical_record:write:assigned` — Write clinical records for assigned patients
 - `audit_event:read:all` — Read all audit events (Security Admin only)
 
 ### 2.3 Role-Permission Matrix
 
-| Resource              | Action    | Physician |       Nurse       |  Pharmacist  |      LabTech      |    Receptionist    | HospitalAdmin | SecurityAdmin |
-| :-------------------- | :-------- | :-------: | :---------------: | :----------: | :---------------: | :----------------: | :-----------: | :-----------: |
-| **patient**           | read      |   dept    |     assigned      |   limited    |      limited      |        all         |    limited    |     none      |
-| **patient**           | create    |    no     |        no         |      no      |        no         |        yes         |      no       |      no       |
-| **patient**           | update    |    no     |        no         |      no      |        no         | yes (demographics) |      no       |      no       |
-| **clinical_record**   | read      |   dept    |     assigned      |  meds_only   |    orders_only    |         no         |      no       |      no       |
-| **clinical_record**   | write     | assigned  | assigned (vitals) |      no      |        no         |         no         |      no       |      no       |
-| **clinical_record**   | sign      | own_draft |        no         |      no      |        no         |         no         |      no       |      no       |
-| **diagnostic_order**  | create    |    yes    |        no         |      no      |        no         |         no         |      no       |      no       |
-| **diagnostic_result** | read      |   dept    |     assigned      | meds_related |        all        |         no         |      no       |      no       |
-| **diagnostic_result** | enter     |    no     |        no         |      no      |        yes        |         no         |      no       |      no       |
-| **diagnostic_result** | verify    |    no     |        no         |      no      | yes (pathologist) |         no         |      no       |      no       |
-| **encounter**         | create    |    yes    |        no         |      no      |        no         |   yes (register)   |      no       |      no       |
-| **encounter**         | discharge | yes (own) |        no         |      no      |        no         |         no         |      no       |      no       |
-| **appointment**       | create    |    no     |        no         |      no      |        no         |        yes         |      no       |      no       |
-| **appointment**       | cancel    |    no     |        no         |      no      |        no         |        yes         |      no       |      no       |
-| **ai_interaction**    | invoke    |    yes    |   yes (limited)   |      no      |        no         |         no         |      no       |      no       |
-| **staff**             | manage    |    no     |        no         |      no      |        no         |         no         |      yes      |      no       |
-| **audit_event**       | read      |    no     |        no         |      no      |        no         |         no         |    summary    |     full      |
-| **break_glass**       | activate  |    yes    |        yes        |      no      |        no         |         no         |      no       |      no       |
-| **break_glass**       | review    |    no     |        no         |      no      |        no         |         no         |      no       |      yes      |
+| Resource | Action | Physician | Nurse | Pharmacist | LabTech | Receptionist | HospitalAdmin | SecurityAdmin |
+|:---|:---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| **patient** | read | dept | assigned | limited | limited | all | limited | none |
+| **patient** | create | no | no | no | no | yes | no | no |
+| **patient** | update | no | no | no | no | yes (demographics) | no | no |
+| **clinical_record** | read | dept | assigned | meds_only | orders_only | no | no | no |
+| **clinical_record** | write | assigned | assigned (vitals) | no | no | no | no | no |
+| **clinical_record** | sign | own_draft | no | no | no | no | no | no |
+| **diagnostic_order** | create | yes | no | no | no | no | no | no |
+| **diagnostic_result** | read | dept | assigned | meds_related | all | no | no | no |
+| **diagnostic_result** | enter | no | no | no | yes | no | no | no |
+| **diagnostic_result** | verify | no | no | no | yes (pathologist) | no | no | no |
+| **encounter** | create | yes | no | no | no | yes (register) | no | no |
+| **encounter** | discharge | yes (own) | no | no | no | no | no | no |
+| **appointment** | create | no | no | no | no | yes | no | no |
+| **appointment** | cancel | no | no | no | no | yes | no | no |
+| **ai_interaction** | invoke | yes | yes (limited) | no | no | no | no | no |
+| **staff** | manage | no | no | no | no | no | yes | no |
+| **audit_event** | read | no | no | no | no | no | summary | full |
+| **break_glass** | activate | yes | yes | no | no | no | no | no |
+| **break_glass** | review | no | no | no | no | no | no | yes |
 
 ### 2.4 Authorization Enforcement
 
@@ -122,15 +120,15 @@ Request → Auth Middleware (JWT validation)
 
 Break-glass provides emergency access to patient records outside normal authorization scope.
 
-| Property             | Value                                                                             |
-| :------------------- | :-------------------------------------------------------------------------------- |
-| **Who can activate** | Physicians, Nurses                                                                |
-| **Requires**         | Written justification (mandatory, cannot be blank)                                |
-| **Grants**           | Read-only access to specified patient's records                                   |
-| **Expiration**       | OPEN — requires security/clinical policy decision (NOT hardcoded)                 |
-| **Audit**            | `BREAK_GLASS_ACTIVATED`, `BREAK_GLASS_RECORD_ACCESSED`, `BREAK_GLASS_DEACTIVATED` |
-| **Review**           | Security Admin reviews all break-glass events                                     |
-| **Notification**     | `BreakGlassAlert` notification sent to Security Admin on activation               |
+| Property | Value |
+|:---|:---|
+| **Who can activate** | Physicians, Nurses |
+| **Requires** | Written justification (mandatory, cannot be blank) |
+| **Grants** | Read-only access to specified patient's records |
+| **Expiration** | OPEN — requires security/clinical policy decision (NOT hardcoded) |
+| **Audit** | `BREAK_GLASS_ACTIVATED`, `BREAK_GLASS_RECORD_ACCESSED`, `BREAK_GLASS_DEACTIVATED` |
+| **Review** | Security Admin reviews all break-glass events |
+| **Notification** | `BreakGlassAlert` notification sent to Security Admin on activation |
 
 ---
 
@@ -138,21 +136,21 @@ Break-glass provides emergency access to patient records outside normal authoriz
 
 ### 3.1 Data in Transit
 
-| Mechanism              | Details                                                                           |
-| :--------------------- | :-------------------------------------------------------------------------------- |
-| **HTTPS**              | TLS for all client-server communication                                           |
-| **API-to-AI Provider** | TLS for all LLM API calls                                                         |
-| **Internal services**  | All communication within the application process (monolith — no network boundary) |
+| Mechanism | Details |
+|:---|:---|
+| **HTTPS** | TLS for all client-server communication |
+| **API-to-AI Provider** | TLS for all LLM API calls |
+| **Internal services** | All communication within the application process (monolith — no network boundary) |
 
 ### 3.2 Data at Rest
 
-| Layer                            | Mechanism                                                        |
-| :------------------------------- | :--------------------------------------------------------------- |
-| **Disk encryption**              | Full-disk encryption on database volume                          |
-| **Field-level encryption**       | Identity document numbers encrypted with pgcrypto                |
+| Layer | Mechanism |
+|:---|:---|
+| **Disk encryption** | Full-disk encryption on database volume |
+| **Field-level encryption** | Identity document numbers encrypted with pgcrypto |
 | **Application-layer encryption** | OCR extracted data, AI raw responses encrypted before DB storage |
-| **Password storage**             | bcrypt (one-way hash, not encryption)                            |
-| **Refresh tokens**               | SHA-256 hash stored (not the raw token)                          |
+| **Password storage** | bcrypt (one-way hash, not encryption) |
+| **Refresh tokens** | SHA-256 hash stored (not the raw token) |
 
 ### 3.3 Key Management
 
@@ -207,12 +205,12 @@ Break-glass provides emergency access to patient records outside normal authoriz
 
 ### 5.1 Prompt Injection Protection
 
-| Threat                                                 | Mitigation                                                                                                                   |
-| :----------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------- |
-| **Direct prompt injection**                            | System instructions and user content use clear delimiters; user input is parameterized, not concatenated into system prompts |
-| **Indirect prompt injection** (via clinical documents) | Clinical record content is inserted into context with explicit boundary markers; AI output is never auto-executed            |
-| **Data exfiltration via AI**                           | AI responses are validated against expected schemas; AI cannot access URLs, send emails, or make external calls              |
-| **Model overreach**                                    | AI has no tools/function calls that modify state; AI is invoked as a text-in/text-out service only                           |
+| Threat | Mitigation |
+|:---|:---|
+| **Direct prompt injection** | System instructions and user content use clear delimiters; user input is parameterized, not concatenated into system prompts |
+| **Indirect prompt injection** (via clinical documents) | Clinical record content is inserted into context with explicit boundary markers; AI output is never auto-executed |
+| **Data exfiltration via AI** | AI responses are validated against expected schemas; AI cannot access URLs, send emails, or make external calls |
+| **Model overreach** | AI has no tools/function calls that modify state; AI is invoked as a text-in/text-out service only |
 
 ### 5.2 AI Data Boundaries
 
@@ -233,26 +231,26 @@ Break-glass provides emergency access to patient records outside normal authoriz
 
 ## 6. Security Headers
 
-| Header                      | Value                                                                           |
-| :-------------------------- | :------------------------------------------------------------------------------ |
-| `Strict-Transport-Security` | `max-age=31536000; includeSubDomains`                                           |
-| `Content-Security-Policy`   | Restrictive policy (no inline scripts, no external resources without allowlist) |
-| `X-Content-Type-Options`    | `nosniff`                                                                       |
-| `X-Frame-Options`           | `DENY`                                                                          |
-| `X-XSS-Protection`          | `0` (CSP is the modern replacement)                                             |
-| `Referrer-Policy`           | `strict-origin-when-cross-origin`                                               |
-| `Permissions-Policy`        | Disable camera, microphone, geolocation                                         |
+| Header | Value |
+|:---|:---|
+| `Strict-Transport-Security` | `max-age=31536000; includeSubDomains` |
+| `Content-Security-Policy` | Restrictive policy (no inline scripts, no external resources without allowlist) |
+| `X-Content-Type-Options` | `nosniff` |
+| `X-Frame-Options` | `DENY` |
+| `X-XSS-Protection` | `0` (CSP is the modern replacement) |
+| `Referrer-Policy` | `strict-origin-when-cross-origin` |
+| `Permissions-Policy` | Disable camera, microphone, geolocation |
 
 ---
 
 ## 7. Logging Security
 
-| Rule                                        | Enforcement                                                                         |
-| :------------------------------------------ | :---------------------------------------------------------------------------------- |
-| PHI never in logs                           | Log sanitization middleware strips PHI fields before logging                        |
-| Passwords never logged                      | Request body sanitization removes password fields                                   |
-| Tokens never logged                         | Authorization headers redacted in request logs                                      |
-| Error details not exposed to client         | Full error logged server-side; safe error summary returned to client                |
+| Rule | Enforcement |
+|:---|:---|
+| PHI never in logs | Log sanitization middleware strips PHI fields before logging |
+| Passwords never logged | Request body sanitization removes password fields |
+| Tokens never logged | Authorization headers redacted in request logs |
+| Error details not exposed to client | Full error logged server-side; safe error summary returned to client |
 | Audit events separate from operational logs | Different log streams — audit goes to immutable store, ops logs to standard logging |
 
 ---
@@ -298,12 +296,12 @@ To ensure tamper-evident audit logs, the system uses a strict cryptographic hash
 
 > "Technical control supporting compliance requirements; legal/regulatory compliance requires separate verification."
 
-| Data Category              | Definition                                   | Allowed in Logs? | Allowed in URLs? | AI Provider Visibility                    |
-| :------------------------- | :------------------------------------------- | :--------------: | :--------------: | :---------------------------------------- |
-| **PHI (Clinical Content)** | Diagnoses, SOAP notes, lab results           |      **NO**      |      **NO**      | Yes (via temporary context, not retained) |
-| **PII (Identity)**         | Names, DOB, phone, address, identity numbers |      **NO**      |      **NO**      | Patient name in context                   |
-| **Resource IDs**           | UUIDs (`patient_id`, `encounter_id`)         |       Yes        |       Yes        | Yes (for grounding links)                 |
-| **Metadata**               | Timestamps, status, interaction type         |       Yes        |       Yes        | Yes                                       |
-| **AI Raw Responses**       | The raw JSON/text from the LLM               |      **NO**      |      **NO**      | N/A (originates from provider)            |
+| Data Category | Definition | Allowed in Logs? | Allowed in URLs? | AI Provider Visibility |
+|:---|:---|:---:|:---:|:---|
+| **PHI (Clinical Content)** | Diagnoses, SOAP notes, lab results | **NO** | **NO** | Yes (via temporary context, not retained) |
+| **PII (Identity)** | Names, DOB, phone, address, identity numbers | **NO** | **NO** | Patient name in context |
+| **Resource IDs** | UUIDs (`patient_id`, `encounter_id`) | Yes | Yes | Yes (for grounding links) |
+| **Metadata** | Timestamps, status, interaction type | Yes | Yes | Yes |
+| **AI Raw Responses** | The raw JSON/text from the LLM | **NO** | **NO** | N/A (originates from provider) |
 
-_Note: Logs sanitize all request/response bodies by default, preserving only safe metadata and UUIDs._
+*Note: Logs sanitize all request/response bodies by default, preserving only safe metadata and UUIDs.*
