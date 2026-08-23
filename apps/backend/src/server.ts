@@ -1,12 +1,10 @@
-import express from 'express';
+import { app } from './app';
+import { config } from './config';
+import { logger } from './logger';
+import { setupGracefulShutdown } from './graceful-shutdown';
 
-const app = express();
-const port = process.env.PORT || 3001;
-
-app.get('/api/v1/health', (req, res) => {
-  res.status(200).json({ status: 'ok' });
+const server = app.listen(config.PORT, () => {
+  logger.info(`Server is running in ${config.NODE_ENV} mode on port ${config.PORT}`);
 });
 
-app.listen(port, () => {
-  console.log(`Backend listening on port ${port}`);
-});
+setupGracefulShutdown(server);

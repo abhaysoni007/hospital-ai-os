@@ -6,9 +6,16 @@
   "private": true,
   "scripts": {
     "build": "tsc",
-    "lint": "eslint src"
+    "lint": "eslint src",
+    "test": "vitest run"
   },
   "devDependencies": {
-    "typescript": "^5.4.5"
+    "@types/uuid": "^11.0.0",
+    "typescript": "^5.4.5",
+    "vitest": "^4.1.11"
+  },
+  "dependencies": {
+    "uuid": "^14.0.2",
+    "zod": "^4.4.3"
   }
 }
