@@ -10,6 +10,8 @@ import { requestLogMiddleware } from './middleware/request-log.middleware';
 import { errorHandlerMiddleware } from './middleware/error-handler.middleware';
 import { healthRoutes } from './modules/health/health.routes';
 import { authRoutes } from './modules/auth/auth.routes';
+// M5 Authorization test probe — infrastructure/testing ONLY, no business logic
+import { authorizationProbeRoutes } from './modules/authorization-probe/probe.routes';
 
 export const app = express();
 
@@ -32,6 +34,8 @@ app.use(rateLimitMiddleware);
 // 5. routes
 app.use('/api/v1/health', healthRoutes);
 app.use('/api/v1/auth', authRoutes);
+// M5 test infrastructure only — no business logic, no patient data
+app.use('/api/v1/_test/authz-probe', authorizationProbeRoutes);
 
 // 6. global error handler
 app.use(errorHandlerMiddleware);
