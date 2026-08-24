@@ -15,7 +15,10 @@ export class PatientController {
 
       const correlationId = req.headers['x-correlation-id'] as string || crypto.randomUUID();
 
-      const newPatient = await patientService.registerPatient(payload, user.staffId, correlationId);
+      const newPatient = await patientService.registerPatient(payload, user.staffId, correlationId, {
+        role: user.role,
+        departmentId: user.departmentId,
+      });
       
       res.status(201).json({
         data: newPatient,

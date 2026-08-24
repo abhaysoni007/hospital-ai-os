@@ -1,7 +1,7 @@
 import { createHash } from 'crypto';
 import { db } from '../../db';
 import { auditEvents } from '../../db/schema/audit';
-import { desc } from 'drizzle-orm';
+import { desc, sql } from 'drizzle-orm';
 import { CreateAuditEventRequest } from 'shared';
 
 export class AuditService {
@@ -11,11 +11,14 @@ export class AuditService {
   async logEvent(
     payload: CreateAuditEventRequest,
     correlationId: string,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    externalTx?: any,
   ): Promise<void> {
-    // In a high-throughput production environment, this requires a serializable transaction 
-    // or a dedicated sequence generator to avoid race conditions on previousHash.
-    // We use a transaction here to safely read the latest hash and insert.
-    await db.transaction(async (tx) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const runInTransaction = async (tx: any) => {
+      // SECURITY REMEDIATION: Strict table lock for hash-chain concurrency
+      await tx.execute(sql`LOCK TABLE audit_events IN EXCLUSIVE MODE`);
+
       // 1. Get the latest event for previousHash
       const latestEvent = await tx.query.auditEvents.findFirst({
         orderBy: [desc(auditEvents.sequenceNumber)],
@@ -60,7 +63,13 @@ export class AuditService {
         previousHash,
         recordHash,
       });
-    });
+    };
+
+    if (externalTx) {
+      await runInTransaction(externalTx);
+    } else {
+      await db.transaction(runInTransaction);
+    }
   }
 }
 

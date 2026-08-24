@@ -2,7 +2,6 @@ import { Request, Response, NextFunction } from 'express';
 import { db } from '../../db';
 import { auditEvents } from '../../db/schema/audit';
 import { desc, and, eq, gte, lte } from 'drizzle-orm';
-import { AppError } from 'shared';
 import { getAuditEventsQuerySchema } from 'shared';
 
 export class AuditController {

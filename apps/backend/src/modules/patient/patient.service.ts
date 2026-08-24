@@ -11,81 +11,72 @@ export class PatientService {
    * Format: MRN-YYYY-XXXXX
    */
   private async generateMRN(): Promise<string> {
-    const year = new Date().getFullYear();
-    const prefix = `MRN-${year}-`;
-
-    const latestPatient = await db.query.patients.findFirst({
-      where: ilike(patients.mrn, `${prefix}%`),
-      orderBy: [desc(patients.mrn)],
-    });
-
-    let sequence = 1;
-    if (latestPatient && latestPatient.mrn) {
-      const lastSequenceStr = latestPatient.mrn.split('-')[2];
-      const lastSequence = parseInt(lastSequenceStr, 10);
-      if (!isNaN(lastSequence)) {
-        sequence = lastSequence + 1;
-      }
-    }
-
-    const paddedSequence = sequence.toString().padStart(5, '0');
-    return `${prefix}${paddedSequence}`;
+    // SECURITY REMEDIATION: Unsafe MRN generation removed.
+    // Generation DEFERRED pending architectural decision (ADR-011).
+    throw new Error('MRN generation is DEFERRED pending architectural decision (ADR-011).');
   }
 
   /**
    * Registers a new patient, generating an MRN and logging the action.
    */
-  async registerPatient(payload: RegisterPatientRequest, creatorId: string, correlationId: string) {
-    // Basic duplicate check (exact match on name and DOB or phone)
-    const existing = await db.query.patients.findFirst({
-      where: or(
-        and(
-          ilike(patients.firstName, payload.firstName),
-          ilike(patients.lastName, payload.lastName),
-          eq(patients.dateOfBirth, payload.dateOfBirth)
+  async registerPatient(
+    payload: RegisterPatientRequest, 
+    creatorId: string, 
+    correlationId: string,
+    authContext: { role: string; departmentId: string }
+  ) {
+    return await db.transaction(async (tx) => {
+      // Basic duplicate check (exact match on name and DOB or phone)
+      const existing = await tx.query.patients.findFirst({
+        where: or(
+          and(
+            ilike(patients.firstName, payload.firstName),
+            ilike(patients.lastName, payload.lastName),
+            eq(patients.dateOfBirth, payload.dateOfBirth)
+          ),
+          eq(patients.phonePrimary, payload.phonePrimary)
         ),
-        eq(patients.phonePrimary, payload.phonePrimary)
-      ),
+      });
+
+      if (existing) {
+        throw new ConflictError(
+          'A patient with similar details or same phone number already exists.',
+          { code: 'DUPLICATE_PATIENT' }
+        );
+      }
+
+      const mrn = await this.generateMRN();
+
+      const [newPatient] = await tx.insert(patients).values({
+        mrn,
+        firstName: payload.firstName,
+        lastName: payload.lastName,
+        dateOfBirth: payload.dateOfBirth,
+        gender: payload.gender,
+        phonePrimary: payload.phonePrimary,
+        phoneEmergency: payload.phoneEmergency,
+        emergencyContactName: payload.emergencyContactName,
+        addressLine1: payload.addressLine1,
+        addressCity: payload.addressCity,
+        addressState: payload.addressState,
+        addressPostalCode: payload.addressPostalCode,
+        createdBy: creatorId,
+      }).returning();
+
+      // Log the audit event synchronously within the same transaction
+      await auditService.logEvent({
+        eventType: 'PATIENT_REGISTERED',
+        actorId: creatorId,
+        actorRole: authContext.role,
+        actorDepartment: authContext.departmentId,
+        targetType: 'PATIENT',
+        targetId: newPatient.id,
+        patientId: newPatient.id,
+        actionDetail: { mrn },
+      }, correlationId, tx);
+
+      return newPatient;
     });
-
-    if (existing) {
-      throw new ConflictError(
-        'A patient with similar details or same phone number already exists.',
-        { code: 'DUPLICATE_PATIENT' }
-      );
-    }
-
-    const mrn = await this.generateMRN();
-
-    const [newPatient] = await db.insert(patients).values({
-      mrn,
-      firstName: payload.firstName,
-      lastName: payload.lastName,
-      dateOfBirth: payload.dateOfBirth,
-      gender: payload.gender,
-      phonePrimary: payload.phonePrimary,
-      phoneEmergency: payload.phoneEmergency,
-      emergencyContactName: payload.emergencyContactName,
-      addressLine1: payload.addressLine1,
-      addressCity: payload.addressCity,
-      addressState: payload.addressState,
-      addressPostalCode: payload.addressPostalCode,
-      createdBy: creatorId,
-    }).returning();
-
-    // Log the audit event synchronously
-    await auditService.logEvent({
-      eventType: 'PATIENT_REGISTERED',
-      actorId: creatorId,
-      actorRole: 'SYSTEM_USER', // In a real flow, this comes from the auth context
-      actorDepartment: 'ADMISSIONS', // From auth context
-      targetType: 'PATIENT',
-      targetId: newPatient.id,
-      patientId: newPatient.id,
-      actionDetail: { mrn },
-    }, correlationId);
-
-    return newPatient;
   }
 
   /**
@@ -110,13 +101,12 @@ export class PatientService {
       conditions.push(eq(patients.phonePrimary, query.phone));
     }
 
-    // Fuzzy search using pg_trgm (we'll simulate SIMILARITY for now if standard OR)
+    // True Fuzzy search using pg_trgm
     if (query.query) {
       conditions.push(
         or(
-          ilike(patients.firstName, `%${query.query}%`),
-          ilike(patients.lastName, `%${query.query}%`),
-          ilike(patients.mrn, `%${query.query}%`)
+          sql`(${patients.firstName} || ' ' || ${patients.lastName}) % ${query.query}`,
+          eq(patients.mrn, query.query)
         )
       );
     }

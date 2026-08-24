@@ -43,12 +43,13 @@ export default function NewPatientPage() {
     try {
       const response = await patientService.registerPatient({
         ...formData,
-        gender: formData.gender as any,
+        gender: formData.gender as "male" | "female" | "other" | "undisclosed",
       });
       router.push(`/patients/${response.data.id}`);
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
-      setError(err.message || 'An error occurred during registration.');
+      const error = err as Error;
+      setError(error.message || 'An error occurred during registration.');
       setLoading(false);
     }
   };

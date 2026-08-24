@@ -15,9 +15,13 @@
 const fs = require('fs');
 const path = require('path');
 
-const FIGMA_TOKEN =
-  process.env.FIGMA_ACCESS_TOKEN || 'figd_FfCP9e5o8twfQ0-A21UMhfdaQnWprPcANol1XNG-';
+const FIGMA_TOKEN = process.env.FIGMA_ACCESS_TOKEN;
 const fileKey = process.argv[2] || process.env.FIGMA_FILE_KEY;
+
+if (!FIGMA_TOKEN) {
+  console.log('❌ Error: FIGMA_ACCESS_TOKEN is required. Set it in your environment variables.');
+  process.exit(1);
+}
 
 if (!fileKey) {
   console.log('❌ Error: Figma File Key is required.');
