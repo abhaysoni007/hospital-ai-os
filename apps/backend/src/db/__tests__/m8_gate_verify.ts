@@ -8,10 +8,11 @@
 import request from 'supertest';
 import bcrypt from 'bcrypt';
 import crypto from 'crypto';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { db } from '../../db';
 import { patients } from '../../db/schema/patients';
 import { staff, departments } from '../../db/schema/staff';
+import { appointmentTokenCounters } from '../../db/schema/appointments';
 import { app } from '../../app';
 
 const RUN = crypto.randomUUID().slice(0, 8);
@@ -41,10 +42,7 @@ async function main() {
   }
   const deptId = dept.id;
 
-  async function ensureStaff(
-    email: string,
-    role: 'physician' | 'receptionist',
-  ): Promise<string> {
+  async function ensureStaff(email: string, role: 'physician' | 'receptionist'): Promise<string> {
     const existing = await db.query.staff.findFirst({ where: eq(staff.email, email) });
     if (existing) return existing.id;
     const [row] = await db
@@ -66,6 +64,14 @@ async function main() {
   const physicianId = await ensureStaff('m8g-physician@test.hospital', 'physician');
   const receptionistId = await ensureStaff('m8g-receptionist@test.hospital', 'receptionist');
 
+  // ADR-012 counters persist across runs; reset for fixture doctors so the
+  // strict "tokenNumber === 1" assertion holds on every gate run.
+  await db
+    .delete(appointmentTokenCounters)
+    .where(
+      sql`${appointmentTokenCounters.doctorId} IN (${physicianId}::uuid, ${receptionistId}::uuid)`,
+    );
+
   const patient = (
     await db
       .insert(patients)
@@ -86,7 +92,11 @@ async function main() {
     const loginRes = await request(app)
       .post('/api/v1/auth/login')
       .send({ email: 'm8g-receptionist@test.hospital', password: 'Gate-Passw0rd!' });
-    check('login receptionist → 200 + accessToken', loginRes.status === 200 && !!loginRes.body.data.accessToken, loginRes.body);
+    check(
+      'login receptionist → 200 + accessToken',
+      loginRes.status === 200 && !!loginRes.body.data.accessToken,
+      loginRes.body,
+    );
     const recepToken = loginRes.body.data.accessToken;
 
     const physLogin = await request(app)
@@ -103,30 +113,28 @@ async function main() {
     check('POST /appointments unauthenticated → 401', anon.status === 401);
 
     // ---- Booking ------------------------------------------------------------
-    const bookRes = await request(app)
-      .post('/api/v1/appointments')
-      .set(auth(recepToken))
-      .send({
-        patientId: patient.id,
-        doctorId: physicianId,
-        departmentId: deptId,
-        scheduledDate: futureDate,
-        scheduledTime: '09:15',
-      });
-    check('book appointment → 201 + tokenNumber 1', bookRes.status === 201 && bookRes.body.data.tokenNumber === 1, bookRes.body);
+    const bookRes = await request(app).post('/api/v1/appointments').set(auth(recepToken)).send({
+      patientId: patient.id,
+      doctorId: physicianId,
+      departmentId: deptId,
+      scheduledDate: futureDate,
+      scheduledTime: '09:15',
+    });
+    check(
+      'book appointment → 201 + tokenNumber 1',
+      bookRes.status === 201 && bookRes.body.data.tokenNumber === 1,
+      bookRes.body,
+    );
     const apptId = bookRes.body.data?.id;
 
     // Double booking → 409 SLOT_UNAVAILABLE surfaced through the API envelope
-    const doubleRes = await request(app)
-      .post('/api/v1/appointments')
-      .set(auth(recepToken))
-      .send({
-        patientId: patient.id,
-        doctorId: physicianId,
-        departmentId: deptId,
-        scheduledDate: futureDate,
-        scheduledTime: '09:15',
-      });
+    const doubleRes = await request(app).post('/api/v1/appointments').set(auth(recepToken)).send({
+      patientId: patient.id,
+      doctorId: physicianId,
+      departmentId: deptId,
+      scheduledDate: futureDate,
+      scheduledTime: '09:15',
+    });
     check(
       'double booking → 409 SLOT_UNAVAILABLE',
       doubleRes.status === 409 && doubleRes.body.error.code === 'SLOT_UNAVAILABLE',
@@ -158,10 +166,16 @@ async function main() {
     const recheckin = await request(app)
       .patch(`/api/v1/appointments/${apptId}/check-in`)
       .set(auth(recepToken));
-    check('second check-in → 409 INVALID_TRANSITION', recheckin.status === 409 && recheckin.body.error.code === 'INVALID_TRANSITION', recheckin.body);
+    check(
+      'second check-in → 409 INVALID_TRANSITION',
+      recheckin.status === 409 && recheckin.body.error.code === 'INVALID_TRANSITION',
+      recheckin.body,
+    );
 
     // ---- ADR-013 PHI boundary -------------------------------------------------
-    const detailRecep = await request(app).get(`/api/v1/encounters/${encounterId}`).set(auth(recepToken));
+    const detailRecep = await request(app)
+      .get(`/api/v1/encounters/${encounterId}`)
+      .set(auth(recepToken));
     check(
       'encounter detail (receptionist): metadata only, NO chiefComplaint/clinical/diagnostic keys',
       detailRecep.status === 200 &&
@@ -180,7 +194,9 @@ async function main() {
     // m8g physician IS the assigned doctor here → should succeed; scope failure covered by unit tests
     check(
       'activate by assigned physician → active, version 2',
-      wrongPhysician.status === 200 && wrongPhysician.body.data.status === 'active' && wrongPhysician.body.data.version === 2,
+      wrongPhysician.status === 200 &&
+        wrongPhysician.body.data.status === 'active' &&
+        wrongPhysician.body.data.version === 2,
       wrongPhysician.body,
     );
 
@@ -200,11 +216,12 @@ async function main() {
     const labTokenRes = await request(app)
       .patch(`/api/v1/appointments/${apptId}/cancel`)
       .set(auth(physToken));
-    check('physician cancel appointment → 403 (permission not granted)', labTokenRes.status === 403);
+    check(
+      'physician cancel appointment → 403 (permission not granted)',
+      labTokenRes.status === 403,
+    );
 
-    const adminList = await request(app)
-      .get('/api/v1/encounters')
-      .set(auth(physToken));
+    const adminList = await request(app).get('/api/v1/encounters').set(auth(physToken));
     check('physician GET /encounters → 200', adminList.status === 200);
 
     console.log(`\n=== M8 GATE: ${pass} passed, ${fail} failed ===`);

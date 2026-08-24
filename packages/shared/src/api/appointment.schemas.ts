@@ -73,10 +73,10 @@ export type AppointmentListItem = AppointmentResponse & {
 };
 
 /**
- * Read-only booking support data for the booking form.
- * NOTE (M8 report): this is a minimal read-only directory read required because
- * staff management (§2.10 admin endpoints, M20) does not exist yet. It grants no
- * new permission surface beyond `appointment:create` and exposes staff names only.
+ * ADR-014 — read-only booking support data for the booking form (M8 support
+ * endpoint, ratified). Department-scoped server-side; exposes department
+ * id/name/code and physician id/name/departmentId ONLY — no emails, employee
+ * IDs, or account fields. Superseded by §2.10 admin endpoints at M20.
  */
 export const bookingOptionsResponseSchema = z.object({
   departments: z.array(z.object({ id: z.string().uuid(), name: z.string(), code: z.string() })),

@@ -587,7 +587,23 @@ describe('M8 Appointment Module (booking / token / cancel / check-in)', () => {
     ).rejects.toMatchObject({ code: 'AUTHORIZATION_ERROR' });
   });
 
-  it('M. Hash chain remains continuous after the whole suite', async () => {
+  it('M. Booking-options (ADR-014): department-scoped, name-only fields', async () => {
+    const options = await appointmentService.getBookingOptions(receptionistCtx());
+
+    // Receptionist sees ONLY their own department
+    expect(options.departments).toHaveLength(1);
+    expect(options.departments[0].id).toBe(deptId);
+    // Only physicians of that department, with no sensitive fields
+    expect(options.physicians.length).toBeGreaterThanOrEqual(2);
+    for (const p of options.physicians) {
+      expect(p.departmentId).toBe(deptId);
+      expect(p).not.toHaveProperty('email');
+      expect(p).not.toHaveProperty('passwordHash');
+      expect(p).not.toHaveProperty('employeeId');
+    }
+  });
+
+  it('N. Hash chain remains continuous after the whole suite', async () => {
     const rows = await db
       .select()
       .from(auditEvents)

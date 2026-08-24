@@ -364,19 +364,39 @@ export class AppointmentService {
   }
 
   /**
-   * Read-only booking support data (departments + active physicians).
-   * Exists because staff management endpoints (§2.10, M20) are out of scope;
-   * gated by `appointment:create` and exposes names only. Flagged in M8 report.
+   * ADR-014 — read-only booking support data (departments + active physicians).
+   *
+   * Exists because staff-management endpoints (api-architecture §2.10) belong to
+   * M20 and the only `appointment:create` holder (receptionist) lacks
+   * `staff:manage`. Ratified as a temporary M8 support read:
+   * - read-only; no mutation of staff or departments
+   * - exposes ONLY: department id/name/code and physician id/first/last/departmentId
+   * - no emails, employee IDs, status, auth or credential fields
+   * - department-scoped: non-admin callers see only their own department and
+   *   its physicians, matching the booking service's own scope rule
    */
-  async getBookingOptions(): Promise<BookingOptionsResponse> {
+  async getBookingOptions(authContext: {
+    role: string;
+    departmentId: string;
+  }): Promise<BookingOptionsResponse> {
+    const scoped = authContext.role !== 'hospital_admin';
+
     const deptRows = await db.query.departments.findMany({
-      where: eq(departments.status, 'active'),
+      where: scoped
+        ? and(eq(departments.status, 'active'), eq(departments.id, authContext.departmentId))
+        : eq(departments.status, 'active'),
       columns: { id: true, name: true, code: true },
       orderBy: [departments.name],
     });
 
     const physicians = await db.query.staff.findMany({
-      where: and(eq(staff.role, 'physician'), eq(staff.status, 'active')),
+      where: scoped
+        ? and(
+            eq(staff.role, 'physician'),
+            eq(staff.status, 'active'),
+            eq(staff.departmentId, authContext.departmentId),
+          )
+        : and(eq(staff.role, 'physician'), eq(staff.status, 'active')),
       columns: { id: true, firstName: true, lastName: true, departmentId: true },
     });
 

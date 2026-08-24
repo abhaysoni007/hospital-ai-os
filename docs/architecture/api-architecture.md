@@ -124,6 +124,21 @@ Validation: scheduledDate must be today or future; doctor must be in specified d
 Errors: 400 VALIDATION_ERROR, 409 SLOT_UNAVAILABLE
 ```
 
+| Method | Path | Purpose | Auth | Permission | Audit Event |
+|:---|:---|:---|:---|:---|:---|
+| GET | `/appointments/booking-options` | Read-only department + physician directory for the booking form (ADR-014) | Required | `appointment:create` | — |
+
+```
+GET /appointments/booking-options  (ADR-014 — temporary M8 support read)
+Response: { data: {
+  departments: [ { id, name, code } ],
+  physicians: [ { id, firstName, lastName, departmentId } ]
+} }
+Scope: non-admin callers receive only their own department and its physicians.
+Fields are limited to booking needs; no emails, employee IDs, or account fields.
+Superseded by §2.10 admin endpoints at M20.
+```
+
 ---
 
 ### 2.4 Encounters (`/api/v1/encounters`)

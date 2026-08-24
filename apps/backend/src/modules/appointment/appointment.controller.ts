@@ -88,9 +88,15 @@ export class AppointmentController {
     }
   }
 
-  async getBookingOptions(_req: Request, res: Response, next: NextFunction) {
+  async getBookingOptions(req: Request, res: Response, next: NextFunction) {
     try {
-      const options = await appointmentService.getBookingOptions();
+      const user = req.user;
+      if (!user) throw new AuthenticationError('Unauthorized');
+
+      const options = await appointmentService.getBookingOptions({
+        role: user.role,
+        departmentId: user.departmentId,
+      });
       res.status(200).json({ data: options });
     } catch (error) {
       next(error);
