@@ -9,6 +9,7 @@ export const corsMiddleware = cors({
   origin: config.CORS_ORIGIN,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'x-request-id'],
+  credentials: true,
 });
 
 export const rateLimitMiddleware = rateLimit({
