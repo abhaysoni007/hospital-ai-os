@@ -1,0 +1,426 @@
+<svg width="1440" height="1024" viewBox="0 0 1440 1024" fill="none" xmlns="http://www.w3.org/2000/svg" style="background:#F8FAFC; font-family:'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+  <defs>
+    <filter id="card-shadow" x="-4" y="-2" width="108%" height="108%" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="1" stdDeviation="2" flood-color="#0F172A" flood-opacity="0.06"/>
+    </filter>
+    <filter id="alert-shadow" x="-4" y="-2" width="108%" height="108%" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#DC2626" flood-opacity="0.08"/>
+    </filter>
+  </defs>
+
+  <!-- BACKGROUND -->
+  <rect width="1440" height="1024" fill="#F8FAFC"/>
+
+  <!-- =====================================================================
+       1. SIDEBAR (Width: 248px, Height: 1024px)
+       ===================================================================== -->
+  <g id="Sidebar">
+    <rect width="248" height="1024" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1"/>
+    
+    <!-- Logo & Brand Header -->
+    <g transform="translate(24, 24)">
+      <rect width="36" height="36" rx="8" fill="#1D4ED8"/>
+      <!-- Medical Node Icon -->
+      <path d="M18 10V26M10 18H26" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round"/>
+      <circle cx="18" cy="18" r="4" fill="#FFFFFF"/>
+      <circle cx="18" cy="18" r="2" fill="#1D4ED8"/>
+      <text x="46" y="22" font-size="16" font-weight="700" fill="#0F172A" letter-spacing="-0.02em">Hospital AI OS</text>
+      <text x="46" y="34" font-size="10" font-weight="600" fill="#2563EB" letter-spacing="0.05em">CLINICAL OPS</text>
+    </g>
+
+    <line x1="20" y1="76" x2="228" y2="76" stroke="#F1F5F9" stroke-width="1"/>
+
+    <!-- NAVIGATION GROUPS -->
+    <!-- Operations Section -->
+    <text x="24" y="104" font-size="11" font-weight="600" fill="#94A3B8" letter-spacing="0.06em">OPERATIONS</text>
+    
+    <!-- Active Nav: Dashboard -->
+    <g transform="translate(16, 116)">
+      <rect width="216" height="40" rx="8" fill="#EFF6FF"/>
+      <!-- Grid/Dashboard Icon -->
+      <rect x="14" y="12" width="6" height="6" rx="1.5" fill="#1D4ED8"/>
+      <rect x="22" y="12" width="6" height="6" rx="1.5" fill="#1D4ED8"/>
+      <rect x="14" y="20" width="6" height="6" rx="1.5" fill="#1D4ED8"/>
+      <rect x="22" y="20" width="6" height="6" rx="1.5" fill="#1D4ED8"/>
+      <text x="38" y="25" font-size="14" font-weight="600" fill="#1D4ED8">Dashboard</text>
+    </g>
+
+    <!-- Nav Item: Patients -->
+    <g transform="translate(16, 162)">
+      <rect width="216" height="40" rx="8" fill="transparent"/>
+      <circle cx="20" cy="18" r="4" stroke="#475569" stroke-width="1.5"/>
+      <path d="M12 26C12 23 15 21 20 21C25 21 28 23 28 26" stroke="#475569" stroke-width="1.5" stroke-linecap="round"/>
+      <text x="38" y="25" font-size="14" font-weight="500" fill="#475569">Patients</text>
+    </g>
+
+    <!-- Nav Item: Appointments -->
+    <g transform="translate(16, 208)">
+      <rect width="216" height="40" rx="8" fill="transparent"/>
+      <rect x="13" y="12" width="16" height="15" rx="2" stroke="#475569" stroke-width="1.5"/>
+      <line x1="17" y1="9" x2="17" y2="12" stroke="#475569" stroke-width="1.5" stroke-linecap="round"/>
+      <line x1="25" y1="9" x2="25" y2="12" stroke="#475569" stroke-width="1.5" stroke-linecap="round"/>
+      <text x="38" y="25" font-size="14" font-weight="500" fill="#475569">Appointments</text>
+    </g>
+
+    <!-- Nav Item: Encounters -->
+    <g transform="translate(16, 254)">
+      <rect width="216" height="40" rx="8" fill="transparent"/>
+      <path d="M14 12H28M14 18H24M14 24H20" stroke="#475569" stroke-width="1.5" stroke-linecap="round"/>
+      <text x="38" y="25" font-size="14" font-weight="500" fill="#475569">Encounters</text>
+    </g>
+
+    <!-- Clinical Section -->
+    <text x="24" y="322" font-size="11" font-weight="600" fill="#94A3B8" letter-spacing="0.06em">CLINICAL</text>
+
+    <!-- Nav Item: Clinical Records -->
+    <g transform="translate(16, 334)">
+      <rect width="216" height="40" rx="8" fill="transparent"/>
+      <path d="M13 11H25C26.1 11 27 11.9 27 13V27H15L13 25V11Z" stroke="#475569" stroke-width="1.5"/>
+      <text x="38" y="25" font-size="14" font-weight="500" fill="#475569">Clinical Records</text>
+    </g>
+
+    <!-- Nav Item: Diagnostics / Labs -->
+    <g transform="translate(16, 380)">
+      <rect width="216" height="40" rx="8" fill="transparent"/>
+      <path d="M16 11V16L12 24C11.5 25 12.2 26 13.3 26H26.7C27.8 26 28.5 25 28 24L24 16V11" stroke="#475569" stroke-width="1.5"/>
+      <text x="38" y="25" font-size="14" font-weight="500" fill="#475569">Diagnostics</text>
+    </g>
+
+    <!-- Nav Item: Tasks -->
+    <g transform="translate(16, 426)">
+      <rect width="216" height="40" rx="8" fill="transparent"/>
+      <rect x="13" y="12" width="16" height="16" rx="3" stroke="#475569" stroke-width="1.5"/>
+      <path d="M17 20L20 23L25 17" stroke="#475569" stroke-width="1.5" stroke-linecap="round"/>
+      <text x="38" y="25" font-size="14" font-weight="500" fill="#475569">Tasks</text>
+      <!-- Task count badge -->
+      <rect x="186" y="12" width="22" height="18" rx="9" fill="#F1F5F9"/>
+      <text x="194" y="25" font-size="11" font-weight="600" fill="#475569">6</text>
+    </g>
+
+    <!-- Intelligence Section -->
+    <text x="24" y="494" font-size="11" font-weight="600" fill="#94A3B8" letter-spacing="0.06em">INTELLIGENCE</text>
+
+    <!-- Nav Item: AI Workspace -->
+    <g transform="translate(16, 506)">
+      <rect width="216" height="40" rx="8" fill="#F5F3FF" stroke="#DDD6FE" stroke-width="1"/>
+      <path d="M21 11L22.5 15.5L27 17L22.5 18.5L21 23L19.5 18.5L15 17L19.5 15.5L21 11Z" fill="#7C3AED"/>
+      <text x="38" y="25" font-size="14" font-weight="600" fill="#6D28D9">AI Workspace</text>
+      <rect x="168" y="12" width="38" height="18" rx="4" fill="#EDE9FE"/>
+      <text x="174" y="24" font-size="10" font-weight="700" fill="#6D28D9">NEW</text>
+    </g>
+
+    <!-- User Profile Footer -->
+    <g transform="translate(16, 944)">
+      <rect width="216" height="60" rx="10" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1"/>
+      <!-- Avatar -->
+      <circle cx="34" cy="30" r="18" fill="#DBEAFE"/>
+      <text x="26" y="35" font-size="13" font-weight="700" fill="#1D4ED8">SC</text>
+      <!-- User Info -->
+      <text x="60" y="24" font-size="13" font-weight="600" fill="#0F172A">Dr. Sarah Chen</text>
+      <text x="60" y="40" font-size="11" font-weight="500" fill="#64748B">Physician • Cardio</text>
+    </g>
+  </g>
+
+  <!-- =====================================================================
+       2. TOP HEADER (Width: 1192px, Height: 64px)
+       ===================================================================== -->
+  <g id="TopHeader" transform="translate(248, 0)">
+    <rect width="1192" height="64" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1"/>
+    
+    <!-- Breadcrumb -->
+    <text x="32" y="37" font-size="14" font-weight="500" fill="#64748B">Operations</text>
+    <text x="108" y="37" font-size="14" font-weight="500" fill="#CBD5E1">/</text>
+    <text x="122" y="37" font-size="14" font-weight="600" fill="#0F172A">Mission Control</text>
+
+    <!-- Center Command Search Bar (Cmd+K) -->
+    <g transform="translate(360, 12)">
+      <rect width="440" height="40" rx="8" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1"/>
+      <circle cx="20" cy="20" r="6" stroke="#94A3B8" stroke-width="1.5"/>
+      <line x1="24.5" y1="24.5" x2="29" y2="29" stroke="#94A3B8" stroke-width="1.5" stroke-linecap="round"/>
+      <text x="36" y="25" font-size="13" font-weight="400" fill="#94A3B8">Search patients (Name, MRN), clinical records, orders...</text>
+      <rect x="382" y="8" width="46" height="24" rx="4" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1"/>
+      <text x="390" y="24" font-size="11" font-weight="600" fill="#64748B">⌘ K</text>
+    </g>
+
+    <!-- Right Header Actions -->
+    <g transform="translate(1030, 16)">
+      <!-- Help Icon -->
+      <circle cx="16" cy="16" r="16" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1"/>
+      <text x="12" y="21" font-size="13" font-weight="600" fill="#64748B">?</text>
+      
+      <!-- Notification Icon with Red Badge -->
+      <g transform="translate(44, 0)">
+        <circle cx="16" cy="16" r="16" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1"/>
+        <path d="M12 18H20C20 18 21 17 21 14V11C21 8.2 18.8 6 16 6C13.2 6 11 8.2 11 11V14C11 17 12 18 12 18Z" stroke="#475569" stroke-width="1.5"/>
+        <circle cx="23" cy="8" r="5" fill="#DC2626"/>
+        <text x="21" y="11.5" font-size="9" font-weight="700" fill="#FFFFFF">1</text>
+      </g>
+
+      <!-- Department Tag -->
+      <rect x="88" y="4" width="60" height="24" rx="12" fill="#EFF6FF"/>
+      <text x="96" y="20" font-size="11" font-weight="600" fill="#1D4ED8">OPD-A</text>
+    </g>
+  </g>
+
+  <!-- =====================================================================
+       3. MAIN CONTENT CANVAS (Padding: 32px)
+       ===================================================================== -->
+  <g id="MainContent" transform="translate(280, 88)">
+
+    <!-- Top Greeting & Live Status -->
+    <text x="0" y="26" font-size="24" font-weight="700" fill="#0F172A" letter-spacing="-0.01em">Good morning, Dr. Sarah Chen</text>
+    <text x="0" y="48" font-size="14" font-weight="400" fill="#64748B">Here is your clinical operations overview for Cardiology Clinic (Room 302).</text>
+
+    <!-- ===================================================================
+         4 KPI METRIC CARDS (4-Column Grid)
+         =================================================================== -->
+    <g id="KPICards" transform="translate(0, 68)">
+      
+      <!-- Card 1: Today's Appointments -->
+      <g transform="translate(0, 0)">
+        <rect width="260" height="106" rx="10" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1" filter="url(#card-shadow)"/>
+        <rect x="16" y="16" width="32" height="32" rx="6" fill="#EFF6FF"/>
+        <rect x="23" y="23" width="18" height="18" rx="2" stroke="#2563EB" stroke-width="1.5"/>
+        <text x="58" y="28" font-size="13" font-weight="600" fill="#64748B">Today's Appointments</text>
+        <text x="58" y="56" font-size="28" font-weight="700" fill="#0F172A">24</text>
+        <rect x="16" y="74" width="8" height="8" rx="4" fill="#16A34A"/>
+        <text x="30" y="82" font-size="12" font-weight="500" fill="#166534">8 remaining in queue</text>
+      </g>
+
+      <!-- Card 2: Active Encounters -->
+      <g transform="translate(280, 0)">
+        <rect width="260" height="106" rx="10" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1" filter="url(#card-shadow)"/>
+        <rect x="16" y="16" width="32" height="32" rx="6" fill="#F0FDF4"/>
+        <path d="M24 32V24H32M24 24L34 34" stroke="#16A34A" stroke-width="2" stroke-linecap="round"/>
+        <text x="58" y="28" font-size="13" font-weight="600" fill="#64748B">Active Encounters</text>
+        <text x="58" y="56" font-size="28" font-weight="700" fill="#0F172A">8</text>
+        <text x="16" y="82" font-size="12" font-weight="500" fill="#475569">3 in consultation room</text>
+      </g>
+
+      <!-- Card 3: Pending Tasks -->
+      <g transform="translate(560, 0)">
+        <rect width="260" height="106" rx="10" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1" filter="url(#card-shadow)"/>
+        <rect x="16" y="16" width="32" height="32" rx="6" fill="#FFFBEB"/>
+        <rect x="23" y="23" width="18" height="18" rx="3" stroke="#D97706" stroke-width="1.5"/>
+        <text x="58" y="28" font-size="13" font-weight="600" fill="#64748B">Pending Tasks</text>
+        <text x="58" y="56" font-size="28" font-weight="700" fill="#0F172A">6</text>
+        <rect x="16" y="74" width="70" height="20" rx="10" fill="#FEF3C7"/>
+        <text x="24" y="88" font-size="11" font-weight="700" fill="#92400E">2 HIGH PRIORITY</text>
+      </g>
+
+      <!-- Card 4: Critical Alerts -->
+      <g transform="translate(840, 0)">
+        <rect width="288" height="106" rx="10" fill="#FEF2F2" stroke="#EF4444" stroke-width="1.5" filter="url(#alert-shadow)"/>
+        <rect x="16" y="16" width="32" height="32" rx="6" fill="#DC2626"/>
+        <path d="M32 24L32 30M32 34V35" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round"/>
+        <text x="58" y="28" font-size="13" font-weight="700" fill="#991B1B">Critical Alerts</text>
+        <text x="58" y="56" font-size="28" font-weight="800" fill="#DC2626">1</text>
+        <text x="16" y="82" font-size="12" font-weight="700" fill="#B91C1C">⚠️ Potassium Panic Value (MRN-92841)</text>
+      </g>
+    </g>
+
+    <!-- ===================================================================
+         CRITICAL LAB VALUE ALERT BANNER
+         =================================================================== -->
+    <g id="CriticalAlertBanner" transform="translate(0, 194)">
+      <rect width="1128" height="60" rx="8" fill="#FEF2F2" stroke="#EF4444" stroke-width="1.5"/>
+      <circle cx="28" cy="30" r="12" fill="#DC2626"/>
+      <text x="25" y="35" font-size="14" font-weight="800" fill="#FFFFFF">!</text>
+      <text x="50" y="27" font-size="14" font-weight="700" fill="#991B1B">CRITICAL LAB RESULT DETECTED: Potassium 6.2 mmol/L (Ref: 3.5 - 5.0 mmol/L)</text>
+      <text x="50" y="45" font-size="12" font-weight="500" fill="#7F1D1D">Patient: Rajesh Kumar • MRN: HOS-92841 • Verified by Pathologist: 8 mins ago</text>
+      <!-- Action Button -->
+      <rect x="980" y="14" width="132" height="32" rx="6" fill="#DC2626"/>
+      <text x="998" y="35" font-size="13" font-weight="600" fill="#FFFFFF">Review &amp; Act</text>
+    </g>
+
+    <!-- ===================================================================
+         TWO-COLUMN OPERATIONAL WORKSPACE
+         Left: 680px (Consultations Schedule), Right: 428px (Tasks & AI)
+         =================================================================== -->
+    <g id="WorkspaceGrid" transform="translate(0, 274)">
+
+      <!-- LEFT: TODAY'S CONSULTATION QUEUE -->
+      <g id="ConsultationsTable" transform="translate(0, 0)">
+        <rect width="680" height="580" rx="10" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1" filter="url(#card-shadow)"/>
+        
+        <!-- Table Header & Title -->
+        <text x="20" y="32" font-size="16" font-weight="700" fill="#0F172A">Today's Consultations Queue</text>
+        <text x="20" y="50" font-size="12" font-weight="400" fill="#64748B">Active outpatient encounters and check-in timeline</text>
+
+        <!-- Filter Chips -->
+        <g transform="translate(420, 16)">
+          <rect width="76" height="28" rx="14" fill="#EFF6FF" stroke="#BFDBFE" stroke-width="1"/>
+          <text x="12" y="18" font-size="12" font-weight="600" fill="#1D4ED8">All (24)</text>
+          
+          <rect x="84" width="80" height="28" rx="14" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1"/>
+          <text x="96" y="18" font-size="12" font-weight="500" fill="#64748B">Waiting (8)</text>
+          
+          <rect x="172" width="76" height="28" rx="14" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1"/>
+          <text x="184" y="18" font-size="12" font-weight="500" fill="#64748B">Active (3)</text>
+        </g>
+
+        <!-- Table Columns Header -->
+        <rect x="0" y="66" width="680" height="36" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1"/>
+        <text x="20" y="89" font-size="11" font-weight="700" fill="#64748B" letter-spacing="0.04em">TOKEN / TIME</text>
+        <text x="130" y="89" font-size="11" font-weight="700" fill="#64748B" letter-spacing="0.04em">PATIENT &amp; MRN</text>
+        <text x="320" y="89" font-size="11" font-weight="700" fill="#64748B" letter-spacing="0.04em">CHIEF COMPLAINT</text>
+        <text x="490" y="89" font-size="11" font-weight="700" fill="#64748B" letter-spacing="0.04em">STATUS</text>
+        <text x="610" y="89" font-size="11" font-weight="700" fill="#64748B" letter-spacing="0.04em">ACTION</text>
+
+        <!-- Row 1: In Consultation (Active) -->
+        <g transform="translate(0, 102)">
+          <rect width="680" height="64" fill="#EFF6FF" stroke="#DBEAFE" stroke-width="1"/>
+          <rect x="20" y="16" width="36" height="24" rx="4" fill="#1D4ED8"/>
+          <text x="26" y="32" font-size="11" font-weight="700" fill="#FFFFFF">#014</text>
+          <text x="20" y="52" font-size="11" font-weight="500" fill="#1E40AF">09:30 AM</text>
+          
+          <text x="130" y="28" font-size="14" font-weight="600" fill="#0F172A">Sunita Devi</text>
+          <text x="130" y="46" font-size="11" font-weight="500" fill="#64748B">MRN-84920 • 54 F</text>
+
+          <text x="320" y="28" font-size="13" font-weight="500" fill="#334155">Chest tightness, SOB</text>
+          <text x="320" y="46" font-size="11" font-weight="400" fill="#64748B">Follow-up HTN</text>
+
+          <rect x="490" y="20" width="94" height="24" rx="12" fill="#DBEAFE"/>
+          <text x="502" y="36" font-size="11" font-weight="700" fill="#1E40AF">IN CONSULT</text>
+
+          <rect x="605" y="16" width="60" height="32" rx="6" fill="#1D4ED8"/>
+          <text x="618" y="36" font-size="12" font-weight="600" fill="#FFFFFF">Chart</text>
+        </g>
+
+        <!-- Row 2: Waiting (Next) -->
+        <g transform="translate(0, 166)">
+          <rect width="680" height="64" fill="#FFFFFF" stroke="#F1F5F9" stroke-width="1"/>
+          <rect x="20" y="16" width="36" height="24" rx="4" fill="#F1F5F9"/>
+          <text x="26" y="32" font-size="11" font-weight="700" fill="#475569">#015</text>
+          <text x="20" y="52" font-size="11" font-weight="500" fill="#64748B">09:45 AM</text>
+          
+          <text x="130" y="28" font-size="14" font-weight="600" fill="#0F172A">Rajesh Kumar</text>
+          <text x="130" y="46" font-size="11" font-weight="700" fill="#DC2626">MRN-92841 ⚠️ Critical Lab</text>
+
+          <text x="320" y="28" font-size="13" font-weight="500" fill="#334155">Palpitations, Dizziness</text>
+          <text x="320" y="46" font-size="11" font-weight="400" fill="#64748B">K+ Level Panic Alert</text>
+
+          <rect x="490" y="20" width="76" height="24" rx="12" fill="#FEF3C7"/>
+          <text x="504" y="36" font-size="11" font-weight="700" fill="#92400E">WAITING</text>
+
+          <rect x="605" y="16" width="60" height="32" rx="6" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1"/>
+          <text x="618" y="36" font-size="12" font-weight="600" fill="#334155">Call In</text>
+        </g>
+
+        <!-- Row 3: Waiting -->
+        <g transform="translate(0, 230)">
+          <rect width="680" height="64" fill="#FFFFFF" stroke="#F1F5F9" stroke-width="1"/>
+          <rect x="20" y="16" width="36" height="24" rx="4" fill="#F1F5F9"/>
+          <text x="26" y="32" font-size="11" font-weight="700" fill="#475569">#016</text>
+          <text x="20" y="52" font-size="11" font-weight="500" fill="#64748B">10:00 AM</text>
+          
+          <text x="130" y="28" font-size="14" font-weight="600" fill="#0F172A">Amit Sharma</text>
+          <text x="130" y="46" font-size="11" font-weight="500" fill="#64748B">MRN-77312 • 42 M</text>
+
+          <text x="320" y="28" font-size="13" font-weight="500" fill="#334155">Routine Lipid Review</text>
+          <text x="320" y="46" font-size="11" font-weight="400" fill="#64748B">Post-stent follow up</text>
+
+          <rect x="490" y="20" width="76" height="24" rx="12" fill="#FEF3C7"/>
+          <text x="504" y="36" font-size="11" font-weight="700" fill="#92400E">WAITING</text>
+
+          <rect x="605" y="16" width="60" height="32" rx="6" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1"/>
+          <text x="618" y="36" font-size="12" font-weight="600" fill="#334155">Call In</text>
+        </g>
+
+        <!-- Row 4: Completed -->
+        <g transform="translate(0, 294)">
+          <rect width="680" height="64" fill="#FFFFFF" stroke="#F1F5F9" stroke-width="1"/>
+          <rect x="20" y="16" width="36" height="24" rx="4" fill="#F1F5F9"/>
+          <text x="26" y="32" font-size="11" font-weight="700" fill="#94A3B8">#013</text>
+          <text x="20" y="52" font-size="11" font-weight="500" fill="#94A3B8">09:15 AM</text>
+          
+          <text x="130" y="28" font-size="14" font-weight="500" fill="#64748B">Meera Patel</text>
+          <text x="130" y="46" font-size="11" font-weight="400" fill="#94A3B8">MRN-55201 • 61 F</text>
+
+          <text x="320" y="28" font-size="13" font-weight="400" fill="#64748B">Echocardiogram Review</text>
+          <text x="320" y="46" font-size="11" font-weight="400" fill="#94A3B8">Rx Refill Completed</text>
+
+          <rect x="490" y="20" width="94" height="24" rx="12" fill="#DCFCE7"/>
+          <text x="502" y="36" font-size="11" font-weight="700" fill="#166534">COMPLETED</text>
+
+          <rect x="605" y="16" width="60" height="32" rx="6" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1"/>
+          <text x="618" y="36" font-size="12" font-weight="500" fill="#64748B">View</text>
+        </g>
+      </g>
+
+      <!-- RIGHT COLUMN: MY TASKS WIDGET & AI ASSISTANT -->
+      <g id="RightColumn" transform="translate(704, 0)">
+        
+        <!-- 1. MY PRIORITIZED TASKS WIDGET -->
+        <g id="TasksWidget">
+          <rect width="424" height="320" rx="10" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1" filter="url(#card-shadow)"/>
+          <text x="20" y="30" font-size="15" font-weight="700" fill="#0F172A">My Prioritized Tasks (6)</text>
+          <text x="350" y="30" font-size="12" font-weight="600" fill="#2563EB">View All</text>
+
+          <!-- Task 1: STAT Review -->
+          <g transform="translate(16, 48)">
+            <rect width="392" height="60" rx="6" fill="#FEF2F2" stroke="#FECACA" stroke-width="1"/>
+            <rect x="12" y="16" width="16" height="16" rx="3" stroke="#DC2626" stroke-width="1.5" fill="#FFFFFF"/>
+            <text x="38" y="26" font-size="13" font-weight="600" fill="#991B1B">Sign critical potassium lab acknowledgment</text>
+            <text x="38" y="44" font-size="11" font-weight="500" fill="#7F1D1D">Patient: Rajesh Kumar • STAT</text>
+            <rect x="330" y="14" width="50" height="20" rx="10" fill="#DC2626"/>
+            <text x="340" y="28" font-size="10" font-weight="700" fill="#FFFFFF">STAT</text>
+          </g>
+
+          <!-- Task 2: High Note Sign -->
+          <g transform="translate(16, 116)">
+            <rect width="392" height="60" rx="6" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1"/>
+            <rect x="12" y="16" width="16" height="16" rx="3" stroke="#94A3B8" stroke-width="1.5"/>
+            <text x="38" y="26" font-size="13" font-weight="600" fill="#0F172A">Sign SOAP note draft (AI-assisted)</text>
+            <text x="38" y="44" font-size="11" font-weight="400" fill="#64748B">Sunita Devi • Due in 45m</text>
+            <rect x="330" y="14" width="50" height="20" rx="10" fill="#FEF3C7"/>
+            <text x="340" y="28" font-size="10" font-weight="700" fill="#92400E">HIGH</text>
+          </g>
+
+          <!-- Task 3: Routine Discharge Review -->
+          <g transform="translate(16, 184)">
+            <rect width="392" height="60" rx="6" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1"/>
+            <rect x="12" y="16" width="16" height="16" rx="3" stroke="#94A3B8" stroke-width="1.5"/>
+            <text x="38" y="26" font-size="13" font-weight="600" fill="#0F172A">Authorize discharge summary (Ward 4B)</text>
+            <text x="38" y="44" font-size="11" font-weight="400" fill="#64748B">Patient: Vikram Rao • Routine</text>
+            <rect x="320" y="14" width="60" height="20" rx="10" fill="#F1F5F9"/>
+            <text x="328" y="28" font-size="10" font-weight="700" fill="#475569">MEDIUM</text>
+          </g>
+
+          <!-- Task 4: Diagnostic Order -->
+          <g transform="translate(16, 252)">
+            <rect width="392" height="56" rx="6" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1"/>
+            <rect x="12" y="14" width="16" height="16" rx="3" stroke="#94A3B8" stroke-width="1.5"/>
+            <text x="38" y="24" font-size="13" font-weight="600" fill="#0F172A">Review 24-hr Holter Monitor report</text>
+            <text x="38" y="42" font-size="11" font-weight="400" fill="#64748B">Meera Patel • Routine</text>
+          </g>
+        </g>
+
+        <!-- 2. AI WORKSPACE ASSISTANT ENTRY CARD -->
+        <g id="AIWorkspaceCard" transform="translate(0, 336)">
+          <rect width="424" height="244" rx="10" fill="#F5F3FF" stroke="#DDD6FE" stroke-width="1.5" filter="url(#card-shadow)"/>
+          
+          <g transform="translate(20, 20)">
+            <rect width="32" height="32" rx="8" fill="#7C3AED"/>
+            <!-- Sparkle/AI icon -->
+            <path d="M16 8L17.5 13.5L23 15L17.5 16.5L16 22L14.5 16.5L9 15L14.5 13.5L16 8Z" fill="#FFFFFF"/>
+            <text x="44" y="20" font-size="15" font-weight="700" fill="#4C1D95">AI Clinical Intelligence</text>
+            <text x="44" y="36" font-size="11" font-weight="600" fill="#7C3AED">ASSISTIVE DRAFTS &amp; CHART SEARCH</text>
+          </g>
+
+          <rect x="20" y="70" width="384" height="96" rx="8" fill="#FFFFFF" stroke="#EDE9FE" stroke-width="1"/>
+          <text x="36" y="94" font-size="12" font-weight="700" fill="#6D28D9">✨ 2 Unreviewed AI Note Drafts Ready</text>
+          <text x="36" y="114" font-size="12" font-weight="400" fill="#475569">SOAP note pre-drafted for Sunita Devi (MRN-84920) based on intake vitals and ECG findings.</text>
+          <rect x="36" y="128" width="130" height="20" rx="4" fill="#F5F3FF"/>
+          <text x="42" y="142" font-size="10" font-weight="600" fill="#7C3AED">AI-Generated • Needs Review</text>
+
+          <!-- Launch Button -->
+          <g transform="translate(20, 180)">
+            <rect width="384" height="42" rx="8" fill="#7C3AED"/>
+            <text x="120" y="26" font-size="14" font-weight="600" fill="#FFFFFF">Launch AI Review Panel →</text>
+          </g>
+        </g>
+      </g>
+    </g>
+  </g>
+</svg>

@@ -1,0 +1,224 @@
+.header {
+  height: var(--header-height);
+  background-color: var(--bg-surface);
+  border-bottom: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--space-6);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+.leftSection {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.mobileMenuButton {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+}
+
+.mobileMenuButton:hover {
+  background-color: var(--bg-subtle);
+  color: var(--text-primary);
+}
+
+.breadcrumbs {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-size-sm);
+}
+
+.breadcrumbSeparator {
+  color: var(--text-tertiary);
+}
+
+.breadcrumbItem {
+  color: var(--text-secondary);
+}
+
+.breadcrumbActive {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.rightSection {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.searchTrigger {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  background-color: var(--bg-subtle);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 6px var(--space-3);
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  width: 260px;
+  transition: all 0.15s ease;
+}
+
+.searchTrigger:hover {
+  background-color: var(--bg-surface);
+  border-color: var(--border-strong);
+  color: var(--text-primary);
+}
+
+.searchIcon {
+  color: var(--text-tertiary);
+  flex-shrink: 0;
+}
+
+.searchText {
+  flex: 1;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.searchKbd {
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-caption);
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-strong);
+  padding: 1px 5px;
+  border-radius: var(--radius-xs);
+  color: var(--text-tertiary);
+}
+
+.notificationWrapper {
+  position: relative;
+}
+
+.iconButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  position: relative;
+  transition: background-color 0.15s ease;
+}
+
+.iconButton:hover {
+  background-color: var(--bg-subtle);
+  color: var(--text-primary);
+}
+
+.activeIconButton {
+  background-color: var(--color-primary-50);
+  color: var(--color-primary-700);
+}
+
+.notificationDot {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-full);
+  background-color: var(--color-danger-main);
+  border: 2px solid var(--bg-surface);
+}
+
+.divider {
+  width: 1px;
+  height: 24px;
+  background-color: var(--border-subtle);
+  margin: 0 var(--space-1);
+}
+
+.userProfileTrigger {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 4px 8px;
+  border-radius: var(--radius-lg);
+  transition: background-color 0.15s ease;
+  user-select: none;
+}
+
+.userProfileTrigger:hover {
+  background-color: var(--bg-subtle);
+}
+
+.userInfo {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+}
+
+.userName {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+
+.userRole {
+  font-size: var(--font-size-caption);
+  color: var(--text-secondary);
+  line-height: 1.2;
+}
+
+.profileMenu {
+  min-width: 240px;
+}
+
+.profileMenuHeader {
+  padding: var(--space-2) var(--space-3);
+}
+
+.profileMenuName {
+  font-size: var(--font-size-body);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.profileMenuEmail {
+  font-size: var(--font-size-caption);
+  color: var(--text-secondary);
+  margin-bottom: var(--space-2);
+}
+
+.badgeRow {
+  display: flex;
+  margin-top: 4px;
+}
+
+@media (max-width: 1024px) {
+  .searchTrigger {
+    width: 200px;
+  }
+}
+
+@media (max-width: 768px) {
+  .header {
+    padding: 0 var(--space-4);
+  }
+  .mobileMenuButton {
+    display: inline-flex;
+  }
+  .searchTrigger {
+    display: none;
+  }
+  .userInfo {
+    display: none;
+  }
+}

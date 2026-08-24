@@ -1,7 +1,13 @@
-export default function Page() {
+'use client';
+
+import React from 'react';
+import { AppShell } from '../components/layout/AppShell/AppShell';
+import { DashboardShell } from '../components/dashboard/DashboardShell';
+
+export default function RootPage() {
   return (
-    <main>
-      <h1>Hospital AI OS Frontend</h1>
-    </main>
+    <AppShell breadcrumbs={['Operations', 'Dashboard']}>
+      <DashboardShell />
+    </AppShell>
   );
 }

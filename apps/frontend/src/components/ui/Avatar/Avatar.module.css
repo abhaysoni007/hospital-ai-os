@@ -1,0 +1,67 @@
+.avatar {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-full);
+  background-color: var(--color-primary-100);
+  color: var(--color-primary-800);
+  font-weight: 600;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.sm {
+  width: 28px;
+  height: 28px;
+  font-size: var(--font-size-caption);
+}
+
+.md {
+  width: 36px;
+  height: 36px;
+  font-size: var(--font-size-sm);
+}
+
+.lg {
+  width: 48px;
+  height: 48px;
+  font-size: var(--font-size-body);
+}
+
+.image {
+  width: 100%;
+  height: 100%;
+  border-radius: var(--radius-full);
+  object-fit: cover;
+}
+
+.initials {
+  line-height: 1;
+}
+
+.statusDot {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 10px;
+  height: 10px;
+  border-radius: var(--radius-full);
+  border: 2px solid var(--bg-surface);
+}
+
+.online {
+  background-color: var(--color-success-main);
+}
+
+.busy {
+  background-color: var(--color-danger-main);
+}
+
+.away {
+  background-color: var(--color-warning-main);
+}
+
+.offline {
+  background-color: var(--color-neutral-400);
+}

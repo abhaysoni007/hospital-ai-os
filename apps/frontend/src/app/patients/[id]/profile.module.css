@@ -1,0 +1,60 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-6);
+  padding: var(--spacing-6);
+  height: 100%;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.patientName {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-600);
+  color: var(--color-slate-900);
+  margin-bottom: var(--spacing-2);
+}
+
+.mrnRow {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  font-family: monospace;
+  color: var(--color-slate-600);
+  font-size: var(--font-size-sm);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-6);
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+}
+
+.infoRow {
+  display: flex;
+  justify-content: space-between;
+  padding: var(--spacing-2) 0;
+  border-bottom: 1px solid var(--color-slate-100);
+}
+
+.infoLabel {
+  font-size: var(--font-size-sm);
+  color: var(--color-slate-500);
+  font-weight: var(--font-weight-500);
+}
+
+.infoValue {
+  font-size: var(--font-size-sm);
+  color: var(--color-slate-900);
+  font-weight: var(--font-weight-500);
+}

@@ -1,0 +1,107 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+  border-radius: var(--radius-full);
+  line-height: 1;
+  white-space: nowrap;
+  border: 1px solid transparent;
+  user-select: none;
+}
+
+/* Sizes */
+.sm {
+  padding: 2px 8px;
+  font-size: var(--font-size-caption);
+  height: 20px;
+}
+
+.md {
+  padding: 4px 10px;
+  font-size: var(--font-size-sm);
+  height: 24px;
+}
+
+/* Variants */
+.critical {
+  background-color: var(--status-critical-bg);
+  border-color: var(--status-critical-border);
+  color: var(--status-critical-text);
+}
+
+.critical .dot {
+  background-color: var(--status-critical-badge);
+}
+
+.urgent {
+  background-color: var(--status-urgent-bg);
+  border-color: var(--status-urgent-border);
+  color: var(--status-urgent-text);
+}
+
+.urgent .dot {
+  background-color: var(--status-urgent-badge);
+}
+
+.stable {
+  background-color: var(--status-stable-bg);
+  border-color: var(--status-stable-border);
+  color: var(--status-stable-text);
+}
+
+.stable .dot {
+  background-color: var(--status-stable-badge);
+}
+
+.pending {
+  background-color: var(--status-pending-bg);
+  border-color: var(--status-pending-border);
+  color: var(--status-pending-text);
+}
+
+.pending .dot {
+  background-color: var(--status-pending-badge);
+}
+
+.ai-assist {
+  background-color: var(--status-ai-bg);
+  border-color: var(--status-ai-border);
+  color: var(--status-ai-text);
+}
+
+.ai-assist .dot {
+  background-color: var(--status-ai-badge);
+}
+
+.neutral {
+  background-color: var(--bg-subtle);
+  border-color: var(--border-subtle);
+  color: var(--text-secondary);
+}
+
+.neutral .dot {
+  background-color: var(--text-tertiary);
+}
+
+.primary {
+  background-color: var(--color-primary-50);
+  border-color: var(--color-primary-200);
+  color: var(--color-primary-700);
+}
+
+.primary .dot {
+  background-color: var(--color-primary-600);
+}
+
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-full);
+  flex-shrink: 0;
+}
+
+.icon {
+  display: inline-flex;
+  align-items: center;
+}

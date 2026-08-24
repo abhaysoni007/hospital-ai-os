@@ -1,0 +1,162 @@
+{
+  "$schema": "https://tr.designtokens.org/format/",
+  "name": "Hospital AI OS Design Tokens",
+  "version": "1.0.0",
+  "color": {
+    "primary": {
+      "50": { "value": "#EFF6FF", "type": "color" },
+      "100": { "value": "#DBEAFE", "type": "color" },
+      "200": { "value": "#BFDBFE", "type": "color" },
+      "300": { "value": "#93C5FD", "type": "color" },
+      "400": { "value": "#60A5FA", "type": "color" },
+      "500": { "value": "#2563EB", "type": "color" },
+      "600": { "value": "#1D4ED8", "type": "color" },
+      "700": { "value": "#1E40AF", "type": "color" },
+      "800": { "value": "#1E3A8A", "type": "color" },
+      "900": { "value": "#172554", "type": "color" },
+      "950": { "value": "#0F172A", "type": "color" }
+    },
+    "neutral": {
+      "0": { "value": "#FFFFFF", "type": "color" },
+      "50": { "value": "#F8FAFC", "type": "color" },
+      "100": { "value": "#F1F5F9", "type": "color" },
+      "200": { "value": "#E2E8F0", "type": "color" },
+      "300": { "value": "#CBD5E1", "type": "color" },
+      "400": { "value": "#94A3B8", "type": "color" },
+      "500": { "value": "#64748B", "type": "color" },
+      "600": { "value": "#475569", "type": "color" },
+      "700": { "value": "#334155", "type": "color" },
+      "800": { "value": "#1E293B", "type": "color" },
+      "900": { "value": "#0F172A", "type": "color" },
+      "950": { "value": "#020617", "type": "color" }
+    },
+    "semantic": {
+      "success": {
+        "light": { "value": "#F0FDF4", "type": "color" },
+        "border": { "value": "#BBF7D0", "type": "color" },
+        "main": { "value": "#16A34A", "type": "color" },
+        "dark": { "value": "#15803D", "type": "color" },
+        "text": { "value": "#166534", "type": "color" }
+      },
+      "warning": {
+        "light": { "value": "#FFFBEB", "type": "color" },
+        "border": { "value": "#FDE68A", "type": "color" },
+        "main": { "value": "#D97706", "type": "color" },
+        "dark": { "value": "#B45309", "type": "color" },
+        "text": { "value": "#92400E", "type": "color" }
+      },
+      "danger": {
+        "light": { "value": "#FEF2F2", "type": "color" },
+        "border": { "value": "#FECACA", "type": "color" },
+        "main": { "value": "#DC2626", "type": "color" },
+        "dark": { "value": "#B91C1C", "type": "color" },
+        "text": { "value": "#991B1B", "type": "color" }
+      },
+      "info": {
+        "light": { "value": "#F0F9FF", "type": "color" },
+        "border": { "value": "#BAE6FD", "type": "color" },
+        "main": { "value": "#0284C7", "type": "color" },
+        "dark": { "value": "#0369A1", "type": "color" },
+        "text": { "value": "#075985", "type": "color" }
+      }
+    },
+    "clinical": {
+      "critical": {
+        "background": { "value": "#FEF2F2", "type": "color" },
+        "border": { "value": "#EF4444", "type": "color" },
+        "text": { "value": "#991B1B", "type": "color" },
+        "badge": { "value": "#DC2626", "type": "color" }
+      },
+      "urgent": {
+        "background": { "value": "#FFF7ED", "type": "color" },
+        "border": { "value": "#F97316", "type": "color" },
+        "text": { "value": "#9A3412", "type": "color" },
+        "badge": { "value": "#EA580C", "type": "color" }
+      },
+      "stable": {
+        "background": { "value": "#F0FDF4", "type": "color" },
+        "border": { "value": "#86EFAC", "type": "color" },
+        "text": { "value": "#166534", "type": "color" },
+        "badge": { "value": "#16A34A", "type": "color" }
+      },
+      "pending": {
+        "background": { "value": "#F8FAFC", "type": "color" },
+        "border": { "value": "#CBD5E1", "type": "color" },
+        "text": { "value": "#475569", "type": "color" },
+        "badge": { "value": "#64748B", "type": "color" }
+      },
+      "aiAssist": {
+        "background": { "value": "#F5F3FF", "type": "color" },
+        "border": { "value": "#DDD6FE", "type": "color" },
+        "text": { "value": "#5B21B6", "type": "color" },
+        "badge": { "value": "#7C3AED", "type": "color" }
+      }
+    }
+  },
+  "typography": {
+    "fontFamily": {
+      "primary": { "value": "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", "type": "fontFamily" },
+      "mono": { "value": "'JetBrains Mono', 'Fira Code', Menlo, monospace", "type": "fontFamily" }
+    },
+    "scale": {
+      "display": { "fontSize": "36px", "lineHeight": "44px", "fontWeight": "700", "letterSpacing": "-0.02em" },
+      "h1": { "fontSize": "30px", "lineHeight": "38px", "fontWeight": "600", "letterSpacing": "-0.015em" },
+      "h2": { "fontSize": "24px", "lineHeight": "32px", "fontWeight": "600", "letterSpacing": "-0.01em" },
+      "h3": { "fontSize": "20px", "lineHeight": "28px", "fontWeight": "600", "letterSpacing": "-0.005em" },
+      "h4": { "fontSize": "16px", "lineHeight": "24px", "fontWeight": "600", "letterSpacing": "0" },
+      "bodyLarge": { "fontSize": "16px", "lineHeight": "24px", "fontWeight": "400", "letterSpacing": "0" },
+      "body": { "fontSize": "14px", "lineHeight": "20px", "fontWeight": "400", "letterSpacing": "0" },
+      "bodyMedium": { "fontSize": "14px", "lineHeight": "20px", "fontWeight": "500", "letterSpacing": "0" },
+      "bodySemibold": { "fontSize": "14px", "lineHeight": "20px", "fontWeight": "600", "letterSpacing": "0" },
+      "small": { "fontSize": "12px", "lineHeight": "16px", "fontWeight": "400", "letterSpacing": "0" },
+      "smallMedium": { "fontSize": "12px", "lineHeight": "16px", "fontWeight": "500", "letterSpacing": "0" },
+      "caption": { "fontSize": "11px", "lineHeight": "14px", "fontWeight": "400", "letterSpacing": "0.02em" },
+      "overline": { "fontSize": "11px", "lineHeight": "14px", "fontWeight": "600", "letterSpacing": "0.06em", "textTransform": "uppercase" }
+    }
+  },
+  "spacing": {
+    "1": { "value": "4px", "type": "spacing" },
+    "2": { "value": "8px", "type": "spacing" },
+    "3": { "value": "12px", "type": "spacing" },
+    "4": { "value": "16px", "type": "spacing" },
+    "5": { "value": "20px", "type": "spacing" },
+    "6": { "value": "24px", "type": "spacing" },
+    "8": { "value": "32px", "type": "spacing" },
+    "10": { "value": "40px", "type": "spacing" },
+    "12": { "value": "48px", "type": "spacing" },
+    "16": { "value": "64px", "type": "spacing" },
+    "20": { "value": "80px", "type": "spacing" }
+  },
+  "borderRadius": {
+    "none": { "value": "0px", "type": "borderRadius" },
+    "xs": { "value": "4px", "type": "borderRadius" },
+    "sm": { "value": "6px", "type": "borderRadius" },
+    "md": { "value": "8px", "type": "borderRadius" },
+    "lg": { "value": "12px", "type": "borderRadius" },
+    "xl": { "value": "16px", "type": "borderRadius" },
+    "2xl": { "value": "20px", "type": "borderRadius" },
+    "full": { "value": "9999px", "type": "borderRadius" }
+  },
+  "shadows": {
+    "xs": { "value": "0px 1px 2px 0px rgba(15, 23, 42, 0.05)", "type": "boxShadow" },
+    "sm": { "value": "0px 1px 3px 0px rgba(15, 23, 42, 0.08), 0px 1px 2px -1px rgba(15, 23, 42, 0.08)", "type": "boxShadow" },
+    "md": { "value": "0px 4px 6px -1px rgba(15, 23, 42, 0.08), 0px 2px 4px -2px rgba(15, 23, 42, 0.06)", "type": "boxShadow" },
+    "lg": { "value": "0px 10px 15px -3px rgba(15, 23, 42, 0.08), 0px 4px 6px -4px rgba(15, 23, 42, 0.04)", "type": "boxShadow" },
+    "modal": { "value": "0px 20px 25px -5px rgba(15, 23, 42, 0.12), 0px 8px 10px -6px rgba(15, 23, 42, 0.08)", "type": "boxShadow" }
+  },
+  "layout": {
+    "sidebar": {
+      "expandedWidth": { "value": "248px", "type": "dimension" },
+      "collapsedWidth": { "value": "72px", "type": "dimension" }
+    },
+    "header": {
+      "height": { "value": "64px", "type": "dimension" }
+    },
+    "content": {
+      "maxWidth": { "value": "1440px", "type": "dimension" },
+      "paddingDesktop": { "value": "32px", "type": "dimension" },
+      "paddingTablet": { "value": "24px", "type": "dimension" },
+      "paddingMobile": { "value": "16px", "type": "dimension" }
+    }
+  }
+}

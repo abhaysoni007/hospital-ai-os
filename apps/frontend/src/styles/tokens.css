@@ -1,0 +1,207 @@
+/**
+ * Hospital AI OS — Production Design Tokens (CSS Custom Properties)
+ * Synced with docs/design/design-tokens.json & Figma Variables
+ */
+
+:root {
+  /* =========================================================================
+     1. Primary Palette (Deep Indigo Healthcare)
+     ========================================================================= */
+  --color-primary-50: #EFF6FF;
+  --color-primary-100: #DBEAFE;
+  --color-primary-200: #BFDBFE;
+  --color-primary-300: #93C5FD;
+  --color-primary-400: #60A5FA;
+  --color-primary-500: #2563EB;
+  --color-primary-600: #1D4ED8;
+  --color-primary-700: #1E40AF;
+  --color-primary-800: #1E3A8A;
+  --color-primary-900: #172554;
+  --color-primary-950: #0F172A;
+
+  /* =========================================================================
+     2. Neutral Surfaces & Text (Slate-based for clinical calmness)
+     ========================================================================= */
+  --color-neutral-0: #FFFFFF;
+  --color-neutral-50: #F8FAFC;
+  --color-neutral-100: #F1F5F9;
+  --color-neutral-200: #E2E8F0;
+  --color-neutral-300: #CBD5E1;
+  --color-neutral-400: #94A3B8;
+  --color-neutral-500: #64748B;
+  --color-neutral-600: #475569;
+  --color-neutral-700: #334155;
+  --color-neutral-800: #1E293B;
+  --color-neutral-900: #0F172A;
+  --color-neutral-950: #020617;
+
+  /* Semantic UI Bindings */
+  --bg-app: var(--color-neutral-50);
+  --bg-surface: var(--color-neutral-0);
+  --bg-subtle: var(--color-neutral-100);
+  --border-subtle: var(--color-neutral-200);
+  --border-strong: var(--color-neutral-300);
+  --text-primary: var(--color-neutral-900);
+  --text-secondary: var(--color-neutral-600);
+  --text-tertiary: var(--color-neutral-400);
+
+  /* =========================================================================
+     3. Semantic Statuses
+     ========================================================================= */
+  --color-success-bg: #F0FDF4;
+  --color-success-border: #BBF7D0;
+  --color-success-main: #16A34A;
+  --color-success-text: #166534;
+
+  --color-warning-bg: #FFFBEB;
+  --color-warning-border: #FDE68A;
+  --color-warning-main: #D97706;
+  --color-warning-text: #92400E;
+
+  --color-danger-bg: #FEF2F2;
+  --color-danger-border: #FECACA;
+  --color-danger-main: #DC2626;
+  --color-danger-text: #991B1B;
+
+  --color-info-bg: #F0F9FF;
+  --color-info-border: #BAE6FD;
+  --color-info-main: #0284C7;
+  --color-info-text: #075985;
+
+  /* =========================================================================
+     4. Healthcare Clinical Statuses
+     ========================================================================= */
+  --status-critical-bg: #FEF2F2;
+  --status-critical-border: #EF4444;
+  --status-critical-text: #991B1B;
+  --status-critical-badge: #DC2626;
+
+  --status-urgent-bg: #FFF7ED;
+  --status-urgent-border: #F97316;
+  --status-urgent-text: #9A3412;
+  --status-urgent-badge: #EA580C;
+
+  --status-stable-bg: #F0FDF4;
+  --status-stable-border: #86EFAC;
+  --status-stable-text: #166534;
+  --status-stable-badge: #16A34A;
+
+  --status-pending-bg: #F8FAFC;
+  --status-pending-border: #CBD5E1;
+  --status-pending-text: #475569;
+  --status-pending-badge: #64748B;
+
+  --status-ai-bg: #F5F3FF;
+  --status-ai-border: #DDD6FE;
+  --status-ai-text: #5B21B6;
+  --status-ai-badge: #7C3AED;
+
+  /* =========================================================================
+     5. Typography System
+     ========================================================================= */
+  --font-family-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-family-mono: 'JetBrains Mono', 'Fira Code', Menlo, monospace;
+
+  --font-size-display: 2.25rem; /* 36px */
+  --line-height-display: 2.75rem; /* 44px */
+
+  --font-size-h1: 1.875rem; /* 30px */
+  --line-height-h1: 2.375rem; /* 38px */
+
+  --font-size-h2: 1.5rem; /* 24px */
+  --line-height-h2: 2rem; /* 32px */
+
+  --font-size-h3: 1.25rem; /* 20px */
+  --line-height-h3: 1.75rem; /* 28px */
+
+  --font-size-h4: 1rem; /* 16px */
+  --line-height-h4: 1.5rem; /* 24px */
+
+  --font-size-body-lg: 1rem; /* 16px */
+  --line-height-body-lg: 1.5rem; /* 24px */
+
+  --font-size-body: 0.875rem; /* 14px */
+  --line-height-body: 1.25rem; /* 20px */
+
+  --font-size-sm: 0.75rem; /* 12px */
+  --line-height-sm: 1rem; /* 16px */
+
+  --font-size-caption: 0.6875rem; /* 11px */
+  --line-height-caption: 0.875rem; /* 14px */
+
+  /* =========================================================================
+     6. Spacing System (4px / 8px Grid)
+     ========================================================================= */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-20: 80px;
+
+  /* =========================================================================
+     7. Border Radius Tokens
+     ========================================================================= */
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-2xl: 20px;
+  --radius-full: 9999px;
+
+  /* =========================================================================
+     8. Elevation Shadows
+     ========================================================================= */
+  --shadow-xs: 0px 1px 2px 0px rgba(15, 23, 42, 0.05);
+  --shadow-sm: 0px 1px 3px 0px rgba(15, 23, 42, 0.08), 0px 1px 2px -1px rgba(15, 23, 42, 0.08);
+  --shadow-md: 0px 4px 6px -1px rgba(15, 23, 42, 0.08), 0px 2px 4px -2px rgba(15, 23, 42, 0.06);
+  --shadow-lg: 0px 10px 15px -3px rgba(15, 23, 42, 0.08), 0px 4px 6px -4px rgba(15, 23, 42, 0.04);
+  --shadow-modal: 0px 20px 25px -5px rgba(15, 23, 42, 0.12), 0px 8px 10px -6px rgba(15, 23, 42, 0.08);
+
+  /* =========================================================================
+     9. Layout Dimensions
+     ========================================================================= */
+  --sidebar-width-expanded: 248px;
+  --sidebar-width-collapsed: 72px;
+  --header-height: 64px;
+  --content-max-width: 1440px;
+}
+
+/* =========================================================================
+   10. Dark Mode Foundations
+   ========================================================================= */
+[data-theme='dark'] {
+  --bg-app: #090D16;
+  --bg-surface: #0F172A;
+  --bg-subtle: #1E293B;
+  --border-subtle: #334155;
+  --border-strong: #475569;
+  --text-primary: #F8FAFC;
+  --text-secondary: #94A3B8;
+  --text-tertiary: #64748B;
+
+  --color-primary-500: #3B82F6;
+  --color-primary-600: #2563EB;
+
+  --status-critical-bg: rgba(220, 38, 38, 0.15);
+  --status-critical-border: #EF4444;
+  --status-critical-text: #FCA5A5;
+
+  --status-urgent-bg: rgba(234, 88, 12, 0.15);
+  --status-urgent-border: #F97316;
+  --status-urgent-text: #FDBA74;
+
+  --status-stable-bg: rgba(22, 163, 74, 0.15);
+  --status-stable-border: #4ADE80;
+  --status-stable-text: #86EFAC;
+
+  --status-ai-bg: rgba(124, 58, 237, 0.15);
+  --status-ai-border: #A78BFA;
+  --status-ai-text: #DDD6FE;
+}
