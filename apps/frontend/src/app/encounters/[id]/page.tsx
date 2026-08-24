@@ -1,0 +1,246 @@
+'use client';
+
+import React, { useCallback, useEffect, useState } from 'react';
+import { useParams } from 'next/navigation';
+import { AppShell } from '../../../components/layout/AppShell/AppShell';
+import { Button } from '../../../components/ui/Button/Button';
+import { Badge } from '../../../components/ui/Badge/Badge';
+import { Card } from '../../../components/ui/Card/Card';
+import { Skeleton } from '../../../components/ui/Skeleton/Skeleton';
+import { ErrorState } from '../../../components/ui/ErrorState/ErrorState';
+import { AlertBanner } from '../../../components/ui/Alert/AlertBanner';
+import { encounterService } from '../../../services/encounter-service';
+import type { EncounterDetailResponse } from 'shared';
+import styles from './encounter-detail.module.css';
+import { useAuth } from '../../../hooks/useAuth';
+import { hasPermission } from '../../../utils/rbac';
+import { StaffRole } from '../../../types/auth';
+
+const STATUS_FLOW = [
+  'registered',
+  'active',
+  'discharge_initiated',
+  'discharged',
+  'closed',
+] as const;
+
+export default function EncounterDetailPage() {
+  const params = useParams<{ id: string }>();
+  const encounterId = params?.id;
+  const { user } = useAuth();
+  const [encounter, setEncounter] = useState<EncounterDetailResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+  const [acting, setActing] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
+
+  // ADR-013: sections render ONLY when the caller holds the corresponding
+  // permission. The backend already omits the data — this is UX only.
+  const canReadClinical = hasPermission(user?.role as StaffRole, 'clinical_record:read');
+  const canActivate = canUpdateRole(user?.role as StaffRole);
+
+  function canUpdateRole(role?: StaffRole): boolean {
+    return hasPermission(role, 'encounter:update') && (role === 'physician' || role === 'nurse');
+  }
+
+  const fetchEncounter = useCallback(async () => {
+    if (!encounterId) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await encounterService.getEncounterById(encounterId);
+      setEncounter(res.data);
+    } catch (err) {
+      setError(err as Error);
+    } finally {
+      setLoading(false);
+    }
+  }, [encounterId]);
+
+  useEffect(() => {
+    fetchEncounter();
+  }, [fetchEncounter]);
+
+  const handleStartConsultation = async () => {
+    if (!encounter) return;
+    setActing(true);
+    setActionError(null);
+    try {
+      await encounterService.activateEncounter(encounter.id, encounter.version);
+      await fetchEncounter();
+    } catch (err) {
+      const apiErr = err as Error & { code?: string };
+      if (apiErr.code === 'VERSION_CONFLICT') {
+        setActionError(
+          'This encounter was updated by someone else. The view has been refreshed — please try again.',
+        );
+        await fetchEncounter();
+      } else {
+        setActionError(apiErr.message || 'Failed to start consultation.');
+      }
+    } finally {
+      setActing(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <AppShell
+        breadcrumbs={['Clinical', 'Encounters', 'Detail']}
+        requiredPermission="encounter:read"
+      >
+        <div className={styles.container}>
+          <Skeleton variant="rectangular" height={280} />
+        </div>
+      </AppShell>
+    );
+  }
+
+  if (error) {
+    return (
+      <AppShell
+        breadcrumbs={['Clinical', 'Encounters', 'Detail']}
+        requiredPermission="encounter:read"
+      >
+        <div className={styles.container}>
+          <ErrorState
+            title="Could not load encounter"
+            message={error.message}
+            onRetry={fetchEncounter}
+          />
+        </div>
+      </AppShell>
+    );
+  }
+
+  if (!encounter) {
+    return (
+      <AppShell
+        breadcrumbs={['Clinical', 'Encounters', 'Detail']}
+        requiredPermission="encounter:read"
+      >
+        <div className={styles.container}>
+          <ErrorState
+            title="Encounter not found"
+            message="The requested encounter does not exist."
+          />
+        </div>
+      </AppShell>
+    );
+  }
+
+  const statusIndex = STATUS_FLOW.indexOf(encounter.status as (typeof STATUS_FLOW)[number]);
+
+  return (
+    <AppShell
+      breadcrumbs={['Clinical', 'Encounters', 'Detail']}
+      requiredPermission="encounter:read"
+    >
+      <div className={styles.container}>
+        <div className={styles.header}>
+          <h1 className={styles.title}>
+            Encounter · {encounter.patient.firstName} {encounter.patient.lastName}
+          </h1>
+          <Badge variant={encounter.status === 'registered' ? 'stable' : 'neutral'}>
+            {encounter.status.replace('_', ' ')}
+          </Badge>
+        </div>
+
+        {actionError && (
+          <AlertBanner
+            severity="warning"
+            title="Action required"
+            dismissible
+            onDismiss={() => setActionError(null)}
+          >
+            {actionError}
+          </AlertBanner>
+        )}
+
+        <Card>
+          <div className={styles.grid}>
+            <div className={styles.field}>
+              <span className={styles.fieldLabel}>MRN</span>
+              <span className={styles.mrn}>{encounter.patient.mrn}</span>
+            </div>
+            <div className={styles.field}>
+              <span className={styles.fieldLabel}>Patient</span>
+              <span>
+                {encounter.patient.firstName} {encounter.patient.lastName} · DOB{' '}
+                {new Date(encounter.patient.dateOfBirth).toLocaleDateString()}
+              </span>
+            </div>
+            <div className={styles.field}>
+              <span className={styles.fieldLabel}>Type</span>
+              <span style={{ textTransform: 'capitalize' }}>
+                {encounter.encounterType.replace('_', ' ')}
+              </span>
+            </div>
+            <div className={styles.field}>
+              <span className={styles.fieldLabel}>Started At</span>
+              <span>
+                {encounter.startedAt ? new Date(encounter.startedAt).toLocaleString() : '—'}
+              </span>
+            </div>
+            {canReadClinical && encounter.chiefComplaint && (
+              <div className={`${styles.field} ${styles.fullWidth}`}>
+                <span className={styles.fieldLabel}>Chief Complaint</span>
+                <span>{encounter.chiefComplaint}</span>
+              </div>
+            )}
+            {encounter.appointment && (
+              <>
+                <div className={styles.field}>
+                  <span className={styles.fieldLabel}>Appointment</span>
+                  <span className={styles.mono}>{encounter.appointment.id}</span>
+                </div>
+                <div className={styles.field}>
+                  <span className={styles.fieldLabel}>Scheduled</span>
+                  <span>
+                    {encounter.appointment.scheduledDate} at {encounter.appointment.scheduledTime}
+                    {encounter.appointment.tokenNumber
+                      ? ` · Token #${encounter.appointment.tokenNumber}`
+                      : ''}
+                  </span>
+                </div>
+              </>
+            )}
+          </div>
+        </Card>
+
+        <Card>
+          <h2 className={styles.sectionTitle}>Status Timeline</h2>
+          <ol className={styles.timeline}>
+            {STATUS_FLOW.map((s, i) => (
+              <li
+                key={s}
+                className={`${styles.timelineItem} ${
+                  i < statusIndex
+                    ? styles.timelineDone
+                    : i === statusIndex
+                      ? styles.timelineCurrent
+                      : ''
+                }`}
+              >
+                {s.replace(/_/g, ' ')}
+              </li>
+            ))}
+          </ol>
+        </Card>
+
+        <div className={styles.actionsBar}>
+          {canActivate && encounter.status === 'registered' && (
+            <Button variant="primary" size="md" disabled={acting} onClick={handleStartConsultation}>
+              {acting ? 'Starting…' : 'Start Consultation'}
+            </Button>
+          )}
+        </div>
+
+        {/* ADR-013: clinical records and diagnostic orders are NEVER part of the
+            detail payload. When M9/M10 ship, their sections will be fetched from
+            their own permission-controlled endpoints and rendered only for
+            callers holding clinical_record:read / diagnostic_order:read. */}
+      </div>
+    </AppShell>
+  );
+}

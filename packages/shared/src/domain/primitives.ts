@@ -9,11 +9,17 @@ export enum PatientStatus {
   MERGED = 'merged',
 }
 
+/**
+ * @deprecated Legacy stub whose values never matched the M2 `encounter_status`
+ * pgEnum. Superseded by `encounterStatusSchema` / `EncounterStatusValue` in
+ * `api/encounter.schemas.ts`, which mirror the database exactly:
+ * registered | active | discharge_initiated | discharged | closed.
+ * Do not use in new code.
+ */
 export enum EncounterStatus {
-  PLANNED = 'planned',
-  ARRIVED = 'arrived',
-  TRIAGED = 'triaged',
-  IN_PROGRESS = 'in_progress',
+  REGISTERED = 'registered',
+  ACTIVE = 'active',
+  DISCHARGE_INITIATED = 'discharge_initiated',
   DISCHARGED = 'discharged',
-  CANCELLED = 'cancelled',
+  CLOSED = 'closed',
 }

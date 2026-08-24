@@ -8,6 +8,7 @@ import {
   text,
   index,
   uniqueIndex,
+  primaryKey,
 } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 import { appointmentStatusEnum, encounterTypeEnum, encounterStatusEnum } from './enums';
@@ -82,5 +83,25 @@ export const appointments = pgTable(
     tokenIdx: uniqueIndex('idx_appointments_token')
       .on(table.doctorId, table.scheduledDate, table.tokenNumber)
       .where(sql`token_number IS NOT NULL`),
+  }),
+);
+
+/**
+ * ADR-012: per-doctor/per-day token high-water mark.
+ * Allocation uses an atomic upsert-increment inside the booking transaction;
+ * this Drizzle mirror exists for tests/reads only — allocation always goes
+ * through the raw ON CONFLICT statement in appointment.service.ts.
+ */
+export const appointmentTokenCounters = pgTable(
+  'appointment_token_counters',
+  {
+    doctorId: uuid('doctor_id')
+      .notNull()
+      .references(() => staff.id),
+    scheduledDate: date('scheduled_date').notNull(),
+    lastToken: integer('last_token').default(0).notNull(),
+  },
+  (table) => ({
+    pk: primaryKey({ columns: [table.doctorId, table.scheduledDate] }),
   }),
 );
