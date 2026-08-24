@@ -17,7 +17,7 @@ import { CardHeader, CardContent } from '../../../components/ui/Card/Card';
 export default function PatientProfilePage() {
   const params = useParams();
   const id = params.id as string;
-  
+
   const [patient, setPatient] = useState<PatientResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -40,7 +40,10 @@ export default function PatientProfilePage() {
 
   if (loading) {
     return (
-      <AppShell breadcrumbs={['Operations', 'Patients', 'Loading...']} requiredPermission="patient:read">
+      <AppShell
+        breadcrumbs={['Operations', 'Patients', 'Loading...']}
+        requiredPermission="patient:read"
+      >
         <div style={{ padding: '24px' }}>
           <Skeleton variant="rectangular" height={300} />
         </div>
@@ -61,11 +64,16 @@ export default function PatientProfilePage() {
   }
 
   return (
-    <AppShell breadcrumbs={['Operations', 'Patients', patient.mrn]} requiredPermission="patient:read">
+    <AppShell
+      breadcrumbs={['Operations', 'Patients', patient.mrn]}
+      requiredPermission="patient:read"
+    >
       <div className={styles.container}>
         <div className={styles.header}>
           <div>
-            <h1 className={styles.patientName}>{patient.firstName} {patient.lastName}</h1>
+            <h1 className={styles.patientName}>
+              {patient.firstName} {patient.lastName}
+            </h1>
             <div className={styles.mrnRow}>
               <span>{patient.mrn}</span>
               <Badge variant={patient.status === 'active' ? 'stable' : 'neutral'}>
@@ -83,11 +91,15 @@ export default function PatientProfilePage() {
               <div className={styles.section}>
                 <div className={styles.infoRow}>
                   <span className={styles.infoLabel}>Date of Birth</span>
-                  <span className={styles.infoValue}>{new Date(patient.dateOfBirth).toLocaleDateString()}</span>
+                  <span className={styles.infoValue}>
+                    {new Date(patient.dateOfBirth).toLocaleDateString()}
+                  </span>
                 </div>
                 <div className={styles.infoRow}>
                   <span className={styles.infoLabel}>Gender</span>
-                  <span className={styles.infoValue} style={{ textTransform: 'capitalize' }}>{patient.gender}</span>
+                  <span className={styles.infoValue} style={{ textTransform: 'capitalize' }}>
+                    {patient.gender}
+                  </span>
                 </div>
                 <div className={styles.infoRow}>
                   <span className={styles.infoLabel}>Primary Phone</span>
@@ -95,7 +107,9 @@ export default function PatientProfilePage() {
                 </div>
                 <div className={styles.infoRow}>
                   <span className={styles.infoLabel}>Emergency Contact</span>
-                  <span className={styles.infoValue}>{patient.emergencyContactName || 'N/A'} ({patient.phoneEmergency || 'N/A'})</span>
+                  <span className={styles.infoValue}>
+                    {patient.emergencyContactName || 'N/A'} ({patient.phoneEmergency || 'N/A'})
+                  </span>
                 </div>
               </div>
             </CardContent>
@@ -124,7 +138,7 @@ export default function PatientProfilePage() {
               </div>
             </CardContent>
           </Card>
-          
+
           <div style={{ gridColumn: '1 / -1' }}>
             <Card>
               <CardHeader title="Upcoming Encounters" />

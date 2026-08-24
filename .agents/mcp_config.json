@@ -4,8 +4,8 @@
       "url": "https://mcp.figma.com/mcp",
       "serverUrl": "https://mcp.figma.com/mcp",
       "headers": {
-        "Authorization": "Bearer figd_FfCP9e5o8twfQ0-A21UMhfdaQnWprPcANol1XNG-",
-        "X-Figma-Token": "figd_FfCP9e5o8twfQ0-A21UMhfdaQnWprPcANol1XNG-"
+        "Authorization": "Bearer ${FIGMA_ACCESS_TOKEN}",
+        "X-Figma-Token": "${FIGMA_ACCESS_TOKEN}"
       }
     }
   }

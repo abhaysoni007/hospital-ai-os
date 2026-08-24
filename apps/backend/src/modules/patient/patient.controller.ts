@@ -8,18 +8,23 @@ export class PatientController {
     try {
       const payload = registerPatientSchema.parse(req.body);
       const user = req.user; // Set by authMiddleware
-      
+
       if (!user) {
         throw new AuthenticationError('Unauthorized');
       }
 
-      const correlationId = req.headers['x-correlation-id'] as string || crypto.randomUUID();
+      const correlationId = (req.headers['x-correlation-id'] as string) || crypto.randomUUID();
 
-      const newPatient = await patientService.registerPatient(payload, user.staffId, correlationId, {
-        role: user.role,
-        departmentId: user.departmentId,
-      });
-      
+      const newPatient = await patientService.registerPatient(
+        payload,
+        user.staffId,
+        correlationId,
+        {
+          role: user.role,
+          departmentId: user.departmentId,
+        },
+      );
+
       res.status(201).json({
         data: newPatient,
       });
@@ -43,7 +48,7 @@ export class PatientController {
     try {
       const { id } = req.params;
       const patient = await patientService.getPatientById(id);
-      
+
       res.status(200).json({
         data: patient,
       });

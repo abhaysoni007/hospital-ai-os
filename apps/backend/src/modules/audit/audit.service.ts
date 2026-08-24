@@ -25,7 +25,9 @@ export class AuditService {
         columns: { recordHash: true },
       });
 
-      const previousHash = latestEvent?.recordHash || '0000000000000000000000000000000000000000000000000000000000000000';
+      const previousHash =
+        latestEvent?.recordHash ||
+        '0000000000000000000000000000000000000000000000000000000000000000';
 
       // 2. Prepare payload string for hashing
       const payloadString = JSON.stringify({

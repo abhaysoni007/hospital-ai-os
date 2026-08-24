@@ -22,17 +22,17 @@ export default function PatientsPage() {
   const [patients, setPatients] = useState<PatientResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  
+
   const canCreate = hasPermission(user?.role as StaffRole, 'patient:create');
 
   useEffect(() => {
     const fetchPatients = async () => {
       setLoading(true);
       try {
-        const response = await patientService.getPatients({ 
-          page: 1, 
-          pageSize: 50, 
-          query: searchQuery || undefined 
+        const response = await patientService.getPatients({
+          page: 1,
+          pageSize: 50,
+          query: searchQuery || undefined,
         });
         setPatients(response.data);
       } catch (error) {
@@ -64,7 +64,12 @@ export default function PatientsPage() {
         <div className={styles.header}>
           <h1 className={styles.title}>Patient Directory</h1>
           {canCreate && (
-            <Button variant="primary" size="md" iconLeft={<Plus size={16} />} onClick={handleCreate}>
+            <Button
+              variant="primary"
+              size="md"
+              iconLeft={<Plus size={16} />}
+              onClick={handleCreate}
+            >
               Register Patient
             </Button>
           )}
@@ -91,8 +96,14 @@ export default function PatientsPage() {
             <EmptyState
               icon={<UserPlus size={32} />}
               title="No patients found"
-              description={searchQuery ? 'Try adjusting your search query.' : 'Register a new patient to get started.'}
-              action={canCreate ? <Button onClick={handleCreate}>Register Patient</Button> : undefined}
+              description={
+                searchQuery
+                  ? 'Try adjusting your search query.'
+                  : 'Register a new patient to get started.'
+              }
+              action={
+                canCreate ? <Button onClick={handleCreate}>Register Patient</Button> : undefined
+              }
             />
           ) : (
             <table className={styles.table}>

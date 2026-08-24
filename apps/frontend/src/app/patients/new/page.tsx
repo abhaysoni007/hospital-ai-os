@@ -43,7 +43,7 @@ export default function NewPatientPage() {
     try {
       const response = await patientService.registerPatient({
         ...formData,
-        gender: formData.gender as "male" | "female" | "other" | "undisclosed",
+        gender: formData.gender as 'male' | 'female' | 'other' | 'undisclosed',
       });
       router.push(`/patients/${response.data.id}`);
     } catch (err) {
@@ -55,15 +55,18 @@ export default function NewPatientPage() {
   };
 
   return (
-    <AppShell breadcrumbs={['Operations', 'Patients', 'Register']} requiredPermission="patient:create">
+    <AppShell
+      breadcrumbs={['Operations', 'Patients', 'Register']}
+      requiredPermission="patient:create"
+    >
       <div className={styles.container}>
         <h1 className={styles.title}>Register New Patient</h1>
-        
+
         <Card>
           <form onSubmit={handleSubmit}>
             <div className={styles.formGrid}>
               <h2 className={styles.sectionTitle}>Basic Information</h2>
-              
+
               <Input
                 label="First Name"
                 name="firstName"
@@ -86,14 +89,22 @@ export default function NewPatientPage() {
                 onChange={handleChange}
                 required
               />
-              
+
               <div>
-                <label className="text-sm font-medium mb-1 block" style={{ fontSize: 'var(--font-size-sm)', fontWeight: 500, color: 'var(--color-slate-700)', marginBottom: '4px' }}>
+                <label
+                  className="text-sm font-medium mb-1 block"
+                  style={{
+                    fontSize: 'var(--font-size-sm)',
+                    fontWeight: 500,
+                    color: 'var(--color-slate-700)',
+                    marginBottom: '4px',
+                  }}
+                >
                   Gender
                 </label>
-                <select 
-                  className={styles.select} 
-                  name="gender" 
+                <select
+                  className={styles.select}
+                  name="gender"
                   value={formData.gender}
                   onChange={handleChange}
                   required
@@ -105,7 +116,9 @@ export default function NewPatientPage() {
                 </select>
               </div>
 
-              <h2 className={styles.sectionTitle} style={{ marginTop: '16px' }}>Contact Details</h2>
+              <h2 className={styles.sectionTitle} style={{ marginTop: '16px' }}>
+                Contact Details
+              </h2>
 
               <Input
                 label="Primary Phone"
@@ -141,7 +154,9 @@ export default function NewPatientPage() {
                 onChange={handleChange}
               />
 
-              <h2 className={styles.sectionTitle} style={{ marginTop: '16px' }}>Emergency Contact</h2>
+              <h2 className={styles.sectionTitle} style={{ marginTop: '16px' }}>
+                Emergency Contact
+              </h2>
 
               <Input
                 label="Contact Name"
@@ -158,13 +173,24 @@ export default function NewPatientPage() {
             </div>
 
             {error && (
-              <div style={{ color: 'var(--color-critical-600)', fontSize: 'var(--font-size-sm)', marginBottom: '16px' }}>
+              <div
+                style={{
+                  color: 'var(--color-critical-600)',
+                  fontSize: 'var(--font-size-sm)',
+                  marginBottom: '16px',
+                }}
+              >
                 {error}
               </div>
             )}
 
             <div className={styles.actions}>
-              <Button type="button" variant="outline" onClick={() => router.back()} disabled={loading}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => router.back()}
+                disabled={loading}
+              >
                 Cancel
               </Button>
               <Button type="submit" variant="primary" disabled={loading}>

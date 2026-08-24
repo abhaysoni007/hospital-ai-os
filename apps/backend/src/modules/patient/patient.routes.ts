@@ -12,18 +12,18 @@ patientRoutes.use(authMiddleware);
 patientRoutes.post(
   '/',
   requirePermission('patient:create'),
-  patientController.registerPatient.bind(patientController)
+  patientController.registerPatient.bind(patientController),
 );
 
 // Search/View requires 'patient:read'
 patientRoutes.get(
   '/',
   requirePermission('patient:read'),
-  patientController.searchPatients.bind(patientController)
+  patientController.searchPatients.bind(patientController),
 );
 
 patientRoutes.get(
   '/:id',
   requirePermission('patient:read'),
-  patientController.getPatientById.bind(patientController)
+  patientController.getPatientById.bind(patientController),
 );

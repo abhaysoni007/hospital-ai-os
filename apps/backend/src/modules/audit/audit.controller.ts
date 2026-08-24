@@ -29,7 +29,7 @@ export class AuditController {
 
       const totalResult = await db.$count(
         auditEvents,
-        conditions.length > 0 ? and(...conditions) : undefined
+        conditions.length > 0 ? and(...conditions) : undefined,
       );
 
       res.status(200).json({

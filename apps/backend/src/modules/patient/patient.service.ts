@@ -20,10 +20,10 @@ export class PatientService {
    * Registers a new patient, generating an MRN and logging the action.
    */
   async registerPatient(
-    payload: RegisterPatientRequest, 
-    creatorId: string, 
+    payload: RegisterPatientRequest,
+    creatorId: string,
     correlationId: string,
-    authContext: { role: string; departmentId: string }
+    authContext: { role: string; departmentId: string },
   ) {
     return await db.transaction(async (tx) => {
       // Basic duplicate check (exact match on name and DOB or phone)
@@ -32,48 +32,55 @@ export class PatientService {
           and(
             ilike(patients.firstName, payload.firstName),
             ilike(patients.lastName, payload.lastName),
-            eq(patients.dateOfBirth, payload.dateOfBirth)
+            eq(patients.dateOfBirth, payload.dateOfBirth),
           ),
-          eq(patients.phonePrimary, payload.phonePrimary)
+          eq(patients.phonePrimary, payload.phonePrimary),
         ),
       });
 
       if (existing) {
         throw new ConflictError(
           'A patient with similar details or same phone number already exists.',
-          { code: 'DUPLICATE_PATIENT' }
+          { code: 'DUPLICATE_PATIENT' },
         );
       }
 
       const mrn = await this.generateMRN();
 
-      const [newPatient] = await tx.insert(patients).values({
-        mrn,
-        firstName: payload.firstName,
-        lastName: payload.lastName,
-        dateOfBirth: payload.dateOfBirth,
-        gender: payload.gender,
-        phonePrimary: payload.phonePrimary,
-        phoneEmergency: payload.phoneEmergency,
-        emergencyContactName: payload.emergencyContactName,
-        addressLine1: payload.addressLine1,
-        addressCity: payload.addressCity,
-        addressState: payload.addressState,
-        addressPostalCode: payload.addressPostalCode,
-        createdBy: creatorId,
-      }).returning();
+      const [newPatient] = await tx
+        .insert(patients)
+        .values({
+          mrn,
+          firstName: payload.firstName,
+          lastName: payload.lastName,
+          dateOfBirth: payload.dateOfBirth,
+          gender: payload.gender,
+          phonePrimary: payload.phonePrimary,
+          phoneEmergency: payload.phoneEmergency,
+          emergencyContactName: payload.emergencyContactName,
+          addressLine1: payload.addressLine1,
+          addressCity: payload.addressCity,
+          addressState: payload.addressState,
+          addressPostalCode: payload.addressPostalCode,
+          createdBy: creatorId,
+        })
+        .returning();
 
       // Log the audit event synchronously within the same transaction
-      await auditService.logEvent({
-        eventType: 'PATIENT_REGISTERED',
-        actorId: creatorId,
-        actorRole: authContext.role,
-        actorDepartment: authContext.departmentId,
-        targetType: 'PATIENT',
-        targetId: newPatient.id,
-        patientId: newPatient.id,
-        actionDetail: { mrn },
-      }, correlationId, tx);
+      await auditService.logEvent(
+        {
+          eventType: 'PATIENT_REGISTERED',
+          actorId: creatorId,
+          actorRole: authContext.role,
+          actorDepartment: authContext.departmentId,
+          targetType: 'PATIENT',
+          targetId: newPatient.id,
+          patientId: newPatient.id,
+          actionDetail: { mrn },
+        },
+        correlationId,
+        tx,
+      );
 
       return newPatient;
     });
@@ -92,7 +99,7 @@ export class PatientService {
     if (query.status) {
       conditions.push(eq(patients.status, query.status));
     }
-    
+
     if (query.mrn) {
       conditions.push(eq(patients.mrn, query.mrn));
     }
@@ -106,8 +113,8 @@ export class PatientService {
       conditions.push(
         or(
           sql`(${patients.firstName} || ' ' || ${patients.lastName}) % ${query.query}`,
-          eq(patients.mrn, query.query)
-        )
+          eq(patients.mrn, query.query),
+        ),
       );
     }
 
@@ -120,7 +127,7 @@ export class PatientService {
 
     const totalResult = await db.$count(
       patients,
-      conditions.length > 0 ? and(...conditions) : undefined
+      conditions.length > 0 ? and(...conditions) : undefined,
     );
 
     return {
