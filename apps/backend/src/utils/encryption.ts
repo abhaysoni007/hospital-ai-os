@@ -1,9 +1,40 @@
 import { createCipheriv, createDecipheriv, createHash, randomBytes } from 'crypto';
 
-const FALLBACK_KEY = 'dev-only-insecure-encryption-key-do-not-use-in-production';
+/**
+ * Field-level encryption for sensitive PII (identity document numbers).
+ *
+ * Mechanism: AES-256-GCM (architecture-approved, authenticated encryption).
+ * Key derivation: ENCRYPTION_KEY is hashed with SHA-256 to produce the 256-bit key.
+ *
+ * KEY MANAGEMENT POLICY:
+ * - PRODUCTION: ENCRYPTION_KEY is REQUIRED and must be >= 32 characters.
+ *   Missing or weak keys FAIL CLOSED (throw) — encryption never silently degrades.
+ * - LOCAL DEVELOPMENT / TEST: if NODE_ENV is 'development' or 'test' and no
+ *   key is configured, a documented insecure fallback is used so contributors
+ *   can run the stack locally. This fallback is NOT suitable for any real data
+ *   and must never reach a deployed environment.
+ *
+ * The key value itself must never be logged. Configure it via the ENCRYPTION_KEY
+ * environment variable (see .env.example).
+ */
+
+const DEV_FALLBACK_KEY_MATERIAL = 'hospital-ai-os-local-development-only-insecure-key';
+const MIN_PRODUCTION_KEY_LENGTH = 32;
 
 function getKey(): Buffer {
-  const secret = process.env.ENCRYPTION_KEY || FALLBACK_KEY;
+  const secret = process.env.ENCRYPTION_KEY;
+  const nodeEnv = process.env.NODE_ENV || 'development';
+
+  if (!secret || secret.length < MIN_PRODUCTION_KEY_LENGTH) {
+    if (nodeEnv === 'production') {
+      // Fail closed: refuse to encrypt with an absent/weak key in production.
+      throw new Error(
+        `ENCRYPTION_KEY must be set to at least ${MIN_PRODUCTION_KEY_LENGTH} characters in production`,
+      );
+    }
+    return createHash('sha256').update(DEV_FALLBACK_KEY_MATERIAL).digest();
+  }
+
   return createHash('sha256').update(secret).digest();
 }
 

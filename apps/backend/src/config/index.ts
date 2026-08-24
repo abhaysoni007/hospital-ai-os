@@ -16,7 +16,15 @@ const configSchema = z.object({
   RATE_LIMIT_WINDOW_MS: z.coerce.number().default(60000),
   RATE_LIMIT_MAX_REQUESTS: z.coerce.number().default(100),
 
-  CORS_ORIGIN: z.string().default('http://localhost:3000'),
+  // CORS origin must be an explicit trusted origin.
+  // Wildcards are forbidden because CORS credentials are enabled (HTTP-only refresh cookie).
+  CORS_ORIGIN: z
+    .string()
+    .refine((v) => v !== '*' && !v.includes('*'), {
+      message:
+        'CORS_ORIGIN must be an explicit trusted origin — wildcard is forbidden while credentials are enabled',
+    })
+    .default('http://localhost:3000'),
 
   JWT_PRIVATE_KEY_PATH: z.string(),
   JWT_PUBLIC_KEY_PATH: z.string(),
