@@ -139,13 +139,17 @@ Errors: 400 VALIDATION_ERROR, 409 SLOT_UNAVAILABLE
 
 **GET /encounters/:id**
 ```
-Response: { data: {
-  id, patientId, doctorId, departmentId, encounterType, chiefComplaint, status,
-  patient: { id, mrn, firstName, lastName, dateOfBirth },
-  clinicalRecords: [ ... ],
-  diagnosticOrders: [ ... ],
-  startedAt, dischargedAt
+Response (metadata-only — see ADR-013): { data: {
+  id, patientId, doctorId, departmentId, encounterType, status,
+  startedAt, dischargedAt, createdAt, version,
+  chiefComplaint,   // ONLY present if caller also holds clinical_record:read; otherwise omitted
+  patient: { id, mrn, firstName, lastName, dateOfBirth, gender }
 } }
+Clinical records and diagnostic orders are NEVER embedded.
+They are served by their own permission-controlled endpoints (§2.5, §2.6, §2.7):
+  GET /encounters/:encounterId/clinical-records   → clinical_record:read
+  GET /encounters/:encounterId/diagnostic-orders   → diagnostic_order:read
+  GET /diagnostic-orders/:orderId/result           → diagnostic_result:read
 ```
 
 ---
