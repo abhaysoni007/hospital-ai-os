@@ -1,6 +1,12 @@
 import { Request, Response, NextFunction } from 'express';
 import { patientService } from './patient.service';
-import { registerPatientSchema, getPatientsQuerySchema } from 'shared';
+import {
+  registerPatientSchema,
+  getPatientsQuerySchema,
+  updatePatientSchema,
+  createIdentitySchema,
+  verifyIdentitySchema,
+} from 'shared';
 import { AuthenticationError } from 'shared/src/errors/AppError';
 
 export class PatientController {
@@ -47,10 +53,100 @@ export class PatientController {
   async getPatientById(req: Request, res: Response, next: NextFunction) {
     try {
       const { id } = req.params;
-      const patient = await patientService.getPatientById(id);
+      const user = req.user;
+      const correlationId = (req.headers['x-correlation-id'] as string) || crypto.randomUUID();
+
+      const patient = await patientService.getPatientById(
+        id,
+        user?.staffId,
+        user ? { role: user.role, departmentId: user.departmentId } : undefined,
+        correlationId,
+      );
 
       res.status(200).json({
         data: patient,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async updatePatient(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      const payload = updatePatientSchema.parse(req.body);
+      const user = req.user;
+
+      if (!user) {
+        throw new AuthenticationError('Unauthorized');
+      }
+
+      const correlationId = (req.headers['x-correlation-id'] as string) || crypto.randomUUID();
+
+      const updated = await patientService.updatePatient(id, payload, user.staffId, correlationId, {
+        role: user.role,
+        departmentId: user.departmentId,
+      });
+
+      res.status(200).json({
+        data: updated,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async addIdentity(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      const payload = createIdentitySchema.parse(req.body);
+      const user = req.user;
+
+      if (!user) {
+        throw new AuthenticationError('Unauthorized');
+      }
+
+      const correlationId = (req.headers['x-correlation-id'] as string) || crypto.randomUUID();
+
+      const identity = await patientService.addIdentity(id, payload, user.staffId, correlationId, {
+        role: user.role,
+        departmentId: user.departmentId,
+      });
+
+      res.status(201).json({
+        data: identity,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async verifyIdentity(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id, identityId } = req.params;
+      const payload = verifyIdentitySchema.parse(req.body);
+      const user = req.user;
+
+      if (!user) {
+        throw new AuthenticationError('Unauthorized');
+      }
+
+      const correlationId = (req.headers['x-correlation-id'] as string) || crypto.randomUUID();
+
+      const identity = await patientService.verifyIdentity(
+        id,
+        identityId,
+        payload.decision,
+        user.staffId,
+        correlationId,
+        {
+          role: user.role,
+          departmentId: user.departmentId,
+        },
+      );
+
+      res.status(200).json({
+        data: identity,
       });
     } catch (error) {
       next(error);

@@ -28,6 +28,7 @@ async function runMigrations() {
 
     await migrate(db, { migrationsFolder: path.resolve(__dirname, './migrations') });
     console.log('Migrations applied successfully.');
+    process.exit(0);
   } catch (error) {
     console.error('Migration failed:', error);
     process.exit(1);

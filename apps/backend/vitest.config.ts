@@ -7,7 +7,8 @@ export default defineConfig({
     include: ['src/**/*.test.ts'],
     exclude: ['dist/**', 'node_modules/**'],
     env: {
-      DATABASE_URL: 'postgresql://postgres:postgres@localhost:5432/hospital_ai_os',
+      DATABASE_URL:
+        process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:55432/hospital_ai_os',
       NODE_ENV: 'test',
     },
   },

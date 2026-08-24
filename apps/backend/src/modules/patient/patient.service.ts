@@ -1,15 +1,23 @@
 import { db } from '../../db';
 import { patients } from '../../db/schema/patients';
+import { identities } from '../../db/schema/identity';
 import { desc, ilike, or, eq, and, sql } from 'drizzle-orm';
-import { RegisterPatientRequest, GetPatientsQuery } from 'shared';
+import {
+  RegisterPatientRequest,
+  GetPatientsQuery,
+  UpdatePatientRequest,
+  CreateIdentityRequest,
+} from 'shared';
 import { ConflictError, NotFoundError } from 'shared/src/errors/AppError';
 import { auditService } from '../audit/audit.service';
+import { encryptField } from '../../utils/encryption';
 
 export class PatientService {
   /**
    * Generates a unique Medical Record Number (MRN).
    * Format: MRN-YYYY-XXXXX
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private async generateMRN(tx?: any): Promise<string> {
     const year = new Date().getUTCFullYear();
     const seqName = `patient_mrn_seq_${year}`;
@@ -18,19 +26,20 @@ export class PatientService {
     try {
       const result = await client.execute(sql.raw(`SELECT nextval('${seqName}') as seq`));
       // Drizzle raw execute returns an array of rows
-      const seqValue = Number((result as any[])[0].seq);
+      const seqValue = Number((result as unknown as Array<{ seq: number }>)[0].seq);
 
       // Format: MRN-YYYY-NNNNN. If we exceed 99,999 patients, padStart won't truncate,
       // it will just produce MRN-2026-100000 (safe rollover).
       return `MRN-${year}-${String(seqValue).padStart(5, '0')}`;
-    } catch (error: any) {
+    } catch (error) {
       // Lazy creation fallback (42P01 = undefined_table) in case we cross into a new year
       // and a DBA/migration hasn't created the sequence yet.
-      if (error.code === '42P01') {
+      const pgCode = (error as { code?: string }).code;
+      if (pgCode === '42P01') {
         await client.execute(sql.raw(`CREATE SEQUENCE IF NOT EXISTS ${seqName} START 1`));
         const result = await client.execute(sql.raw(`SELECT nextval('${seqName}') as seq`));
-        const seqValue = Number((result as any[])[0].seq);
-        return `MRN-${year}-${String(seqValue).padStart(5, '0')}`;
+        const retrySeqValue = Number((result as unknown as Array<{ seq: number }>)[0].seq);
+        return `MRN-${year}-${String(retrySeqValue).padStart(5, '0')}`;
       }
       throw error;
     }
@@ -161,7 +170,12 @@ export class PatientService {
     };
   }
 
-  async getPatientById(id: string) {
+  async getPatientById(
+    id: string,
+    accessedBy?: string,
+    authContext?: { role: string; departmentId: string },
+    correlationId?: string,
+  ) {
     const patient = await db.query.patients.findFirst({
       where: eq(patients.id, id),
     });
@@ -170,7 +184,182 @@ export class PatientService {
       throw new NotFoundError('Patient not found', { code: 'PATIENT_NOT_FOUND' });
     }
 
+    if (accessedBy && authContext && correlationId) {
+      await auditService.logEvent(
+        {
+          eventType: 'PATIENT_ACCESSED',
+          actorId: accessedBy,
+          actorRole: authContext.role,
+          actorDepartment: authContext.departmentId,
+          targetType: 'PATIENT',
+          targetId: id,
+          patientId: id,
+        },
+        correlationId,
+      );
+    }
+
     return patient;
+  }
+
+  /**
+   * Updates patient demographics. Runs in one transaction with the PATIENT_UPDATED audit event.
+   */
+  async updatePatient(
+    id: string,
+    payload: UpdatePatientRequest,
+    updaterId: string,
+    correlationId: string,
+    authContext: { role: string; departmentId: string },
+  ) {
+    return await db.transaction(async (tx) => {
+      const existing = await tx.query.patients.findFirst({ where: eq(patients.id, id) });
+      if (!existing) {
+        throw new NotFoundError('Patient not found', { code: 'PATIENT_NOT_FOUND' });
+      }
+
+      if (payload.phonePrimary && payload.phonePrimary !== existing.phonePrimary) {
+        const duplicate = await tx.query.patients.findFirst({
+          where: eq(patients.phonePrimary, payload.phonePrimary),
+        });
+        if (duplicate) {
+          throw new ConflictError('A patient with this phone number already exists.', {
+            code: 'DUPLICATE_PATIENT',
+          });
+        }
+      }
+
+      const [updated] = await tx
+        .update(patients)
+        .set(payload)
+        .where(eq(patients.id, id))
+        .returning();
+
+      await auditService.logEvent(
+        {
+          eventType: 'PATIENT_UPDATED',
+          actorId: updaterId,
+          actorRole: authContext.role,
+          actorDepartment: authContext.departmentId,
+          targetType: 'PATIENT',
+          targetId: id,
+          patientId: id,
+          actionDetail: { updatedFields: Object.keys(payload) },
+        },
+        correlationId,
+        tx,
+      );
+
+      return updated;
+    });
+  }
+
+  /**
+   * Registers an identity document for a patient. The document number is
+   * encrypted at rest (AES-256-GCM) and never returned to clients.
+   */
+  async addIdentity(
+    patientId: string,
+    payload: CreateIdentityRequest,
+    actorId: string,
+    correlationId: string,
+    authContext: { role: string; departmentId: string },
+  ) {
+    return await db.transaction(async (tx) => {
+      const patient = await tx.query.patients.findFirst({ where: eq(patients.id, patientId) });
+      if (!patient) {
+        throw new NotFoundError('Patient not found', { code: 'PATIENT_NOT_FOUND' });
+      }
+
+      const [identity] = await tx
+        .insert(identities)
+        .values({
+          patientId,
+          documentType: payload.documentType,
+          documentNumberEnc: encryptField(payload.documentNumber),
+        })
+        .returning();
+
+      await auditService.logEvent(
+        {
+          eventType: 'IDENTITY_UPLOADED',
+          actorId,
+          actorRole: authContext.role,
+          actorDepartment: authContext.departmentId,
+          targetType: 'IDENTITY',
+          targetId: identity.id,
+          patientId,
+          actionDetail: { documentType: payload.documentType },
+        },
+        correlationId,
+        tx,
+      );
+
+      return {
+        id: identity.id,
+        patientId: identity.patientId,
+        documentType: identity.documentType,
+        verificationStatus: identity.verificationStatus,
+        createdAt: identity.createdAt,
+      };
+    });
+  }
+
+  /**
+   * Verifies or rejects a patient identity document.
+   */
+  async verifyIdentity(
+    patientId: string,
+    identityId: string,
+    decision: 'verified' | 'rejected',
+    verifierId: string,
+    correlationId: string,
+    authContext: { role: string; departmentId: string },
+  ) {
+    return await db.transaction(async (tx) => {
+      const identity = await tx.query.identities.findFirst({
+        where: and(eq(identities.id, identityId), eq(identities.patientId, patientId)),
+      });
+      if (!identity) {
+        throw new NotFoundError('Identity document not found', { code: 'IDENTITY_NOT_FOUND' });
+      }
+      if (identity.verificationStatus !== 'pending') {
+        throw new ConflictError(
+          `Identity document has already been ${identity.verificationStatus}.`,
+          { code: 'IDENTITY_ALREADY_RESOLVED' },
+        );
+      }
+
+      const [updated] = await tx
+        .update(identities)
+        .set({ verificationStatus: decision, verifiedBy: verifierId })
+        .where(eq(identities.id, identityId))
+        .returning();
+
+      await auditService.logEvent(
+        {
+          eventType: 'IDENTITY_VERIFIED',
+          actorId: verifierId,
+          actorRole: authContext.role,
+          actorDepartment: authContext.departmentId,
+          targetType: 'IDENTITY',
+          targetId: identityId,
+          patientId,
+          actionDetail: { decision },
+        },
+        correlationId,
+        tx,
+      );
+
+      return {
+        id: updated.id,
+        patientId: updated.patientId,
+        documentType: updated.documentType,
+        verificationStatus: updated.verificationStatus,
+        verifiedBy: updated.verifiedBy,
+        createdAt: updated.createdAt,
+      };
+    });
   }
 }
 

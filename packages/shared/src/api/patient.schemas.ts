@@ -56,3 +56,27 @@ export const getPatientsQuerySchema = offsetPaginationSchema.extend({
 });
 
 export type GetPatientsQuery = z.infer<typeof getPatientsQuerySchema>;
+
+export const documentTypeSchema = z.enum([
+  'aadhaar',
+  'pan',
+  'passport',
+  'driving_license',
+  'voter_id',
+  'other',
+]);
+
+export type DocumentType = z.infer<typeof documentTypeSchema>;
+
+export const createIdentitySchema = z.object({
+  documentType: documentTypeSchema,
+  documentNumber: z.string().min(4).max(50),
+});
+
+export type CreateIdentityRequest = z.infer<typeof createIdentitySchema>;
+
+export const verifyIdentitySchema = z.object({
+  decision: z.enum(['verified', 'rejected']),
+});
+
+export type VerifyIdentityRequest = z.infer<typeof verifyIdentitySchema>;
