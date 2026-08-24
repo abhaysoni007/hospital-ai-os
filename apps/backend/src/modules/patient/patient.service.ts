@@ -10,10 +10,30 @@ export class PatientService {
    * Generates a unique Medical Record Number (MRN).
    * Format: MRN-YYYY-XXXXX
    */
-  private async generateMRN(): Promise<string> {
-    // SECURITY REMEDIATION: Unsafe MRN generation removed.
-    // Generation DEFERRED pending architectural decision (ADR-011).
-    throw new Error('MRN generation is DEFERRED pending architectural decision (ADR-011).');
+  private async generateMRN(tx?: any): Promise<string> {
+    const year = new Date().getUTCFullYear();
+    const seqName = `patient_mrn_seq_${year}`;
+    const client = tx || db;
+
+    try {
+      const result = await client.execute(sql.raw(`SELECT nextval('${seqName}') as seq`));
+      // Drizzle raw execute returns an array of rows
+      const seqValue = Number((result as any[])[0].seq);
+
+      // Format: MRN-YYYY-NNNNN. If we exceed 99,999 patients, padStart won't truncate,
+      // it will just produce MRN-2026-100000 (safe rollover).
+      return `MRN-${year}-${String(seqValue).padStart(5, '0')}`;
+    } catch (error: any) {
+      // Lazy creation fallback (42P01 = undefined_table) in case we cross into a new year
+      // and a DBA/migration hasn't created the sequence yet.
+      if (error.code === '42P01') {
+        await client.execute(sql.raw(`CREATE SEQUENCE IF NOT EXISTS ${seqName} START 1`));
+        const result = await client.execute(sql.raw(`SELECT nextval('${seqName}') as seq`));
+        const seqValue = Number((result as any[])[0].seq);
+        return `MRN-${year}-${String(seqValue).padStart(5, '0')}`;
+      }
+      throw error;
+    }
   }
 
   /**
@@ -45,7 +65,7 @@ export class PatientService {
         );
       }
 
-      const mrn = await this.generateMRN();
+      const mrn = await this.generateMRN(tx);
 
       const [newPatient] = await tx
         .insert(patients)
