@@ -10,10 +10,16 @@ import { Skeleton } from '../../../components/ui/Skeleton/Skeleton';
 import { ErrorState } from '../../../components/ui/ErrorState/ErrorState';
 import { AlertBanner } from '../../../components/ui/Alert/AlertBanner';
 import { EmptyState } from '../../../components/ui/EmptyState/EmptyState';
-import { Lock, FileText, Plus } from 'lucide-react';
+import { Lock, FileText, Plus, FlaskConical, TestTubes } from 'lucide-react';
+import { ORDER_STATUS_LABELS } from '../../../utils/diagnostics';
 import { encounterService } from '../../../services/encounter-service';
 import { clinicalService } from '../../../services/clinical-service';
-import type { EncounterDetailResponse, ClinicalRecordResponse } from 'shared';
+import { diagnosticsService } from '../../../services/diagnostics-service';
+import type {
+  EncounterDetailResponse,
+  ClinicalRecordResponse,
+  DiagnosticOrderResponse,
+} from 'shared';
 import styles from './encounter-detail.module.css';
 import { useAuth } from '../../../hooks/useAuth';
 import { hasPermission } from '../../../utils/rbac';
@@ -54,6 +60,16 @@ export default function EncounterDetailPage() {
   const [recordsLoading, setRecordsLoading] = useState(false);
   const [recordsError, setRecordsError] = useState<Error | null>(null);
 
+  // M10 — diagnostics section (gated, decomposed per ADR-013/016)
+  const canReadDx = hasPermission(role, 'diagnostic_order:read');
+  const canOrderDx = role === 'physician' && hasPermission(role, 'diagnostic_order:create');
+  const canCollectDx = role === 'lab_technician' && hasPermission(role, 'diagnostic_order:update');
+  const [orders, setOrders] = useState<DiagnosticOrderResponse[]>([]);
+  const [ordersLoading, setOrdersLoading] = useState(false);
+  const [ordersError, setOrdersError] = useState<Error | null>(null);
+  const [collectingId, setCollectingId] = useState<string | null>(null);
+  const [collectConflict, setCollectConflict] = useState(false);
+
   const fetchRecords = useCallback(async () => {
     if (!encounterId || !canReadClinical) return;
     setRecordsLoading(true);
@@ -69,9 +85,50 @@ export default function EncounterDetailPage() {
     }
   }, [encounterId, canReadClinical]);
 
+  const fetchOrders = useCallback(async () => {
+    if (!encounterId || !canReadDx) return;
+    setOrdersLoading(true);
+    setOrdersError(null);
+    try {
+      const res = await diagnosticsService.getEncounterOrders(encounterId);
+      setOrders(res.data);
+    } catch (err) {
+      setOrdersError(err as Error);
+    } finally {
+      setOrdersLoading(false);
+    }
+  }, [encounterId, canReadDx]);
+
   useEffect(() => {
     if (encounter && canReadClinical) fetchRecords();
-  }, [encounter, canReadClinical, fetchRecords]);
+    if (encounter && canReadDx) fetchOrders();
+  }, [encounter, canReadClinical, canReadDx, fetchRecords, fetchOrders]);
+
+  const handleCollect = async (orderId: string) => {
+    if (
+      !window.confirm(
+        'Confirm sample collection for this order. Collection can only be performed once.',
+      )
+    ) {
+      return;
+    }
+    setCollectingId(orderId);
+    setCollectConflict(false);
+    try {
+      await diagnosticsService.collectSample(orderId);
+      await fetchOrders();
+    } catch (err) {
+      const apiErr = err as Error & { code?: string; statusCode?: number };
+      if (apiErr.code === 'INVALID_TRANSITION' || apiErr.statusCode === 409) {
+        setCollectConflict(true); // another technician already collected it
+        await fetchOrders();
+      } else {
+        setOrdersError(apiErr);
+      }
+    } finally {
+      setCollectingId(null);
+    }
+  };
 
   function canUpdateRole(role?: StaffRole): boolean {
     return hasPermission(role, 'encounter:update') && (role === 'physician' || role === 'nurse');
@@ -360,6 +417,93 @@ export default function EncounterDetailPage() {
                     Record Vitals
                   </Button>
                 )}
+              </div>
+            )}
+          </Card>
+        )}
+
+        {canReadDx && encounter.status === 'active' && (
+          <Card>
+            <h2 className={styles.sectionTitle}>Diagnostics</h2>
+            {collectConflict && (
+              <AlertBanner
+                severity="warning"
+                title="Already collected"
+                dismissible
+                onDismiss={() => setCollectConflict(false)}
+              >
+                Another technician already collected this sample. The list below shows the current
+                state.
+              </AlertBanner>
+            )}
+            {ordersLoading ? (
+              <Skeleton variant="rectangular" height={100} />
+            ) : ordersError ? (
+              <ErrorState
+                title="Could not load diagnostics"
+                message={ordersError.message}
+                onRetry={fetchOrders}
+              />
+            ) : orders.length === 0 ? (
+              <EmptyState
+                icon={<TestTubes size={32} />}
+                title="No diagnostics ordered"
+                description="Lab orders placed during this consultation will appear here."
+              />
+            ) : (
+              <ul className={styles.recordList}>
+                {orders.map((o) => (
+                  <li key={o.id}>
+                    <button
+                      type="button"
+                      className={styles.recordRow}
+                      onClick={() => router.push(`/diagnostics/${o.id}`)}
+                    >
+                      <span style={{ fontWeight: 500 }}>{o.testName}</span>
+                      {o.priority === 'stat' && <Badge variant="critical">‼ STAT</Badge>}
+                      {o.priority === 'urgent' && <Badge variant="stable">▲ Urgent</Badge>}
+                      <Badge variant={o.status === 'ordered' ? 'stable' : 'neutral'}>
+                        {ORDER_STATUS_LABELS[o.status] ?? o.status}
+                      </Badge>
+                      <span className={styles.mrn}>
+                        ordered {new Date(o.createdAt).toLocaleString()}
+                        {o.collectedAt &&
+                          ` · collected ${new Date(o.collectedAt).toLocaleTimeString()}`}
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {(canOrderDx || canCollectDx) && (
+              <div
+                className={styles.actionsBar}
+                style={{ justifyContent: 'flex-start', marginTop: 16 }}
+              >
+                {canOrderDx && (
+                  <Button
+                    variant="secondary"
+                    size="md"
+                    iconLeft={<FlaskConical size={14} />}
+                    onClick={() => router.push(`/encounters/${encounter.id}/diagnostics/new`)}
+                  >
+                    Order Diagnostic
+                  </Button>
+                )}
+                {canCollectDx &&
+                  orders
+                    .filter((o) => o.status === 'ordered')
+                    .map((o) => (
+                      <Button
+                        key={o.id}
+                        variant="primary"
+                        size="md"
+                        disabled={collectingId === o.id}
+                        onClick={() => handleCollect(o.id)}
+                      >
+                        {collectingId === o.id ? 'Collecting…' : `Collect Sample — ${o.testName}`}
+                      </Button>
+                    ))}
               </div>
             )}
           </Card>

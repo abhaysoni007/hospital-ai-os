@@ -1,0 +1,161 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-6);
+  padding: var(--spacing-6);
+  height: 100%;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+}
+
+.title {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-600);
+  color: var(--color-slate-900);
+}
+
+.filters {
+  display: flex;
+  gap: var(--spacing-4);
+  background: var(--color-white);
+  padding: var(--spacing-4);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-slate-200);
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+.filterField {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--color-slate-700);
+}
+
+.filterField select,
+.filterField input {
+  min-width: 150px;
+  padding: var(--spacing-2) var(--spacing-3);
+  border: 1px solid var(--color-slate-300);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  height: 40px;
+  background: var(--color-white);
+}
+
+.tableContainer {
+  background: var(--color-white);
+  border: 1px solid var(--color-slate-200);
+  border-radius: var(--radius-lg);
+  overflow-x: auto;
+  flex: 1;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.table th {
+  background: var(--color-slate-50);
+  padding: var(--spacing-3) var(--spacing-4);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-600);
+  color: var(--color-slate-500);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--color-slate-200);
+  white-space: nowrap;
+}
+
+.table td {
+  padding: var(--spacing-4);
+  font-size: var(--font-size-sm);
+  color: var(--color-slate-700);
+  border-bottom: 1px solid var(--color-slate-100);
+  vertical-align: middle;
+}
+
+.row {
+  cursor: pointer;
+}
+
+.row:hover {
+  background: var(--color-slate-50);
+}
+
+/* STAT rows carry a strong left rule + tinted background — icon + text + tone,
+   never color alone. */
+.rowStat {
+  box-shadow: inset 4px 0 0 var(--color-critical-600);
+  background: color-mix(in srgb, var(--color-critical-600) 4%, transparent);
+}
+
+.testName {
+  display: block;
+  font-weight: var(--font-weight-500);
+  color: var(--color-slate-900);
+}
+
+.code {
+  font-size: var(--font-size-xs);
+  color: var(--color-slate-500);
+  font-family: monospace;
+}
+
+.priorityChip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  padding: var(--spacing-1) var(--spacing-2);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-600);
+}
+
+.priority_routine {
+  background: var(--color-slate-100);
+  color: var(--color-slate-600);
+}
+
+.priority_urgent {
+  background: var(--color-warning-100, #fef3c7);
+  color: var(--color-warning-700, #b45309);
+}
+
+.priority_stat {
+  background: var(--color-critical-600);
+  color: var(--color-white);
+  letter-spacing: 0.08em;
+}
+
+.collected {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  color: var(--color-primary-700);
+}
+
+.pending {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  color: var(--color-slate-500);
+}
+
+@media (max-width: 900px) {
+  .table th:nth-child(4),
+  .table td:nth-child(4) {
+    display: none; /* degrade gracefully: ordered time hidden on narrow view */
+  }
+}
