@@ -176,8 +176,12 @@ They are served by their own permission-controlled endpoints (§2.5, §2.6, §2.
 | POST | `/encounters/:encounterId/clinical-records` | Create clinical record | Required | `clinical_record:write` | `CLINICAL_RECORD_CREATED` |
 | GET | `/encounters/:encounterId/clinical-records` | List records for encounter | Required | `clinical_record:read` | `CLINICAL_RECORD_ACCESSED` |
 | GET | `/encounters/:encounterId/clinical-records/:id` | Get single record | Required | `clinical_record:read` | `CLINICAL_RECORD_ACCESSED` |
-| PATCH | `/encounters/:encounterId/clinical-records/:id` | Update draft record | Required | `clinical_record:write` | — |
+| PATCH | `/encounters/:encounterId/clinical-records/:id` | Update draft record | Required | `clinical_record:write` | `CLINICAL_RECORD_DRAFT_UPDATED` |
 | POST | `/encounters/:encounterId/clinical-records/:id/sign` | Sign a draft | Required | `clinical_record:sign` | `CLINICAL_NOTE_SIGNED` |
+
+> [!NOTE]
+> Content structure, draft-update auditing, sign-version semantics, amendment
+> deferral, and scope refinements are governed by **ADR-015**.
 
 **POST /encounters/:encounterId/clinical-records**
 ```

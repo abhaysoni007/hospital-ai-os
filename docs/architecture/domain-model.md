@@ -275,7 +275,7 @@ Staff ──► Department
 
 **Lifecycle:** `Draft` → `Signed` → `Amended` (creates new version; previous version immutable)
 
-**Audit Requirements:** `CLINICAL_RECORD_CREATED`, `CLINICAL_NOTE_SIGNED`, `CLINICAL_RECORD_AMENDED`, `CLINICAL_RECORD_ACCESSED`
+**Audit Requirements:** `CLINICAL_RECORD_CREATED`, `CLINICAL_NOTE_SIGNED`, `CLINICAL_RECORD_AMENDED` (reserved — amendment deferred per ADR-015), `CLINICAL_RECORD_ACCESSED`, `CLINICAL_RECORD_DRAFT_UPDATED` (added per ADR-015)
 
 ---
 
