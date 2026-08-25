@@ -34,6 +34,9 @@ export const diagnosticOrders = pgTable(
     clinicalIndication: text('clinical_indication'),
     priority: orderPriorityEnum('priority').default('routine').notNull(),
     status: diagnosticOrderStatusEnum('status').default('ordered').notNull(),
+    // ADR-016 Decision 4 — collection provenance (migration 0004)
+    collectedAt: timestamp('collected_at', { withTimezone: true }),
+    collectedBy: uuid('collected_by').references(() => staff.id),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
   },

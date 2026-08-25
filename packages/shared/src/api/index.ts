@@ -7,3 +7,4 @@ export * from './patient.schemas';
 export * from './appointment.schemas';
 export * from './encounter.schemas';
 export * from './clinical.schemas';
+export * from './diagnostics.schemas';

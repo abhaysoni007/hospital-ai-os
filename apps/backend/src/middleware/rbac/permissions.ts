@@ -130,6 +130,9 @@ export const ROLE_PERMISSIONS: Readonly<Record<StaffRole, ReadonlySet<Permission
     'clinical_record:sign',
     'diagnostic_order:create',
     'diagnostic_order:read',
+    // ADR-016 Decision 2: ordering physician, own order, pre-collection only.
+    // Service enforces the conditions; this grant enables the capability.
+    'diagnostic_order:cancel',
     'diagnostic_result:read',
     'encounter:create',
     'encounter:read',

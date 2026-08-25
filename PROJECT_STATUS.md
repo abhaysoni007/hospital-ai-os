@@ -1,7 +1,7 @@
 # Hospital AI OS — Project Status
 
-> **Current Phase:** Phase 5 In Progress (Workflow Domain) - M9 VERIFIED + FROZEN
-> **Next: M10 Lab Module**
+> **Current Phase:** Phase 5 In Progress (Workflow Domain) - M10 BACKEND VERIFIED
+> **Next: M10 Frontend slice, then M11/M12 AI**
 
 ---
 
@@ -16,7 +16,8 @@
 - [x] **Phase 5 — M8 Encounter Module, Slice 1** — COMPLETE. Booking (ADR-012 tokens), cancellation, check-in → encounter creation, encounter list/detail/activation (`registered → active`), optimistic concurrency, department scope, RBAC matrix tests, audit atomicity, PHI response boundary enforced server-side. Frontend: `/appointments`, `/appointments/new`, `/encounters`, `/encounters/[id]` in the existing design system.
 - [x] **Phase 5 — M8 verification/sign-off COMPLETE (FROZEN).** Final gate: build/lint/format PASS; shared 6/6; backend **282/282**; live API gate **13/13**; migration idempotent. Booking-options endpoint ratified as ADR-014. See `docs/implementation/MILESTONE_8_REPORT.md`.
 - [x] **Phase 5 - M9 Clinical Module - COMPLETE.** Create/read/update/sign lifecycle with signed immutability, optimistic concurrency, physician notes + nurse vitals, ADR-015 content model and audit events (incl. CLINICAL_RECORD_DRAFT_UPDATED), PHI boundaries server-enforced. Frontend clinical workspace on encounter screens. Gates: build/lint/format PASS; shared 31/31; backend 348/348; live API gate 30/30. See docs/implementation/MILESTONE_9_REPORT.md.
-- [ ] **Next: M10 Lab Module** - Ready to start.
+- [x] **Phase 5 - M10 Diagnostics BACKEND - COMPLETE.** Order lifecycle, collection provenance (migration 0004), deterministic critical-value evaluator (ADR-010 battery), outbox-via-notifications alerts (ADR-016), four-eyes verification, M5 amendment (diagnostic_order:cancel -> physician). Gates: shared 43/43; backend 487/487; live gate 23/23. See docs/implementation/MILESTONE_10_BACKEND_REPORT.md.
+- [ ] **Phase 5 - M10 Frontend vertical slice** - Next (backend contracts frozen).
 
 ---
 

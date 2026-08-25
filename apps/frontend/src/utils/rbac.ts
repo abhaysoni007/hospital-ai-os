@@ -20,6 +20,8 @@ export const ROLE_PERMISSIONS: Record<StaffRole, readonly Permission[]> = {
     'clinical_record:sign',
     'diagnostic_order:create',
     'diagnostic_order:read',
+    // ADR-016 Decision 2 (mirror of backend matrix)
+    'diagnostic_order:cancel',
     'diagnostic_result:read',
     'encounter:create',
     'encounter:read',
