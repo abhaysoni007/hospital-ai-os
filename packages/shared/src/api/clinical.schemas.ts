@@ -95,12 +95,19 @@ export type Vitals = z.infer<typeof vitalsSchema>;
 /**
  * Discriminated union for creation. NOTE: `discharge_summary` is deliberately
  * absent — its authoring workflow belongs to M13 (ADR-015 Decision 2).
+ * ADR-019: optional `aiDraftId` enables ATOMIC provenance binding — accepted
+ * only for AI-draftable note types; the M9 create path is otherwise unchanged.
  */
 export const createClinicalRecordSchema = z.discriminatedUnion('recordType', [
-  z.object({ recordType: z.literal('soap'), content: soapContentSchema }),
+  z.object({
+    recordType: z.literal('soap'),
+    content: soapContentSchema,
+    aiDraftId: uuidSchema.optional(),
+  }),
   z.object({
     recordType: z.literal('progress_note'),
     content: progressNoteContentSchema,
+    aiDraftId: uuidSchema.optional(),
   }),
   z.object({
     recordType: z.literal('vital_signs'),
@@ -161,6 +168,8 @@ export const clinicalRecordResponseSchema = z.object({
   signedBy: uuidSchema.nullable(),
   signedAt: z.string().datetime().nullable(),
   createdBy: uuidSchema,
+  /** ADR-019: read-only provenance pointer (null unless AI-bound at creation). */
+  aiDraftId: uuidSchema.nullable(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
 });
@@ -179,6 +188,7 @@ export type ClinicalRecordResponse = {
   signedBy: string | null;
   signedAt: string | null;
   createdBy: string;
+  aiDraftId: string | null;
   createdAt: string;
   updatedAt: string;
 };

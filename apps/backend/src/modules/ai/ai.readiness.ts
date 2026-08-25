@@ -14,6 +14,21 @@ export interface ReadinessInputs {
   encryptionKeyValid: boolean;
 }
 
+/** Single source of truth for readiness inputs (orchestrator + health). */
+export function resolveReadinessInputs(cfg: {
+  AI_ENABLED: boolean;
+  AI_PROVIDER: string;
+  AI_API_KEY?: string;
+  NODE_ENV: string;
+}): ReadinessInputs {
+  return {
+    aiEnabled: cfg.AI_ENABLED,
+    // The deterministic fake provider requires no credentials by design.
+    apiKeyPresent: cfg.AI_PROVIDER === 'fake' || Boolean(cfg.AI_API_KEY),
+    encryptionKeyValid: isEncryptionKeyValid(cfg.NODE_ENV, process.env.ENCRYPTION_KEY),
+  };
+}
+
 const MIN_PRODUCTION_KEY_LENGTH = 32;
 
 /** Mirrors utils/encryption.ts policy without importing process.env here. */

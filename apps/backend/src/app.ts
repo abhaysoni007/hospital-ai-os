@@ -15,6 +15,7 @@ import { patientRoutes } from './modules/patient/patient.routes';
 import { appointmentRoutes } from './modules/appointment/appointment.routes';
 import { encounterRoutes } from './modules/encounter/encounter.routes';
 import { clinicalRoutes } from './modules/clinical/clinical.routes';
+import { aiRoutes } from './modules/ai/ai.routes';
 import {
   diagnosticEncounterRoutes,
   diagnosticOrderRoutes,
@@ -50,6 +51,7 @@ app.use('/api/v1/encounters', encounterRoutes);
 app.use('/api/v1/encounters/:encounterId/clinical-records', clinicalRoutes);
 app.use('/api/v1/encounters/:encounterId/diagnostic-orders', diagnosticEncounterRoutes);
 app.use('/api/v1/diagnostic-orders', diagnosticOrderRoutes);
+app.use('/api/v1/ai', aiRoutes);
 // M5 test infrastructure only — no business logic, no patient data
 app.use('/api/v1/_test/authz-probe', authorizationProbeRoutes);
 

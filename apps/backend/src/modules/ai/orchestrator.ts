@@ -15,7 +15,7 @@ import { aiShutdownRegistry, withProviderTimeout } from './resilience/timeout';
 import { PipelineResult, runValidationPipeline } from './validation/output-pipeline';
 import { startOfUtcDay, aiInteractionRepository } from './ai.persistence';
 import { AI_AUDIT_EVENTS, AiAuditActor, buildAiInteractionAuditEvent } from './ai.audit';
-import { computeAiSubsystemState, isEncryptionKeyValid } from './ai.readiness';
+import { computeAiSubsystemState, resolveReadinessInputs } from './ai.readiness';
 import { AIServiceError } from 'shared';
 import { RateLimitError } from 'shared';
 
@@ -43,6 +43,8 @@ export interface InvokeStructuredParams<T> {
   blocks: readonly ContextBlock[];
   /** Bounded clinician slot. */
   instructions?: string;
+  /** Capability request metadata persisted in contextSummary (e.g., recordType — ADR-019 B8). */
+  requestMeta?: Record<string, unknown>;
   outputSchema: z.ZodType<T>;
   correlationId?: string;
 }
@@ -113,14 +115,7 @@ export class AIOrchestrator {
     if (this.readinessOverride) {
       state = this.readinessOverride.enabled ? 'ready' : 'disabled';
     } else {
-      state = computeAiSubsystemState(
-        {
-          aiEnabled: config.AI_ENABLED,
-          apiKeyPresent: Boolean(config.AI_API_KEY),
-          encryptionKeyValid: isEncryptionKeyValid(config.NODE_ENV, process.env.ENCRYPTION_KEY),
-        },
-        this.breaker.getState(),
-      );
+      state = computeAiSubsystemState(resolveReadinessInputs(config), this.breaker.getState());
     }
     if (state !== 'ready') {
       throw new AIServiceError(`AI subsystem unavailable (${state})`);
@@ -208,6 +203,7 @@ export class AIOrchestrator {
         manifest,
         computedGaps: gaps,
         blockCounts: countBlocks(params.blocks),
+        ...(params.requestMeta ?? {}),
       },
       rawResponseEncrypted: encryptField(rawText),
       parsedOutput:

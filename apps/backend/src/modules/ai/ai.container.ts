@@ -4,7 +4,7 @@ import { FakeProvider } from './adapters/fake.provider';
 import { GeminiAdapter } from './adapters/gemini.adapter';
 import { AIProviderAdapter } from './adapters/provider.interface';
 import { AIOrchestrator } from './orchestrator';
-import { computeAiSubsystemState, isEncryptionKeyValid, AiSubsystemState } from './ai.readiness';
+import { computeAiSubsystemState, resolveReadinessInputs, AiSubsystemState } from './ai.readiness';
 
 /**
  * Composition root for the M11 AI infrastructure (ADR-017 §11).
@@ -24,14 +24,7 @@ const adapter = buildAdapter();
 export const aiOrchestrator = new AIOrchestrator(adapter, auditService);
 
 export function getAiSubsystemState(): AiSubsystemState {
-  return computeAiSubsystemState(
-    {
-      aiEnabled: config.AI_ENABLED,
-      apiKeyPresent: Boolean(config.AI_API_KEY),
-      encryptionKeyValid: isEncryptionKeyValid(config.NODE_ENV, process.env.ENCRYPTION_KEY),
-    },
-    aiOrchestrator.breakerState,
-  );
+  return computeAiSubsystemState(resolveReadinessInputs(config), aiOrchestrator.breakerState);
 }
 
 /** Metadata-only snapshot for the health endpoint (no secrets, no credentials). */

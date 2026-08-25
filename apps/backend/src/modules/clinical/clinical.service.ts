@@ -12,6 +12,9 @@ import {
 } from 'shared';
 import { AuthorizationError, ConflictError, NotFoundError } from 'shared/src/errors/AppError';
 import { auditService } from '../audit/audit.service';
+import { AI_AUDIT_EVENTS, buildAiInteractionAuditEvent } from '../ai/ai.audit';
+import { aiInteractions } from '../../db/schema/ai';
+import { config } from '../../config';
 import type { ClinicalStatus } from './clinical.state-machine';
 
 type AuthContext = { role: string; departmentId: string };
@@ -37,9 +40,80 @@ function toResponse(row: any): ClinicalRecordResponse {
     signedBy: row.signedBy ?? null,
     signedAt: row.signedAt ? row.signedAt.toISOString() : null,
     createdBy: row.createdBy,
+    aiDraftId: row.aiDraftId ?? null,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   };
+}
+
+/**
+ * ADR-019 B1–B10 — atomic AI draft binding. Runs INSIDE the clinical-record
+ * creation transaction; any failure throws ⇒ full rollback (record never
+ * persists without its provenance transition).
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function bindAiDraftInTx(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  tx: any,
+  opts: {
+    interactionId: string;
+    authorId: string;
+    encounterId: string;
+    recordType: 'soap' | 'progress_note';
+  },
+): Promise<void> {
+  // B1 — existence (foreign ids are indistinguishable via B2's 404 semantics;
+  // here a missing row is a client error on a just-issued draft).
+  const interaction = await tx.query.aiInteractions.findFirst({
+    where: eq(aiInteractions.id, opts.interactionId),
+  });
+  if (!interaction)
+    throw new NotFoundError('AI draft not found', { code: 'INTERACTION_NOT_FOUND' });
+  // B2 ownership.
+  if (interaction.initiatedBy !== opts.authorId) {
+    throw new NotFoundError('AI draft not found', { code: 'INTERACTION_NOT_FOUND' });
+  }
+  // B3 type.
+  if (interaction.interactionType !== 'note_draft') {
+    throw new ConflictError('Interaction is not an AI note draft.', { code: 'INVALID_TRANSITION' });
+  }
+  // B4 grounding.
+  if (interaction.groundingStatus !== 'grounded') {
+    throw new ConflictError('AI draft was not successfully grounded.', {
+      code: 'INVALID_TRANSITION',
+    });
+  }
+  // B5 state (pre-check for precise errors; B10 guard enforces atomically).
+  if (interaction.userAction !== 'pending') {
+    throw new ConflictError('AI draft has already been resolved.', { code: 'ALREADY_RESOLVED' });
+  }
+  // B6 TTL (lazy staleness).
+  const ttlMs = config.AI_DRAFT_TTL_HOURS * 3_600_000;
+  if (Date.now() - interaction.createdAt.getTime() > ttlMs) {
+    throw new ConflictError('AI draft has expired; regenerate it.', { code: 'DRAFT_EXPIRED' });
+  }
+  // B7 encounter match.
+  if (interaction.encounterId !== opts.encounterId) {
+    throw new ConflictError('AI draft belongs to a different encounter.', {
+      code: 'ENCOUNTER_MISMATCH',
+    });
+  }
+  // B8 requested/generated record-type match (persisted at commission time).
+  const summary = (interaction.contextSummary ?? {}) as Record<string, unknown>;
+  if (summary['recordType'] !== opts.recordType) {
+    throw new ConflictError('AI draft was generated for a different note type.', {
+      code: 'TYPE_MISMATCH',
+    });
+  }
+  // B10 — guarded atomic transition pending→accepted; zero rows ⇒ rollback.
+  const guarded = await tx
+    .update(aiInteractions)
+    .set({ userAction: 'accepted' })
+    .where(and(eq(aiInteractions.id, opts.interactionId), eq(aiInteractions.userAction, 'pending')))
+    .returning({ id: aiInteractions.id });
+  if (guarded.length === 0) {
+    throw new ConflictError('AI draft has already been resolved.', { code: 'ALREADY_RESOLVED' });
+  }
 }
 
 export class ClinicalService {
@@ -108,6 +182,7 @@ export class ClinicalService {
       status: 'draft';
       version: number;
       createdBy: string;
+      aiDraftId?: string;
     } = {
       encounterId,
       patientId: encounter.patientId, // server-side linkage only
@@ -121,7 +196,26 @@ export class ClinicalService {
       insertValues.vitals = payload.vitals;
     }
 
+    // ADR-019: optional AI provenance — note types only; vitals are nurse-entered
+    // and never AI-drafted (the union's vital_signs member carries no aiDraftId).
+    const aiDraftId =
+      payload.recordType === 'vital_signs' ? undefined : (payload.aiDraftId as string | undefined);
+    if (aiDraftId) insertValues.aiDraftId = aiDraftId;
+
     return await db.transaction(async (tx) => {
+      // B1–B10 invariant checks + guarded pending→accepted transition FIRST:
+      // zero-row guard ⇒ thrown ConflictError rolls back the entire creation.
+      let acceptedInteractionId: string | null = null;
+      if (aiDraftId) {
+        await bindAiDraftInTx(tx, {
+          interactionId: aiDraftId,
+          authorId,
+          encounterId,
+          recordType: payload.recordType as 'soap' | 'progress_note',
+        });
+        acceptedInteractionId = aiDraftId;
+      }
+
       const [record] = await tx.insert(clinicalRecords).values(insertValues).returning();
 
       await auditService.logEvent(
@@ -142,6 +236,34 @@ export class ClinicalService {
         correlationId,
         tx,
       );
+
+      // ADR-020: acceptance audit JOINS the same business transaction.
+      if (acceptedInteractionId) {
+        await auditService.logEvent(
+          buildAiInteractionAuditEvent({
+            eventType: AI_AUDIT_EVENTS.DRAFT_ACCEPTED,
+            actor: {
+              staffId: authorId,
+              role: authContext.role,
+              departmentId: authContext.departmentId,
+            },
+            interactionId: acceptedInteractionId,
+            patientId: record.patientId,
+            detail: {
+              capability: 'note_draft',
+              promptTemplateId: 'bound-at-create',
+              modelProvider: 'n/a',
+              modelName: 'n/a',
+              inputTokens: 0,
+              outputTokens: 0,
+              latencyMs: 0,
+              groundingStatus: 'grounded',
+            },
+          }),
+          correlationId,
+          tx,
+        );
+      }
 
       return toResponse(record);
     });

@@ -293,3 +293,40 @@ export const aiInteractionMetadataSchema = z
   })
   .strict();
 export type AiInteractionMetadata = z.infer<typeof aiInteractionMetadataSchema>;
+
+// ---------------------------------------------------------------------------
+// M12 � note-draft capability contracts (ADR-018/019)
+// ---------------------------------------------------------------------------
+
+export const rejectionReasonCategorySchema = z.enum([
+  'INACCURATE_CLINICAL_CONTENT',
+  'MISSING_RELEVANT_CONTEXT',
+  'POOR_STRUCTURE',
+  'HALLUCINATION_SUSPECTED',
+  'CLINICIAN_PREFERENCE',
+  'OTHER',
+]);
+export type RejectionReasonCategory = z.infer<typeof rejectionReasonCategorySchema>;
+
+/** PATCH /ai/interactions/:id/action � reject or edit-flag ONLY (ADR-019: accept = bind). */
+export const aiInteractionActionRequestSchema = z.discriminatedUnion('action', [
+  z.object({
+    action: z.literal('rejected'),
+    reasonCategory: rejectionReasonCategorySchema,
+    reasonNote: z.string().trim().max(500).optional(),
+  }),
+  z.object({ action: z.literal('edited') }),
+]);
+export type AiInteractionActionRequest = z.infer<typeof aiInteractionActionRequestSchema>;
+
+/** POST /ai/note-draft response (SOURCE-GROUNDED draft; never auto-bound). */
+export interface AiNoteDraftResponse {
+  interactionId: string;
+  groundingStatus: 'grounded';
+  promptTemplateId: string;
+  provider: string;
+  model: string;
+  latencyMs: number;
+  computedGaps: GapCode[];
+  draft: SoapNoteDraftOutput | ProgressNoteDraftOutput;
+}

@@ -59,3 +59,5 @@
 
 27. `project-management/` — Roadmap, Backlog, Milestones, and Risk Register.
 28. `.claude/` — Rules, skills, agents, templates, workflows, and checklists.
+
+Phase 5 � M12 AI Hero VERIFIED + FROZEN

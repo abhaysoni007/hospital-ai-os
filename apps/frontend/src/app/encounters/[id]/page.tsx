@@ -15,6 +15,7 @@ import { ORDER_STATUS_LABELS } from '../../../utils/diagnostics';
 import { encounterService } from '../../../services/encounter-service';
 import { clinicalService } from '../../../services/clinical-service';
 import { diagnosticsService } from '../../../services/diagnostics-service';
+import { AiNoteDraftPanel } from '@/components/ai/AiNoteDraftPanel';
 import type {
   EncounterDetailResponse,
   ClinicalRecordResponse,
@@ -327,9 +328,25 @@ export default function EncounterDetailPage() {
           )}
         </div>
 
+        {/* M12 HERO — governed AI note-draft panel (assigned physician only). */}
+        {physicianWrite &&
+          hasPermission(role, 'ai_interaction:invoke') &&
+          encounter.status === 'active' && (
+            <Card>
+              <h2 className={styles.sectionTitle}>AI Assistance</h2>
+              <AiNoteDraftPanel
+                encounterId={encounterId}
+                recordType="soap"
+                onBound={() => {
+                  void fetchRecords();
+                }}
+              />
+            </Card>
+          )}
+
         {canReadClinical && encounter.status === 'active' && (
           <Card>
-            <h2 className={styles.sectionTitle}>Clinical Records</h2>
+            <h2 className={styles.sectionTitle}>Clinical Records</h2>{' '}
             {recordsLoading ? (
               <Skeleton variant="rectangular" height={120} />
             ) : recordsError ? (
