@@ -1,7 +1,7 @@
 # Hospital AI OS — Project Status
 
-> **Current Phase:** Phase 5 In Progress (Workflow Domain) — M8 VERIFIED + FROZEN
-> **Next: M9 Clinical Module**
+> **Current Phase:** Phase 5 In Progress (Workflow Domain) - M9 VERIFIED + FROZEN
+> **Next: M10 Lab Module**
 
 ---
 
@@ -15,7 +15,8 @@
 - [x] **Phase 5 — Architecture Review & Decisions** — Complete. Scope confirmed (M8/M9/M10); ADR-012 (appointment token allocation) and ADR-013 (encounter-detail PHI boundary) ACCEPTED; `api-architecture.md` §2.4 corrected per ADR-013.
 - [x] **Phase 5 — M8 Encounter Module, Slice 1** — COMPLETE. Booking (ADR-012 tokens), cancellation, check-in → encounter creation, encounter list/detail/activation (`registered → active`), optimistic concurrency, department scope, RBAC matrix tests, audit atomicity, PHI response boundary enforced server-side. Frontend: `/appointments`, `/appointments/new`, `/encounters`, `/encounters/[id]` in the existing design system.
 - [x] **Phase 5 — M8 verification/sign-off COMPLETE (FROZEN).** Final gate: build/lint/format PASS; shared 6/6; backend **282/282**; live API gate **13/13**; migration idempotent. Booking-options endpoint ratified as ADR-014. See `docs/implementation/MILESTONE_8_REPORT.md`.
-- [ ] **Next: M9 Clinical Module** — Not started.
+- [x] **Phase 5 - M9 Clinical Module - COMPLETE.** Create/read/update/sign lifecycle with signed immutability, optimistic concurrency, physician notes + nurse vitals, ADR-015 content model and audit events (incl. CLINICAL_RECORD_DRAFT_UPDATED), PHI boundaries server-enforced. Frontend clinical workspace on encounter screens. Gates: build/lint/format PASS; shared 31/31; backend 348/348; live API gate 30/30. See docs/implementation/MILESTONE_9_REPORT.md.
+- [ ] **Next: M10 Lab Module** - Ready to start.
 
 ---
 

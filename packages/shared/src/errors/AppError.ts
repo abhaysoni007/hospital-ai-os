@@ -33,8 +33,18 @@ export class AuthorizationError extends AppError {
 
 export class NotFoundError extends AppError {
   readonly statusCode = 404;
-  readonly code = 'NOT_FOUND_ERROR';
+  readonly code: string;
   readonly isOperational = true;
+
+  /**
+   * @param options.code Optional machine-readable sub-code surfaced in the API
+   *   error envelope (e.g. ENCOUNTER_NOT_FOUND, PATIENT_NOT_FOUND).
+   *   Defaults to 'NOT_FOUND_ERROR'. The options object is also retained as `details`.
+   */
+  constructor(message: string, options?: { code?: string } & Record<string, unknown>) {
+    super(message, options);
+    this.code = options?.code ?? 'NOT_FOUND_ERROR';
+  }
 }
 
 export class ConflictError extends AppError {

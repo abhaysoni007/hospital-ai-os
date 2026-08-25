@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { AppShell } from '../../../components/layout/AppShell/AppShell';
 import { Button } from '../../../components/ui/Button/Button';
 import { Badge } from '../../../components/ui/Badge/Badge';
@@ -9,8 +9,11 @@ import { Card } from '../../../components/ui/Card/Card';
 import { Skeleton } from '../../../components/ui/Skeleton/Skeleton';
 import { ErrorState } from '../../../components/ui/ErrorState/ErrorState';
 import { AlertBanner } from '../../../components/ui/Alert/AlertBanner';
+import { EmptyState } from '../../../components/ui/EmptyState/EmptyState';
+import { Lock, FileText, Plus } from 'lucide-react';
 import { encounterService } from '../../../services/encounter-service';
-import type { EncounterDetailResponse } from 'shared';
+import { clinicalService } from '../../../services/clinical-service';
+import type { EncounterDetailResponse, ClinicalRecordResponse } from 'shared';
 import styles from './encounter-detail.module.css';
 import { useAuth } from '../../../hooks/useAuth';
 import { hasPermission } from '../../../utils/rbac';
@@ -26,6 +29,7 @@ const STATUS_FLOW = [
 
 export default function EncounterDetailPage() {
   const params = useParams<{ id: string }>();
+  const router = useRouter();
   const encounterId = params?.id;
   const { user } = useAuth();
   const [encounter, setEncounter] = useState<EncounterDetailResponse | null>(null);
@@ -38,6 +42,36 @@ export default function EncounterDetailPage() {
   // permission. The backend already omits the data — this is UX only.
   const canReadClinical = hasPermission(user?.role as StaffRole, 'clinical_record:read');
   const canActivate = canUpdateRole(user?.role as StaffRole);
+
+  // M9 — clinical records section (fetched from gated sub-endpoint)
+  const role = user?.role as StaffRole | undefined;
+  const physicianWrite = role === 'physician' && hasPermission(role, 'clinical_record:write');
+  const nurseVitals = role === 'nurse' && hasPermission(role, 'clinical_record:write');
+  const canWriteAny = physicianWrite || nurseVitals;
+  const canWriteVitalsOnly = nurseVitals;
+
+  const [records, setRecords] = useState<ClinicalRecordResponse[]>([]);
+  const [recordsLoading, setRecordsLoading] = useState(false);
+  const [recordsError, setRecordsError] = useState<Error | null>(null);
+
+  const fetchRecords = useCallback(async () => {
+    if (!encounterId || !canReadClinical) return;
+    setRecordsLoading(true);
+    setRecordsError(null);
+    try {
+      const res = await clinicalService.getClinicalRecords(encounterId);
+      setRecords(res.data);
+    } catch (err) {
+      // A record-read failure must not break the whole encounter view
+      setRecordsError(err as Error);
+    } finally {
+      setRecordsLoading(false);
+    }
+  }, [encounterId, canReadClinical]);
+
+  useEffect(() => {
+    if (encounter && canReadClinical) fetchRecords();
+  }, [encounter, canReadClinical, fetchRecords]);
 
   function canUpdateRole(role?: StaffRole): boolean {
     return hasPermission(role, 'encounter:update') && (role === 'physician' || role === 'nurse');
@@ -236,10 +270,104 @@ export default function EncounterDetailPage() {
           )}
         </div>
 
+        {canReadClinical && encounter.status === 'active' && (
+          <Card>
+            <h2 className={styles.sectionTitle}>Clinical Records</h2>
+            {recordsLoading ? (
+              <Skeleton variant="rectangular" height={120} />
+            ) : recordsError ? (
+              <ErrorState
+                title="Could not load clinical records"
+                message={recordsError.message}
+                onRetry={fetchRecords}
+              />
+            ) : records.length === 0 ? (
+              <EmptyState
+                icon={<FileText size={32} />}
+                title="No clinical records yet"
+                description="Notes and vitals recorded during this consultation will appear here."
+              />
+            ) : (
+              <ul className={styles.recordList}>
+                {records.map((r) => (
+                  <li key={r.id}>
+                    <button
+                      type="button"
+                      className={styles.recordRow}
+                      onClick={() =>
+                        router.push(`/encounters/${encounter.id}/clinical-records/${r.id}`)
+                      }
+                    >
+                      <span style={{ textTransform: 'capitalize' }}>
+                        {canWriteVitalsOnly || canWriteAny
+                          ? r.recordType.replace(/_/g, ' ')
+                          : r.recordType.replace(/_/g, ' ')}
+                        {r.status === 'signed' && <Lock size={12} style={{ marginLeft: 6 }} />}
+                      </span>
+                      <Badge variant={r.status === 'draft' ? 'stable' : 'neutral'}>
+                        {r.status}
+                      </Badge>
+                      <span className={styles.mrn}>
+                        v{r.version} · updated {new Date(r.updatedAt).toLocaleString()}
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {canWriteAny && (
+              <div
+                className={styles.actionsBar}
+                style={{ justifyContent: 'flex-start', marginTop: 16 }}
+              >
+                {physicianWrite && (
+                  <>
+                    <Button
+                      variant="secondary"
+                      size="md"
+                      iconLeft={<Plus size={14} />}
+                      onClick={() =>
+                        router.push(`/encounters/${encounter.id}/clinical-records/new?type=soap`)
+                      }
+                    >
+                      New SOAP Note
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      size="md"
+                      iconLeft={<Plus size={14} />}
+                      onClick={() =>
+                        router.push(
+                          `/encounters/${encounter.id}/clinical-records/new?type=progress_note`,
+                        )
+                      }
+                    >
+                      New Progress Note
+                    </Button>
+                  </>
+                )}
+                {nurseVitals && (
+                  <Button
+                    variant="secondary"
+                    size="md"
+                    iconLeft={<Plus size={14} />}
+                    onClick={() =>
+                      router.push(
+                        `/encounters/${encounter.id}/clinical-records/new?type=vital_signs`,
+                      )
+                    }
+                  >
+                    Record Vitals
+                  </Button>
+                )}
+              </div>
+            )}
+          </Card>
+        )}
+
         {/* ADR-013: clinical records and diagnostic orders are NEVER part of the
-            detail payload. When M9/M10 ship, their sections will be fetched from
-            their own permission-controlled endpoints and rendered only for
-            callers holding clinical_record:read / diagnostic_order:read. */}
+            detail payload. M9 fetches records via the permission-controlled
+            clinical-records endpoints above; diagnostic orders remain M10. */}
       </div>
     </AppShell>
   );
