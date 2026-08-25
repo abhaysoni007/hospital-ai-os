@@ -422,7 +422,7 @@ export default function EncounterDetailPage() {
           </Card>
         )}
 
-        {canReadDx && encounter.status === 'active' && (
+        {canReadDx && (
           <Card>
             <h2 className={styles.sectionTitle}>Diagnostics</h2>
             {collectConflict && (
