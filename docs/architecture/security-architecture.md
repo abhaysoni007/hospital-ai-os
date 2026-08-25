@@ -96,7 +96,7 @@ Example permissions:
 | **encounter** | discharge | yes (own) | no | no | no | no | no | no |
 | **appointment** | create | no | no | no | no | yes | no | no |
 | **appointment** | cancel | no | no | no | no | yes | no | no |
-| **ai_interaction** | invoke | yes | yes (limited) | no | no | no | no | no |
+| **ai_interaction** | invoke | yes | yes (limited — read-only capabilities only, e.g. chart search; ADR-018 §3) | no | no | no | no | no |
 | **staff** | manage | no | no | no | no | no | yes | no |
 | **audit_event** | read | no | no | no | no | no | summary | full |
 | **break_glass** | activate | yes | yes | no | no | no | no | no |

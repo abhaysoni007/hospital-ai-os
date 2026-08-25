@@ -243,13 +243,15 @@ Side effects:
 
 ### 2.8 AI Features (`/api/v1/ai`)
 
+> **Ratified by ADR-017/018/019/020 (Phase 5).** Binding refinements: (1) draft **accept is the atomic bind-at-clinical-record-creation act carrying optional `aiDraftId`** — the PATCH endpoint below handles reject/edit-flag lifecycle operations only (ADR-019 supersedes the earlier accept-via-PATCH implication); (2) `/ai/discharge-draft` is DEFERRED to M13; (3) OCR is REJECTED for v1; (4) runtime, authorization and audit rules per ADR-017/018/020.
+
 | Method | Path | Purpose | Auth | Permission | Audit Event |
 |:---|:---|:---|:---|:---|:---|
-| POST | `/ai/note-draft` | Generate clinical note draft | Required | `ai_interaction:invoke` | `AI_DRAFT_GENERATED` |
-| POST | `/ai/discharge-draft` | Generate discharge summary draft | Required | `ai_interaction:invoke` | `AI_DRAFT_GENERATED` |
-| POST | `/ai/chart-search` | Search patient chart via AI | Required | `ai_interaction:invoke` | `AI_SEARCH_EXECUTED` |
-| POST | `/ai/ocr` | Extract text from document image | Required | `ai_interaction:invoke` | `AI_DRAFT_GENERATED` |
-| PATCH | `/ai/interactions/:id/action` | Accept/reject AI draft | Required | `ai_interaction:invoke` | `AI_DRAFT_ACCEPTED` / `AI_DRAFT_REJECTED` |
+| POST | `/ai/note-draft` | Generate clinical note draft | Required | `ai_interaction:invoke` + ADR-018 capability gate | `AI_DRAFT_GENERATED` |
+| POST | `/ai/discharge-draft` | Generate discharge summary draft (**DEFERRED — M13**) | Required | `ai_interaction:invoke` | `AI_DRAFT_GENERATED` |
+| POST | `/ai/chart-search` | Search patient chart via AI (grounded chart brief; read-only) | Required | `ai_interaction:invoke` + ADR-018 capability gate | `AI_SEARCH_EXECUTED` |
+| POST | `/ai/ocr` | Extract text from document image (**REJECTED for v1 — ADR-017**) | Required | `ai_interaction:invoke` | `AI_DRAFT_GENERATED` |
+| PATCH | `/ai/interactions/:id/action` | Reject / edit-flag an AI interaction (**never "accept"** — accept is atomic binding per ADR-019) | Required | `ai_interaction:invoke` (initiator only) | `AI_DRAFT_REJECTED` |
 
 **POST /ai/note-draft**
 ```

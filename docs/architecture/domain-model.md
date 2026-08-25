@@ -482,8 +482,8 @@ Staff ──► Department
 | `input_tokens` | Integer | Token count | No |
 | `output_tokens` | Integer | Token count | No |
 | `latency_ms` | Integer | Request duration | No |
-| `raw_response` | JSONB | Encrypted structured output | **Internal** |
-| `parsed_output` | JSONB | Validated structured output | No |
+| `raw_response` | JSONB | Encrypted structured output (ADR-020 envelope) | **Internal** |
+| `parsed_output` | JSONB | Validated structured output — **reclassified Internal/sensitive by ADR-020** (derived clinical narrative; no read endpoint exists) | **Internal** |
 | `grounding_status` | Enum (Unverified, Grounded, ValidationFailed) | Required | No |
 | `user_action` | Enum (Pending, Accepted, Rejected, Edited) | Default: Pending | No |
 | `rejection_reason` | Text | Nullable | No |

@@ -1,8 +1,10 @@
 # Hospital AI OS — AI Architecture
 
-> **Status:** Phase 3 Architecture Blueprint  
-> **Authority:** AI Rules, AI Safety (Phase 2.1), Healthcare Rules  
+> **Status:** Phase 3 Architecture Blueprint — **RATIFIED with binding refinements by ADR-017/018/019/020 (Phase 5, 2026-08-26)**
+> **Authority:** AI Rules, AI Safety (Phase 2.1), Healthcare Rules
 > **Scope:** Provider abstraction, prompt architecture, RAG, structured outputs, grounding, safety, observability
+>
+> **Ratification notes (binding where they refine this document):** synchronous-only execution v1 with the ADR-017 resilience envelope and deferral ledger (BullMQ/embeddings deferred, OCR rejected, discharge→M13, no fallback chain); §5 RAG pipeline deferred until a scoped consumer exists; §8 parameters ratified as-is; grounding terminology fixed to "SOURCE-GROUNDED (provenance-verified)" per ADR-018 §7; prompt mechanics per `PROMPT_ARCHITECTURE.md`; draft acceptance = atomic bind-at-create per ADR-019.
 
 ---
 
@@ -341,7 +343,30 @@ Every AI invocation is logged to the `ai_interactions` table:
 | **Critical/panic lab classification** | Deterministic clinical rules | **NO — PROHIBITED** |
 | **Abnormal trend surfacing** | AI (grounded, human-reviewed) | Yes |
 | **Clinical note drafting** | AI (side-by-side human review) | Yes |
-| **Discharge summary drafting** | AI (physician authorization required) | Yes |
-| **Chart search** | AI + RAG (grounded source citations) | Yes |
-| **Document OCR** | AI (human verification of extracted fields) | Yes |
+| **Discharge summary drafting** | AI (physician authorization required) | Yes — workflow DEFERRED to M13 |
+| **Chart search** | AI + deterministic per-patient retrieval (grounded citations; RAG deferred) | Yes |
+| **Document OCR** | AI (human verification of extracted fields) | **REJECTED for v1** (ADR-017) |
 | **Clinical state changes** | Human clinician only | **NO — PROHIBITED** |
+
+---
+
+## 11. Ratified Buildathon Hero Workflow (Phase 5)
+
+The approved demonstration narrative, exercising only ratified machinery:
+
+```text
+Critical lab value entered
+→ DETERMINISTIC classification + notification persistence (ADR-010/016 — no AI)
+→ physician opens encounter
+→ commissions AI SOAP draft (ADR-018 gates; authorized context; input manifest)
+→ SOURCE-GROUNDED draft with manifest-valid citations + system-computed information gaps
+→ physician edits
+→ ATOMIC provenance binding into the frozen M9 draft lifecycle (ADR-019 B1–B10)
+→ physician signs → immutable signed record retaining aiDraftId
+→ hash-chained audit: AI_DRAFT_GENERATED → AI_DRAFT_ACCEPTED → CLINICAL_NOTE_SIGNED
+→ AI outage → clean 503 banner → manual workflows continue unchanged (ADR-017 §4)
+```
+
+Core message: **"Deterministic where it matters. Generative where it helps. Clinician always authoritative."**
+
+Explicitly rejected: any generic free-form "AI chat" interface. All AI surface lives inside existing clinical workflows (encounter editor drafting panel; encounter chart-brief panel).

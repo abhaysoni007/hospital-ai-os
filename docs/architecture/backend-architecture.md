@@ -231,8 +231,8 @@ Other modules call the AI service interface. They do not construct prompts, call
 | Job | Queue | Priority | Retry | Description |
 |:---|:---|:---|:---|:---|
 | `notification.dispatch` | notifications | High | 3 retries, exponential backoff | Send in-app notifications |
-| `embedding.generate` | embeddings | Low | 2 retries | Generate vector embeddings for new clinical records |
-| `critical-alert.dispatch` | notifications | **Critical** | 5 retries, immediate | Dispatch critical lab value notifications |
+| `embedding.generate` | embeddings | Low | 2 retries | **DEFERRED — no v1 consumer (ADR-017 ledger); chart grounding uses deterministic retrieval.** Activates with the RAG pipeline when corpus scale justifies it |
+| `critical-alert.dispatch` | notifications | **Critical** | 5 retries, immediate | Dispatch critical lab value notifications (M14 dispatcher; M10 persists rows) |
 
 ### 7.2 Job Processing & Transactional Outbox
 

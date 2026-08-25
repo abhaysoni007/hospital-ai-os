@@ -188,26 +188,30 @@ Level 8 (Integration & Polish):
 
 ### M11: AI Infrastructure
 
+> **Ratified by ADR-017/018/020 (Phase 5).** Scope refinements: synchronous-only execution (no BullMQ/Redis consumers — ADR-017 deferral ledger); embedding-generation job deferred with the RAG pipeline; pre-flight encryption-readiness gate; global DB-backed daily token budget.
+
 | Property | Detail |
 |:---|:---|
-| **Objective** | Provider abstraction, prompt templates, circuit breaker, embedding pipeline |
-| **Scope** | AI adapter interface; Google Gemini adapter; prompt builder; structured output parser; Zod output schemas; circuit breaker; embedding generation job |
+| **Objective** | Provider abstraction, prompt templates, circuit breaker, resilience envelope, AI contracts & audit wiring |
+| **Scope** | AI adapter interface + Gemini adapter (exact-pinned SDK, import-bounded) + FakeProvider fixtures; prompt builder per PROMPT_ARCHITECTURE.md; context assembler (authorized readers + allowlist projections); structured output validation incl. grounding/gap fidelity; circuit breaker, semaphore, rate limit, token budget; shared Zod AI schemas; AI routes + RBAC matrix extension; AI audit events |
 | **Dependencies** | M3, M7 |
-| **Acceptance** | AI adapter generates structured output; malformed responses caught by Zod; circuit breaker opens after 3 failures; embeddings stored in pgvector |
-| **Tests** | Unit tests with recorded API fixtures; circuit breaker tests; output validation tests |
+| **Acceptance** | Adapter generates validated structured output from fixtures; malformed responses rejected by Zod + grounding checks; breaker opens after threshold and recovers via half-open probe; no DB transaction spans provider latency; app boots with AI disabled when unconfigured; zero migrations |
+| **Tests** | FakeProvider fixture suites; breaker tests; output validation tests; context authorization fixtures incl. mixed-department; PHI identifier battery |
 | **Risks** | High — AI reliability |
 
 ---
 
 ### M12: AI Features
 
+> **Ratified by ADR-018/019 (Phase 5).** Scope refinements: hero = encounter note draft with atomic `aiDraftId` binding into the frozen M9 lifecycle; supporting = grounded chart brief; OCR rejected; discharge draft belongs to M13.
+
 | Property | Detail |
 |:---|:---|
-| **Objective** | Clinical note draft, discharge draft, chart search, OCR |
-| **Scope** | Context assembly per capability; prompt templates; grounding validation; AI interaction logging; user accept/reject flow |
-| **Dependencies** | M11, M9, M6 |
-| **Acceptance** | Each capability generates valid draft; grounding checks pass; AI interaction logged; user can accept/reject |
-| **Tests** | AI evaluation datasets; prompt regression tests; adversarial tests |
+| **Objective** | Clinical note draft (hero), grounded chart brief, accept/reject lifecycle |
+| **Scope** | Capability services atop M11 (capability gates per ADR-018 §3); deterministic information-gap detection; citation manifest validation; atomic draft binding under ADR-019 invariants B1–B10; PATCH reject/edit actions; frontend editor-integrated drafting panel + encounter chart-brief panel |
+| **Dependencies** | M11, M9, M6, M8 |
+| **Acceptance** | Each capability produces source-grounded drafts with manifest-valid citations and gap fidelity; binding satisfies B1–B10 (race-proof); AI interaction logged with full provenance; user accepts = atomic bind, or rejects with reason; M9 suite byte-green unchanged |
+| **Tests** | Adversarial prompt-injection battery; lifecycle rejection matrix; concurrency double-bind tests; grounding/gap-fidelity tests; mixed-dept authorization fixtures |
 | **Risks** | High — AI quality and safety |
 
 ---
