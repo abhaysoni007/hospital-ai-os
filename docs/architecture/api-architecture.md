@@ -203,8 +203,16 @@ Validation: encounterId must exist and be Active; recordType-specific content va
 |:---|:---|:---|:---|:---|:---|
 | POST | `/encounters/:encounterId/diagnostic-orders` | Place lab order | Required | `diagnostic_order:create` | `DIAGNOSTIC_ORDER_CREATED` |
 | GET | `/encounters/:encounterId/diagnostic-orders` | List orders for encounter | Required | `diagnostic_order:read` | — |
+| GET | `/diagnostic-orders` | Lab queue (dept-scoped; ADR-016) | Required | `diagnostic_order:read` | — |
 | PATCH | `/diagnostic-orders/:id/collect-sample` | Mark sample collected | Required | `diagnostic_order:update` | `SAMPLE_COLLECTED` |
 | PATCH | `/diagnostic-orders/:id/cancel` | Cancel order | Required | `diagnostic_order:cancel` | `DIAGNOSTIC_ORDER_CANCELLED` |
+
+> [!NOTE]
+> Order lifecycle, cancellation scope, collection provenance, lab queue, and
+> critical-alert persistence are governed by **ADR-016**. Derived transitions:
+> result entry is permitted from `sample_collected`; successful verification
+> atomically completes the order. Cancellation = ordering physician, own order,
+> pre-collection only.
 
 ---
 

@@ -88,6 +88,7 @@ Example permissions:
 | **clinical_record** | write | assigned | assigned (vitals) | no | no | no | no | no |
 | **clinical_record** | sign | own_draft | no | no | no | no | no | no |
 | **diagnostic_order** | create | yes | no | no | no | no | no | no |
+| **diagnostic_order** | cancel (own, pre-collection) | yes (ADR-016) | no | no | no | no | no | no |
 | **diagnostic_result** | read | dept | assigned | meds_related | all | no | no | no |
 | **diagnostic_result** | enter | no | no | no | yes | no | no | no |
 | **diagnostic_result** | verify | no | no | no | yes (pathologist) | no | no | no |
