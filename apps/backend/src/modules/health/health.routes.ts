@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { db } from '../../db'; // Assuming db connection is exported here
 import { sql } from 'drizzle-orm';
 import { logger } from '../../logger';
+import { getAiHealthSnapshot } from '../ai/ai.container';
 
 const router = Router();
 
@@ -14,6 +15,9 @@ router.get('/', async (req, res) => {
     version: '1.0.0', // Optionally pull from process.env or package.json
     checks: {
       database: { status: 'down', latencyMs: 0 },
+      // M11 ADR-017/020: AI subsystem readiness (disabled|ready|breaker_open|unavailable)
+      // Core workflows never depend on this check.
+      ai: getAiHealthSnapshot(),
     },
     uptime: process.uptime(),
   };

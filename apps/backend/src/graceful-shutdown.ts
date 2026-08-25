@@ -1,5 +1,6 @@
 import { Server } from 'http';
 import { logger } from './logger';
+import { abortInFlightAiCalls } from './modules/ai/orchestrator';
 
 // In a real app we might close postgres/redis connections here
 // But since we use Drizzle with a postgres client, we can export the connection to close it if needed.
@@ -8,6 +9,15 @@ import { logger } from './logger';
 export const setupGracefulShutdown = (server: Server) => {
   const shutdown = async (signal: string) => {
     logger.info(`Received ${signal}. Starting graceful shutdown...`);
+
+    // ADR-017 §9: abort/drain in-flight AI provider calls first so no AI
+    // request outlives process shutdown.
+    try {
+      const aborted = abortInFlightAiCalls(`graceful-shutdown:${signal}`);
+      if (aborted > 0) logger.info(`Aborted ${aborted} in-flight AI provider call(s).`);
+    } catch (err) {
+      logger.warn({ err }, 'AI shutdown drain reported an error (continuing)');
+    }
 
     // Give it at most 10 seconds to finish requests
     setTimeout(() => {

@@ -30,6 +30,21 @@ const configSchema = z.object({
   JWT_PUBLIC_KEY_PATH: z.string(),
   JWT_ACCESS_EXPIRATION: z.string().default('15m'),
   JWT_REFRESH_EXPIRATION_DAYS: z.coerce.number().default(7),
+
+  // --- AI subsystem (ADR-017/018/019/020 ratified defaults) -----------------
+  // All keys are optional-with-defaults: the app ALWAYS boots without AI.
+  // AI_ENABLED=false or absent AI_API_KEY ⇒ subsystem `disabled`; core
+  // clinical workflows never depend on it.
+  AI_ENABLED: z.preprocess((v) => v === true || v === 'true', z.boolean()).default(false),
+  AI_PROVIDER: z.enum(['google-gemini', 'fake']).default('google-gemini'),
+  AI_API_KEY: z.string().optional(),
+  AI_MODEL_NAME: z.string().min(1).default('gemini-2.0-flash'),
+  AI_TIMEOUT_MS: z.coerce.number().int().positive().max(120000).default(30000),
+  AI_MAX_TOKENS: z.coerce.number().int().positive().default(4096),
+  AI_DAILY_TOKEN_BUDGET: z.coerce.number().int().positive().default(200000),
+  AI_PER_USER_RATE_LIMIT: z.coerce.number().int().positive().default(6),
+  AI_SEMAPHORE_SIZE: z.coerce.number().int().positive().default(4),
+  AI_DRAFT_TTL_HOURS: z.coerce.number().int().positive().default(24),
 });
 
 const _config = configSchema.safeParse(process.env);
