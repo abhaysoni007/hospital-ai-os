@@ -21,7 +21,7 @@
 
 import * as dotenv from 'dotenv';
 import path from 'path';
-import { eq, inArray, sql } from 'drizzle-orm';
+import { inArray, sql } from 'drizzle-orm';
 
 dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 

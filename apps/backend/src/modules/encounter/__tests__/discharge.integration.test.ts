@@ -33,7 +33,10 @@ describe('M13 Discharge Module (Phase 1A)', () => {
       .returning();
     deptAId = deptA.id;
 
-    async function ensureStaff(role: string, email: string) {
+    async function ensureStaff(
+      role: 'physician' | 'receptionist' | 'nurse',
+      email: string,
+    ): Promise<string> {
       const [row] = await db
         .insert(staff)
         .values({
@@ -42,7 +45,7 @@ describe('M13 Discharge Module (Phase 1A)', () => {
           passwordHash: 'dummy',
           firstName: 'Test',
           lastName: role,
-          role: role as any,
+          role,
           departmentId: deptAId,
           status: 'active',
         })
@@ -82,8 +85,6 @@ describe('M13 Discharge Module (Phase 1A)', () => {
       await db.delete(encounters).where(inArray(encounters.id, eIds));
     }
     if (patientId) await db.delete(patients).where(eq(patients.id, patientId));
-    if (staffIds.length > 0) await db.delete(staff).where(inArray(staff.id, staffIds));
-    if (deptAId) await db.delete(departments).where(eq(departments.id, deptAId));
   });
 
   const ctx = (role: string) => ({ role, departmentId: deptAId });
@@ -158,7 +159,7 @@ describe('M13 Discharge Module (Phase 1A)', () => {
     // Create a diagnostic order -> status 'ordered'
     const order = await diagnosticsService.createOrder(
       enc.id,
-      { testCode: 'CBC', priority: 'routine' },
+      { testCode: 'CBC', testName: 'Complete Blood Count', priority: 'routine' },
       physicianAId,
       crypto.randomUUID(),
       ctx('physician'),
@@ -278,7 +279,7 @@ describe('M13 Discharge Module (Phase 1A)', () => {
     expect(records).toHaveLength(1);
     expect(records[0].recordType).toBe('discharge_summary');
     expect(records[0].status).toBe('signed');
-    expect((records[0].content as any).narrative).toBe('Atomic summary content.');
+    expect((records[0].content as { narrative: string }).narrative).toBe('Atomic summary content.');
 
     // Verify Audits
     const audits = await db.query.auditEvents.findMany({
@@ -303,7 +304,17 @@ describe('M13 Discharge Module (Phase 1A)', () => {
     await expect(
       clinicalService.createClinicalRecord(
         enc.id,
-        { recordType: 'soap', content: { sections: ['', '', '', ''] as any } },
+        {
+          recordType: 'soap',
+          content: {
+            sections: [
+              { heading: 'subjective', content: 'test' },
+              { heading: 'objective', content: 'test' },
+              { heading: 'assessment', content: 'test' },
+              { heading: 'plan', content: 'test' },
+            ],
+          },
+        },
         physicianAId,
         crypto.randomUUID(),
         ctx('physician'),
@@ -314,7 +325,7 @@ describe('M13 Discharge Module (Phase 1A)', () => {
     await expect(
       diagnosticsService.createOrder(
         enc.id,
-        { testCode: 'CBC', priority: 'routine' },
+        { testCode: 'CBC', testName: 'Complete Blood Count', priority: 'routine' },
         physicianAId,
         crypto.randomUUID(),
         ctx('physician'),
@@ -331,7 +342,7 @@ describe('M13 Discharge Module (Phase 1A)', () => {
       clinicalService.updateClinicalRecord(
         enc.id,
         summaryId,
-        { expectedVersion: 1, content: {} },
+        { expectedVersion: 1, content: { narrative: 'updated discharge text' } },
         physicianAId,
         crypto.randomUUID(),
         ctx('physician'),

@@ -70,7 +70,7 @@ export default function EncounterDetailPage() {
     hasPermission(role, 'encounter:update') && (role === 'physician' || role === 'nurse');
 
   const canDischarge = role === 'physician' && hasPermission(role, 'encounter:discharge');
-  const isAssignedPhysician = encounter ? user?.staffId === encounter.doctorId : false;
+  const isAssignedPhysician = encounter ? user?.id === encounter.doctorId : false;
 
   // M9 — clinical records section (permission-gated sub-endpoint)
   const physicianWrite = role === 'physician' && hasPermission(role, 'clinical_record:write');
@@ -614,7 +614,7 @@ export default function EncounterDetailPage() {
             </p>
             {dischargeError && (
               <AlertBanner
-                severity="error"
+                severity="critical"
                 title="Discharge failed"
                 dismissible
                 onDismiss={() => setDischargeError(null)}

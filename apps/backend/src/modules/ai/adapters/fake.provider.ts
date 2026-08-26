@@ -103,7 +103,8 @@ export class FakeProvider implements AIProviderAdapter {
         );
       case 'ok':
       default: {
-        const payload = this.scriptedOutput ?? minimalValidOutput(params.outputSchema);
+        const payload =
+          this.scriptedOutput ?? minimalValidOutput(params.userPrompt, params.outputSchema);
         return this.respond(JSON.stringify(payload), payload as T, params.config, latencyMs);
       }
     }
@@ -146,12 +147,103 @@ function sleep(ms: number): Promise<void> {
 }
 
 /**
- * Derives a minimal object satisfying "object-shaped" schemas well enough for
- * generic tests; capability tests always pass explicit scripted outputs.
+ * Derives a valid grounded object satisfying output schemas using context
+ * from the prompt (citations and gaps), allowing deterministic local/demo QA.
  */
-function minimalValidOutput(schema: z.ZodType): unknown {
-  void schema;
-  return { disclaimers: ['AI-generated draft for clinician review.'], informationGaps: [] };
+function minimalValidOutput(userPrompt: string, _schema: z.ZodType): unknown {
+  void _schema;
+  // Extract citable sources from prompt context blocks
+  const citations: Array<{ sourceType: string; sourceId: string; excerpt: string }> = [];
+  const lines = userPrompt.split('\n');
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (trimmed.startsWith('- {') || (trimmed.startsWith('{') && trimmed.includes('sourceId'))) {
+      try {
+        const jsonStr = trimmed.startsWith('- ') ? trimmed.slice(2) : trimmed;
+        const block = JSON.parse(jsonStr);
+        if (block.blockType === 'clinical_record' && block.sourceId) {
+          citations.push({
+            sourceType: 'CLINICAL_RECORD',
+            sourceId: block.sourceId,
+            excerpt:
+              typeof block.textContent === 'string'
+                ? block.textContent.slice(0, 40)
+                : 'Clinical entry',
+          });
+        } else if (block.blockType === 'diagnostic_result' && block.sourceId) {
+          citations.push({
+            sourceType: 'DIAGNOSTIC_RESULT',
+            sourceId: block.sourceId,
+            excerpt: 'Diagnostic result',
+          });
+        } else if (block.blockType === 'diagnostic_order' && block.sourceId) {
+          citations.push({
+            sourceType: 'DIAGNOSTIC_ORDER',
+            sourceId: block.sourceId,
+            excerpt: block.testName || block.testCode || 'Diagnostic order',
+          });
+        }
+      } catch {
+        // Skip unparseable lines
+      }
+    }
+  }
+
+  // Extract system-computed gaps
+  const gapCodes: string[] = [];
+  const gapMatch = userPrompt.match(/SYSTEM-COMPUTED INFORMATION GAPS:\s*([^\n]+)/);
+  if (gapMatch && gapMatch[1] && !gapMatch[1].includes('(none computed)')) {
+    const parts = gapMatch[1]
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+    gapCodes.push(...parts);
+  }
+
+  const defaultCitation = citations[0] ?? {
+    sourceType: 'CLINICAL_RECORD',
+    sourceId: randomUUID(),
+    excerpt: 'Clinical history review',
+  };
+
+  const isProgressNote = userPrompt.includes('NOTE TYPE: progress note');
+  if (isProgressNote) {
+    return {
+      narrative:
+        'Patient reviewed in active encounter. Clinical course stable with ongoing diagnostic monitoring.',
+      citations: citations.length > 0 ? citations : [defaultCitation],
+      disclaimers: ['AI-generated draft for clinician review.'],
+      informationGaps: gapCodes,
+    };
+  }
+
+  // Default to SOAP note format
+  return {
+    sections: [
+      {
+        heading: 'subjective',
+        content: 'Patient evaluated for active clinical complaint. Review of symptoms documented.',
+        citations: [citations[0] ?? defaultCitation],
+      },
+      {
+        heading: 'objective',
+        content: 'Clinical observations, vitals, and diagnostic findings reviewed.',
+        citations: [citations[1] ?? citations[0] ?? defaultCitation],
+      },
+      {
+        heading: 'assessment',
+        content: 'Clinical status evaluated based on available medical records.',
+        citations: [citations[0] ?? defaultCitation],
+      },
+      {
+        heading: 'plan',
+        content: 'Continue established therapeutic regimen and monitor patient response.',
+        citations: [citations[0] ?? defaultCitation],
+      },
+    ],
+    disclaimers: ['AI-generated draft for clinician review.'],
+    informationGaps: gapCodes,
+  };
 }
 
 /** Convenience id for telemetry assertions. */

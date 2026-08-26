@@ -57,4 +57,22 @@ describe('AI subsystem readiness (ADR-020 §3)', () => {
     expect(isEncryptionKeyValid('development', undefined)).toBe(true);
     expect(isEncryptionKeyValid('test', undefined)).toBe(true);
   });
+
+  it('marks fake provider as ready when AI_ENABLED=true without needing API key', () => {
+    expect(
+      computeAiSubsystemState(
+        { aiEnabled: true, apiKeyPresent: true, encryptionKeyValid: true },
+        'closed',
+      ),
+    ).toBe('ready');
+  });
+
+  it('remains fail-closed if AI is disabled regardless of provider', () => {
+    expect(
+      computeAiSubsystemState(
+        { aiEnabled: false, apiKeyPresent: true, encryptionKeyValid: true },
+        'closed',
+      ),
+    ).toBe('disabled');
+  });
 });

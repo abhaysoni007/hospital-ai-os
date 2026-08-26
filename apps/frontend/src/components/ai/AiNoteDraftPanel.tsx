@@ -89,7 +89,7 @@ export function AiNoteDraftPanel({
     setErrorMsg('');
     try {
       const r = await aiService.draftNote(encounterId, recordType);
-      setResult(r);
+      setResult(r.data);
       setState('ready');
     } catch (err) {
       const code = (err as { code?: string })?.code ?? '';

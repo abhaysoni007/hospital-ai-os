@@ -549,4 +549,22 @@ describe('M10 Diagnostics Module', () => {
     const res = await diagnosticsService.getResult(order.id, techA2Id, ctx('lab_technician'));
     expect(res.orderId).toBe(order.id);
   });
+
+  it('K. Lab queue strictly scopes to technician department (ADR-016 Decision 5)', async () => {
+    const order = await createOrder(physicianAId, deptAId);
+
+    // Technician in Department A sees the order
+    const queueA = await diagnosticsService.listLabQueue(
+      { page: 1, pageSize: 50 },
+      ctx('lab_technician', deptAId),
+    );
+    expect(queueA.data.some((o) => o.id === order.id)).toBe(true);
+
+    // Technician in Department B does NOT see Department A order
+    const queueB = await diagnosticsService.listLabQueue(
+      { page: 1, pageSize: 50 },
+      ctx('lab_technician', deptBId),
+    );
+    expect(queueB.data.some((o) => o.id === order.id)).toBe(false);
+  });
 });

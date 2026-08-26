@@ -7,9 +7,8 @@ export const aiService = {
     encounterId: string,
     recordType: 'soap' | 'progress_note',
     instructions?: string,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  ): Promise<any> {
-    return apiClient<AiNoteDraftResponse>('/ai/note-draft', {
+  ): Promise<{ data: AiNoteDraftResponse }> {
+    return apiClient<{ data: AiNoteDraftResponse }>('/ai/note-draft', {
       method: 'POST',
       body: { encounterId, recordType, instructions: instructions || undefined },
     });
