@@ -1,76 +1,71 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Bell, Check, AlertOctagon, AlertTriangle, Info, Clock, X } from 'lucide-react';
+import Link from 'next/link';
+import {
+  Bell,
+  Check,
+  AlertOctagon,
+  AlertTriangle,
+  Info,
+  Clock,
+  X,
+  ChevronRight,
+} from 'lucide-react';
+import type { NotificationItem } from 'shared';
 import styles from './NotificationPanel.module.css';
-
-export interface NotificationItem {
-  id: string;
-  title: string;
-  message: string;
-  time: string;
-  severity: 'critical' | 'urgent' | 'info' | 'routine';
-  isRead: boolean;
-}
-
-const INITIAL_NOTIFICATIONS: NotificationItem[] = [
-  {
-    id: 'n1',
-    title: 'Panic Lab Value Alert — Potassium 6.2 mEq/L',
-    message: 'Patient: Eleanor Vance (MRN: HOS-92841) • Bed 402-B • Stat re-test ordered.',
-    time: '4 mins ago',
-    severity: 'critical',
-    isRead: false,
-  },
-  {
-    id: 'n2',
-    title: 'STAT Consultation Request',
-    message: 'Emergency Department requested immediate Cardiology review for Room 3.',
-    time: '18 mins ago',
-    severity: 'urgent',
-    isRead: false,
-  },
-  {
-    id: 'n3',
-    title: 'AI Progress Note Draft Ready',
-    message:
-      'Encounter #ENC-1092 AI clinical draft synthesized and waiting for physician sign-off.',
-    time: '1 hour ago',
-    severity: 'info',
-    isRead: true,
-  },
-  {
-    id: 'n4',
-    title: 'Department Shift Handover Complete',
-    message: 'Morning handover report for Cardiology Inpatient Ward submitted by Nurse Roberts.',
-    time: '3 hours ago',
-    severity: 'routine',
-    isRead: true,
-  },
-];
 
 export interface NotificationPanelProps {
   isOpen: boolean;
   onClose: () => void;
+  items: NotificationItem[];
+  unreadCount: number;
+  isLoading: boolean;
+  error: string | null;
+  onAcknowledge: (id: string) => Promise<boolean>;
+  onReload: () => void;
 }
 
-export function NotificationPanel({ isOpen, onClose }: NotificationPanelProps) {
-  const [notifications, setNotifications] = useState<NotificationItem[]>(INITIAL_NOTIFICATIONS);
+/**
+ * M12.2 — REAL notification inbox (critical-result loop).
+ * Data comes exclusively from GET /api/v1/notifications (server-derived
+ * recipient scope). No fabricated content anywhere.
+ */
+
+function formatTime(iso: string): string {
+  const d = new Date(iso);
+  const now = new Date();
+  const sameDay = d.toDateString() === now.toDateString();
+  return sameDay
+    ? d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    : d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+}
+
+export function NotificationPanel({
+  isOpen,
+  onClose,
+  items,
+  unreadCount,
+  isLoading,
+  error,
+  onAcknowledge,
+  onReload,
+}: NotificationPanelProps) {
+  const [ackedErrorId, setAckedErrorId] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
-  const unreadCount = notifications.filter((n) => !n.isRead).length;
-
-  const markAllAsRead = () => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+  const handleAcknowledge = async (id: string) => {
+    setAckedErrorId(null);
+    const ok = await onAcknowledge(id);
+    if (!ok) {
+      // Truthful failure feedback (e.g., 409 already acknowledged elsewhere).
+      setAckedErrorId(id);
+    }
   };
 
-  const markItemAsRead = (id: string) => {
-    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, isRead: true } : n)));
-  };
-
-  const getSeverityIcon = (severity: string) => {
-    switch (severity) {
+  const getSeverityIcon = (priority: string) => {
+    switch (priority) {
       case 'critical':
         return <AlertOctagon size={16} className={styles.criticalIcon} />;
       case 'urgent':
@@ -85,14 +80,21 @@ export function NotificationPanel({ isOpen, onClose }: NotificationPanelProps) {
       <div className={styles.header}>
         <div className={styles.titleRow}>
           <h3 className={styles.title}>Notifications</h3>
-          {unreadCount > 0 && <span className={styles.unreadBadge}>{unreadCount} new</span>}
+          {unreadCount > 0 && (
+            <span className={styles.unreadBadge} aria-live="polite">
+              {unreadCount} new
+            </span>
+          )}
         </div>
         <div className={styles.headerActions}>
-          {unreadCount > 0 && (
-            <button type="button" className={styles.markAllButton} onClick={markAllAsRead}>
-              <Check size={14} /> Mark all read
-            </button>
-          )}
+          <button
+            type="button"
+            className={styles.markAllButton}
+            onClick={onReload}
+            aria-label="Refresh notifications"
+          >
+            <Check size={14} /> Refresh
+          </button>
           <button
             type="button"
             className={styles.closeButton}
@@ -104,38 +106,84 @@ export function NotificationPanel({ isOpen, onClose }: NotificationPanelProps) {
         </div>
       </div>
 
-      <div className={styles.list}>
-        {notifications.length === 0 ? (
+      <div className={styles.list} aria-live="polite">
+        {isLoading ? (
+          <div className={styles.emptyState} role="status">
+            <Bell size={28} className={styles.emptyIcon} />
+            <p className={styles.emptyTitle}>Loading notifications…</p>
+          </div>
+        ) : error ? (
+          <div className={styles.emptyState} role="alert">
+            <AlertOctagon size={28} className={styles.criticalIcon} />
+            <p className={styles.emptyTitle}>{error}</p>
+            <button type="button" className={styles.markAllButton} onClick={onReload}>
+              Retry
+            </button>
+          </div>
+        ) : items.length === 0 ? (
           <div className={styles.emptyState}>
             <Bell size={28} className={styles.emptyIcon} />
             <p className={styles.emptyTitle}>No notifications</p>
-            <span className={styles.emptyDesc}>You are caught up on all clinical alerts</span>
+            <span className={styles.emptyDesc}>
+              You are caught up — no alerts require attention.
+            </span>
           </div>
         ) : (
-          notifications.map((item) => (
-            <div
-              key={item.id}
-              className={`
-                ${styles.item}
-                ${!item.isRead ? styles.unreadItem : ''}
-                ${styles[item.severity]}
-              `}
-              onClick={() => markItemAsRead(item.id)}
-            >
-              <div className={styles.itemHeader}>
-                <div className={styles.itemHeaderLeft}>
-                  {getSeverityIcon(item.severity)}
-                  <span className={styles.itemTitle}>{item.title}</span>
+          items.map((item) => {
+            const isUnread = item.status !== 'acknowledged';
+            const reviewHref =
+              item.notificationType === 'critical_lab_alert' && item.relatedOrderId
+                ? `/diagnostics/${item.relatedOrderId}`
+                : null;
+            return (
+              <div
+                key={item.id}
+                className={`${styles.item} ${isUnread ? styles.unreadItem : ''} ${styles[item.priority === 'normal' ? 'info' : item.priority]}`}
+              >
+                <div className={styles.itemHeader}>
+                  <div className={styles.itemHeaderLeft}>
+                    {getSeverityIcon(item.priority)}
+                    <span className={styles.itemTitle}>{item.title}</span>
+                    {!isUnread && (
+                      <span className={styles.metaDot} aria-label={`Status: ${item.status}`} />
+                    )}
+                  </div>
+                  {isUnread && <span className={styles.unreadDot} aria-hidden="true" />}
                 </div>
-                {!item.isRead && <span className={styles.unreadDot} aria-label="Unread" />}
+                <p className={styles.itemMessage}>{item.body}</p>
+                <div className={styles.itemFooter}>
+                  <Clock size={12} />
+                  <span>{formatTime(item.createdAt)}</span>
+                  <span className={styles.metaDot} aria-hidden="true" />
+                  <span>{isUnread ? 'Requires attention' : `Acknowledged`}</span>
+                  {reviewHref && (
+                    <Link
+                      href={reviewHref}
+                      className={styles.markAllButton}
+                      aria-label={`Review diagnostic result for ${item.title}`}
+                    >
+                      Review <ChevronRight size={12} />
+                    </Link>
+                  )}
+                  {isUnread && item.status === 'dispatched' && (
+                    <button
+                      type="button"
+                      className={styles.markAllButton}
+                      onClick={() => handleAcknowledge(item.id)}
+                      aria-label={`Acknowledge ${item.title}`}
+                    >
+                      Acknowledge
+                    </button>
+                  )}
+                </div>
+                {ackedErrorId === item.id && (
+                  <p role="alert" className={styles.emptyDesc}>
+                    Could not acknowledge — it may already be acknowledged. Refresh and try again.
+                  </p>
+                )}
               </div>
-              <p className={styles.itemMessage}>{item.message}</p>
-              <div className={styles.itemFooter}>
-                <Clock size={12} />
-                <span>{item.time}</span>
-              </div>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
     </div>

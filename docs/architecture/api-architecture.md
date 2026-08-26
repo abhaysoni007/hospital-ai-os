@@ -267,7 +267,9 @@ Errors: 503 AI_SERVICE_UNAVAILABLE (circuit breaker open)
 
 ### 2.9 Tasks & Notifications (`/api/v1/tasks`, `/api/v1/notifications`)
 
-> **IMPLEMENTATION STATUS (M12.1): PLANNED — NOT IMPLEMENTED.** No backend module is mounted; the `tasks` and `notifications` tables exist and `notifications` rows are written by the M10 critical-value outbox, but no read/acknowledge API exists yet.
+> **IMPLEMENTATION STATUS (M12.2):** `GET /notifications` and `PATCH /notifications/:id/acknowledge` are IMPLEMENTED (any authenticated role; recipient scope derived server-side from the JWT; acknowledgement is owner-only, guarded `dispatched|delivered → acknowledged`, audited as `NOTIFICATION_ACKNOWLEDGED`). Task endpoints remain PLANNED. Escalation schedules, reminders and reassignment stay M14 scope.
+>
+> **M12.2 addition:** `GET /api/v1/staff/identity?ids=` — minimum staff identity projection (id/displayName/role only, ≤50 ids per call, any authenticated role). NOT staff management (M20 owns CRUD).
 
 | Method | Path | Purpose | Auth | Permission |
 |:---|:---|:---|:---|:---|

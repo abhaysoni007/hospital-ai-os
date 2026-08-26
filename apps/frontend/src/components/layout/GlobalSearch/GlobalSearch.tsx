@@ -1,21 +1,12 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import {
-  Search,
-  X,
-  Users,
-  Calendar,
-  FileText,
-  Activity,
-  CheckSquare,
-  Sparkles,
-  Clock,
-  CornerDownLeft,
-} from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Search, X, Users, AlertOctagon } from 'lucide-react';
 import { useAuth } from '../../../hooks/useAuth';
-import { Permission } from '../../../types/auth';
 import { hasPermission } from '../../../utils/rbac';
+import { patientService } from '../../../services/patient-service';
+import type { PatientResponse } from 'shared';
 import styles from './GlobalSearch.module.css';
 
 export interface GlobalSearchProps {
@@ -23,88 +14,38 @@ export interface GlobalSearchProps {
   onClose: () => void;
 }
 
-interface SearchItem {
-  id: string;
-  category: 'patients' | 'appointments' | 'records' | 'diagnostics' | 'tasks' | 'ai';
-  title: string;
-  subtitle: string;
-  badge?: string;
-  permission?: Permission;
-}
+/**
+ * M12.2 — REAL global search over the patient directory.
+ * Uses the existing permission-controlled GET /patients endpoint (patient:read).
+ * No fabricated records: loading, error and empty states are truthful, and an
+ * AbortController prevents stale responses from overwriting newer ones.
+ */
 
-const DEMO_SEARCH_ITEMS: SearchItem[] = [
-  {
-    id: 'p1',
-    category: 'patients',
-    title: 'Eleanor Vance (58F)',
-    subtitle: 'MRN: HOS-92841 • Cardiology • Bed 402-B',
-    badge: 'Critical Alert',
-    permission: 'patient:read',
-  },
-  {
-    id: 'p2',
-    category: 'patients',
-    title: 'Arthur Pendelton (64M)',
-    subtitle: 'MRN: HOS-88319 • OPD Queue #12 • Dr. Chen',
-    permission: 'patient:read',
-  },
-  {
-    id: 'a1',
-    category: 'appointments',
-    title: 'Cardiology Follow-up — Marcus Brody',
-    subtitle: 'Today • 10:30 AM • OPD Room 304',
-    badge: 'In Progress',
-    permission: 'appointment:read',
-  },
-  {
-    id: 'r1',
-    category: 'records',
-    title: 'Discharge Summary — Post-PCI Care',
-    subtitle: 'Patient: Eleanor Vance • Dr. Sarah Chen',
-    permission: 'clinical_record:read',
-  },
-  {
-    id: 'd1',
-    category: 'diagnostics',
-    title: 'Comprehensive Metabolic Panel (STAT)',
-    subtitle: 'Order #ORD-77491 • Panic Potassium: 6.2 mEq/L',
-    badge: 'Panic Value',
-    permission: 'diagnostic_result:read',
-  },
-  {
-    id: 't1',
-    category: 'tasks',
-    title: 'Sign Pending Discharge Note #402',
-    subtitle: 'Due in 45 minutes • High Priority',
-    badge: 'STAT',
-    permission: 'task:read',
-  },
-  {
-    id: 'ai1',
-    category: 'ai',
-    title: 'Draft Progress Note for Bed 402',
-    subtitle: 'AI Clinical Assistant • Synthesizes lab & telemetry',
-    badge: 'AI Draft',
-    permission: 'ai_interaction:invoke',
-  },
-];
+const MIN_QUERY_LENGTH = 2;
 
 export function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
   const [query, setQuery] = useState('');
-  const [recentSearches] = useState<string[]>([
-    'Eleanor Vance HOS-92841',
-    'Post-Op Orders',
-    'Potassium Critical Value',
-  ]);
+  const [results, setResults] = useState<PatientResponse[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
+  const [searched, setSearched] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const abortRef = useRef<AbortController | null>(null);
   const { user } = useAuth();
+  const router = useRouter();
+
+  const canSearchPatients = hasPermission(user?.role, 'patient:read');
 
   useEffect(() => {
     if (isOpen) {
-      setTimeout(() => inputRef.current?.focus(), 50);
-    } else {
-      setQuery('');
+      const t = setTimeout(() => inputRef.current?.focus(), 50);
+      return () => clearTimeout(t);
     }
+    setQuery('');
+    setResults([]);
+    setSearched(false);
+    setSearchError(null);
+    return undefined;
   }, [isOpen]);
 
   // Global keydown for Escape
@@ -118,39 +59,48 @@ export function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
 
+  // Debounced real search with stale-response protection
+  useEffect(() => {
+    if (!isOpen || !canSearchPatients) return undefined;
+    const trimmed = query.trim();
+    if (trimmed.length < MIN_QUERY_LENGTH) {
+      setResults([]);
+      setSearched(false);
+      setSearchError(null);
+      return undefined;
+    }
+    const timer = setTimeout(async () => {
+      abortRef.current?.abort();
+      const controller = new AbortController();
+      abortRef.current = controller;
+      setIsSearching(true);
+      setSearchError(null);
+      try {
+        const res = await patientService.getPatients({ page: 1, query: trimmed, pageSize: 8 });
+        if (controller.signal.aborted) return;
+        setResults(res.data as unknown as PatientResponse[]);
+        setSearched(true);
+      } catch (err) {
+        if (controller.signal.aborted) return;
+        setResults([]);
+        setSearched(true);
+        setSearchError(
+          err instanceof Error && err.message.includes('403')
+            ? 'Your role does not have access to the patient directory.'
+            : 'Patient search is unavailable right now.',
+        );
+      } finally {
+        if (!controller.signal.aborted) setIsSearching(false);
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [query, isOpen, canSearchPatients]);
+
   if (!isOpen) return null;
 
-  // Filter items by permission and search query
-  const filteredItems = DEMO_SEARCH_ITEMS.filter((item) => {
-    if (item.permission && !hasPermission(user?.role, item.permission)) {
-      return false;
-    }
-    if (!query.trim()) return true;
-    const q = query.toLowerCase();
-    return (
-      item.title.toLowerCase().includes(q) ||
-      item.subtitle.toLowerCase().includes(q) ||
-      item.category.toLowerCase().includes(q)
-    );
-  });
-
-  const getCategoryIcon = (category: string) => {
-    switch (category) {
-      case 'patients':
-        return <Users size={16} />;
-      case 'appointments':
-        return <Calendar size={16} />;
-      case 'records':
-        return <FileText size={16} />;
-      case 'diagnostics':
-        return <Activity size={16} />;
-      case 'tasks':
-        return <CheckSquare size={16} />;
-      case 'ai':
-        return <Sparkles size={16} />;
-      default:
-        return <Search size={16} />;
-    }
+  const openPatient = (id: string) => {
+    onClose();
+    router.push(`/patients/${id}`);
   };
 
   return (
@@ -162,10 +112,15 @@ export function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
             ref={inputRef}
             type="text"
             className={styles.searchInput}
-            placeholder="Search patients, MRN, encounters, orders, or ask AI..."
+            placeholder={
+              canSearchPatients
+                ? 'Search patients by name or MRN…'
+                : 'Patient search requires patient:read access'
+            }
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             aria-label="Global search query"
+            disabled={!canSearchPatients}
           />
           {query && (
             <button
@@ -183,79 +138,75 @@ export function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
         </div>
 
         <div className={styles.resultsContainer}>
-          {!query.trim() && recentSearches.length > 0 && (
-            <div className={styles.recentSection}>
+          {!canSearchPatients ? (
+            <div className={styles.emptyState} role="status">
+              <p>Your role does not include patient directory access.</p>
+              <span className={styles.emptySubtext}>Use the sidebar to reach your workflows.</span>
+            </div>
+          ) : isSearching ? (
+            <div className={styles.emptyState} role="status" aria-live="polite">
+              <p>Searching…</p>
+            </div>
+          ) : searchError ? (
+            <div className={styles.emptyState} role="alert">
+              <AlertOctagon size={20} />
+              <p>{searchError}</p>
+            </div>
+          ) : !query.trim() || query.trim().length < MIN_QUERY_LENGTH ? (
+            <div className={styles.emptyState}>
+              <Users size={20} />
+              <p>Type at least {MIN_QUERY_LENGTH} characters to search patients</p>
+              <span className={styles.emptySubtext}>
+                Results come live from the patient directory.
+              </span>
+            </div>
+          ) : searched && results.length === 0 ? (
+            <div className={styles.emptyState}>
+              <p>No patients found for &ldquo;{query}&rdquo;</p>
+            </div>
+          ) : (
+            <>
               <div className={styles.sectionHeader}>
-                <Clock size={14} />
-                <span>Recent Searches</span>
+                <span>Patients</span>
+                <span className={styles.resultCount}>{results.length} found</span>
               </div>
-              <div className={styles.recentTags}>
-                {recentSearches.map((term, i) => (
+              <div className={styles.resultsList}>
+                {results.map((p) => (
                   <button
-                    key={i}
+                    key={p.id}
                     type="button"
-                    className={styles.recentTag}
-                    onClick={() => setQuery(term)}
+                    className={styles.resultItem}
+                    style={{
+                      width: '100%',
+                      textAlign: 'left',
+                      cursor: 'pointer',
+                      background: 'none',
+                      border: 'none',
+                    }}
+                    onClick={() => openPatient(p.id)}
                   >
-                    {term}
+                    <div className={`${styles.itemCategoryIcon} ${styles.patients}`}>
+                      <Users size={16} />
+                    </div>
+                    <div className={styles.itemInfo}>
+                      <div className={styles.itemTitleRow}>
+                        <span className={styles.itemTitle}>
+                          {p.firstName} {p.lastName}
+                        </span>
+                        <span className={`${styles.itemBadge} ${styles.patients}`}>{p.mrn}</span>
+                      </div>
+                      <span className={styles.itemSubtitle}>
+                        {p.gender}, {p.dateOfBirth}
+                      </span>
+                    </div>
                   </button>
                 ))}
               </div>
-            </div>
-          )}
-
-          <div className={styles.sectionHeader}>
-            <span>{query ? 'Search Results' : 'Suggested Actions & Records'}</span>
-            <span className={styles.resultCount}>{filteredItems.length} items</span>
-          </div>
-
-          {filteredItems.length === 0 ? (
-            <div className={styles.emptyState}>
-              <p>No matching resources found for &ldquo;{query}&rdquo;</p>
-              <span className={styles.emptySubtext}>
-                Try searching with a patient name or MRN number
-              </span>
-            </div>
-          ) : (
-            <div className={styles.resultsList}>
-              {filteredItems.map((item) => (
-                <div
-                  key={item.id}
-                  className={styles.resultItem}
-                  onClick={() => {
-                    onClose();
-                  }}
-                  tabIndex={0}
-                  role="button"
-                >
-                  <div className={`${styles.itemCategoryIcon} ${styles[item.category]}`}>
-                    {getCategoryIcon(item.category)}
-                  </div>
-                  <div className={styles.itemInfo}>
-                    <div className={styles.itemTitleRow}>
-                      <span className={styles.itemTitle}>{item.title}</span>
-                      {item.badge && (
-                        <span className={`${styles.itemBadge} ${styles[item.category]}`}>
-                          {item.badge}
-                        </span>
-                      )}
-                    </div>
-                    <span className={styles.itemSubtitle}>{item.subtitle}</span>
-                  </div>
-                  <CornerDownLeft size={14} className={styles.selectIcon} aria-hidden="true" />
-                </div>
-              ))}
-            </div>
+            </>
           )}
         </div>
 
         <div className={styles.searchFooter}>
-          <span className={styles.shortcutHint}>
-            <kbd>↑</kbd> <kbd>↓</kbd> to navigate
-          </span>
-          <span className={styles.shortcutHint}>
-            <kbd>↵</kbd> to select
-          </span>
           <span className={styles.shortcutHint}>
             <kbd>esc</kbd> to dismiss
           </span>

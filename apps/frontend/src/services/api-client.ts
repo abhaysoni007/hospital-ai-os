@@ -42,10 +42,86 @@ export interface RequestOptions extends Omit<RequestInit, 'body'> {
   /** Structured request payload. apiClient OWNS serialization (M12.1 P0-1). */
   body?: unknown;
   skipAuth?: boolean;
+  /** Internal: set when a request has already been retried after refresh (M12.2 Part C). */
+  _retried?: boolean;
+}
+
+// ---------------------------------------------------------------------------
+// M12.2 Part C — centralized 401 recovery
+//
+// Contract:
+//   * On the FIRST 401 of an authenticated request, attempt EXACTLY ONE
+//     cookie-based refresh (POST /auth/refresh, credentials include).
+//   * Concurrent 401s share a single in-flight refresh (no storm).
+//   * After successful refresh the original request is retried EXACTLY ONCE
+//     (_retried flag prevents loops).
+//   * Failed refresh clears auth state and emits 'auth:session-expired' so the
+//     AuthContext resets and AuthGuard routes to /login.
+//   * Refresh uses raw fetch (never apiClient) so it cannot recurse; tokens are
+//     never logged and never placed in persistent storage.
+// ---------------------------------------------------------------------------
+
+let refreshInFlight: Promise<boolean> | null = null;
+
+async function tryRefreshOnce(): Promise<boolean> {
+  if (!refreshInFlight) {
+    refreshInFlight = (async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
+          method: 'POST',
+          credentials: 'include', // HTTP-only refresh cookie — never a bearer token
+        });
+        if (!response.ok) return false;
+        const payload = (await response.json()) as { data?: { accessToken?: string } };
+        const token = payload?.data?.accessToken;
+        if (!token) return false;
+        inMemoryAccessToken = token;
+        return true;
+      } catch {
+        return false;
+      }
+    })().finally(() => {
+      refreshInFlight = null;
+    });
+  }
+  return refreshInFlight;
+}
+
+const sessionExpiredListeners = new Set<() => void>();
+
+/**
+ * Subscribes to session-expiry notifications (failed refresh). Returns an
+ * unsubscribe function. AuthContext uses this to reset auth state so
+ * AuthGuard routes to /login.
+ */
+export function onSessionExpired(listener: () => void): () => void {
+  sessionExpiredListeners.add(listener);
+  return () => sessionExpiredListeners.delete(listener);
+}
+
+function notifySessionExpired(): void {
+  for (const listener of sessionExpiredListeners) {
+    try {
+      listener();
+    } catch {
+      // A faulty listener must never break request handling.
+    }
+  }
+}
+
+/** Test seam: reset module-level auth/recovery state between tests. */
+export function __resetAuthClientStateForTests(): void {
+  inMemoryAccessToken = null;
+  refreshInFlight = null;
+}
+
+/** Test seam: observe whether a refresh is currently in flight. */
+export function __isRefreshInFlightForTests(): boolean {
+  return refreshInFlight !== null;
 }
 
 export async function apiClient<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
-  const { body, skipAuth = false, headers = {}, ...customConfig } = options;
+  const { body, skipAuth = false, headers = {}, _retried, ...customConfig } = options;
 
   // M12.1 P0-1 serialization contract: callers provide STRUCTURED objects;
   // apiClient performs the one and only JSON.stringify. A pre-stringified
@@ -90,6 +166,20 @@ export async function apiClient<T>(endpoint: string, options: RequestOptions = {
 
   if (response.status === 204) {
     return {} as T;
+  }
+
+  // M12.2 Part C: centralized 401 recovery — refresh once, retry once.
+  // A 401 after a successful refresh means the session is dead (revoked or
+  // deactivated): end it instead of surfacing raw errors. Either way the
+  // session-expired notification fires EXACTLY ONCE per expiration event.
+  if (response.status === 401 && !skipAuth) {
+    const refreshed = _retried ? false : await tryRefreshOnce();
+    if (refreshed) {
+      return apiClient<T>(endpoint, { ...options, _retried: true });
+    }
+    setAccessToken(null);
+    notifySessionExpired();
+    // fall through to the standard non-OK handling below
   }
 
   let data: Record<string, unknown> | null = null;

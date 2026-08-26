@@ -15,6 +15,7 @@ import {
 } from '../../ui/Dropdown/Dropdown';
 import { GlobalSearch } from '../GlobalSearch/GlobalSearch';
 import { NotificationPanel } from '../NotificationPanel/NotificationPanel';
+import { useNotifications } from '../../../hooks/useNotifications';
 import styles from './AppHeader.module.css';
 
 export interface AppHeaderProps {
@@ -29,6 +30,15 @@ export function AppHeader({
   const { user, logout } = useAuth();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  // M12.2: REAL unread state — replaces the previous hardcoded "(2 unread)".
+  const {
+    items: notifications,
+    unreadCount,
+    isLoading: notificationsLoading,
+    error: notificationsError,
+    acknowledge,
+    reload: reloadNotifications,
+  } = useNotifications();
 
   const fullName =
     user?.firstName && user?.lastName
@@ -90,14 +100,24 @@ export function AppHeader({
                 ${isNotificationsOpen ? styles.activeIconButton : ''}
               `}
               onClick={() => setIsNotificationsOpen((prev) => !prev)}
-              aria-label="Open notifications (2 unread)"
+              aria-label={
+                unreadCount > 0
+                  ? `Open notifications (${unreadCount} unread)`
+                  : 'Open notifications'
+              }
             >
               <Bell size={18} />
-              <span className={styles.notificationDot} />
+              {unreadCount > 0 && <span className={styles.notificationDot} />}
             </button>
             <NotificationPanel
               isOpen={isNotificationsOpen}
               onClose={() => setIsNotificationsOpen(false)}
+              items={notifications}
+              unreadCount={unreadCount}
+              isLoading={notificationsLoading}
+              error={notificationsError}
+              onAcknowledge={acknowledge}
+              onReload={() => void reloadNotifications()}
             />
           </div>
 

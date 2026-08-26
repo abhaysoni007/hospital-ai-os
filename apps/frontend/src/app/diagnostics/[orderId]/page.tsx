@@ -11,6 +11,7 @@ import { ErrorState } from '../../../components/ui/ErrorState/ErrorState';
 import { AlertBanner } from '../../../components/ui/Alert/AlertBanner';
 import { Lock, AlertTriangle, RefreshCw, ShieldCheck } from 'lucide-react';
 import { diagnosticsService } from '../../../services/diagnostics-service';
+import { getStaffIdentities } from '../../../services/staff-service';
 import type { DiagnosticOrderResponse, DiagnosticResultResponse } from 'shared';
 import styles from './order-detail.module.css';
 import { useAuth } from '../../../hooks/useAuth';
@@ -26,6 +27,9 @@ export default function DiagnosticOrderDetailPage() {
 
   const [order, setOrder] = useState<DiagnosticOrderResponse | null>(null);
   const [result, setResult] = useState<DiagnosticResultResponse | null>(null);
+  // M12.2 Part D — human-readable staff identity (server-projected).
+  const [enteredByName, setEnteredByName] = useState<string | null>(null);
+  const [verifiedByName, setVerifiedByName] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const [verifying, setVerifying] = useState(false);
@@ -43,6 +47,15 @@ export default function DiagnosticOrderDetailPage() {
       try {
         const resRes = await diagnosticsService.getResult(orderId);
         setResult(resRes.data); // result may legitimately not exist yet
+        const ids = await getStaffIdentities(
+          [resRes.data.enteredBy, resRes.data.verifiedBy].filter(
+            (id): id is string => typeof id === 'string',
+          ),
+        );
+        setEnteredByName(ids.get(resRes.data.enteredBy)?.displayName ?? null);
+        setVerifiedByName(
+          resRes.data.verifiedBy ? (ids.get(resRes.data.verifiedBy)?.displayName ?? null) : null,
+        );
       } catch {
         setResult(null);
       }
@@ -286,7 +299,9 @@ export default function DiagnosticOrderDetailPage() {
               <div className={styles.metaGrid}>
                 <div>
                   <span className={styles.metaLabel}>Entered by</span>
-                  <span className={styles.mono}>{result.enteredBy.slice(0, 8)}…</span>
+                  {enteredByName ?? (
+                    <span className={styles.mono}>{result.enteredBy.slice(0, 8)}…</span>
+                  )}
                 </div>
                 <div>
                   <span className={styles.metaLabel}>Entered at</span>
@@ -295,7 +310,7 @@ export default function DiagnosticOrderDetailPage() {
                 <div>
                   <span className={styles.metaLabel}>Verified by</span>
                   {result.verifiedBy
-                    ? `${result.verifiedBy.slice(0, 8)}…`
+                    ? (verifiedByName ?? `${result.verifiedBy.slice(0, 8)}…`)
                     : 'Pending independent verification'}
                 </div>
                 <div>

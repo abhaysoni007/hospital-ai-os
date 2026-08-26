@@ -14,7 +14,7 @@ import React, { createContext, useContext, useEffect, useState, useCallback } fr
 import { AuthUser } from '../types/auth';
 import { AuthService } from '../services/auth-service';
 import { LoginRequest } from 'shared';
-import { ApiError } from '../services/api-client';
+import { ApiError, onSessionExpired } from '../services/api-client';
 
 interface AuthContextType {
   user: AuthUser | null;
@@ -63,6 +63,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     refreshSession();
   }, [refreshSession]);
+
+  // M12.2 Part C: apiClient signals a failed refresh — reset auth state so
+  // AuthGuard routes the user to /login. The refresh cookie is already
+  // invalidated server-side (rotation) or unusable; no further calls needed.
+  useEffect(
+    () =>
+      onSessionExpired(() => {
+        setUser(null);
+        setError('Your session expired. Please sign in again.');
+      }),
+    [],
+  );
 
   const login = useCallback(async (credentials: LoginRequest) => {
     try {

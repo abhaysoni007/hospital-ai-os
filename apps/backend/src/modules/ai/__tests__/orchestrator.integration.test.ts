@@ -158,7 +158,10 @@ describe('M11 Orchestrator — governed invocation pipeline', () => {
     // with a freshly-anchored cap; once grounded, ANY further call must block
     // regardless of concurrent writers (they can only push the sum upward).
     let orch = makeOrchestrator(provider);
-    for (let attempt = 0; attempt < 5 && provider.calls === 0; attempt++) {
+    for (let attempt = 0; attempt < 8 && provider.calls === 0; attempt++) {
+      // Backoff lets parallel vitest workers finish their own AI commits so
+      // the global SUM stops moving between our anchor and the pre-check.
+      if (attempt > 0) await new Promise((r) => setTimeout(r, 40 * attempt));
       const usedBefore = await aiInteractionRepository.sumTokensForUtcDay(startOfUtcDay());
       orch = makeOrchestrator(provider, { budget: usedBefore + 1000 });
       try {
@@ -166,7 +169,7 @@ describe('M11 Orchestrator — governed invocation pipeline', () => {
         if (first.status === 'grounded') createdInteractionIds.push(first.interactionId);
         break;
       } catch (err) {
-        if (!(err instanceof Error && /budget/i.test(err.message)) || attempt === 4) throw err;
+        if (!(err instanceof Error && /budget/i.test(err.message)) || attempt === 7) throw err;
       }
     }
     expect(provider.calls).toBe(1);

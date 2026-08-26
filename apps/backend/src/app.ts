@@ -16,6 +16,8 @@ import { appointmentRoutes } from './modules/appointment/appointment.routes';
 import { encounterRoutes } from './modules/encounter/encounter.routes';
 import { clinicalRoutes } from './modules/clinical/clinical.routes';
 import { aiRoutes } from './modules/ai/ai.routes';
+import { notificationRoutes } from './modules/notification/notification.routes';
+import { staffIdentityRoutes } from './modules/staff/staff.identity';
 import {
   diagnosticEncounterRoutes,
   diagnosticOrderRoutes,
@@ -53,6 +55,8 @@ app.use('/api/v1/encounters/:encounterId/clinical-records', clinicalRoutes);
 app.use('/api/v1/encounters/:encounterId/diagnostic-orders', diagnosticEncounterRoutes);
 app.use('/api/v1/diagnostic-orders', diagnosticOrderRoutes);
 app.use('/api/v1/ai', aiRoutes);
+app.use('/api/v1/notifications', notificationRoutes);
+app.use('/api/v1/staff', staffIdentityRoutes);
 // M5 test infrastructure only — no business logic, no patient data.
 // M12.1: mounted ONLY outside production (test/development environments).
 if (config.NODE_ENV !== 'production') {

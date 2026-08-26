@@ -67,7 +67,9 @@ describe('M12.1 P0-5 — daily token budget GLOBAL scope', () => {
     let resultA: Awaited<ReturnType<AIOrchestrator['invokeStructured']>> | undefined;
     let orchB: AIOrchestrator | undefined;
     const providerB = new FakeProvider({ scriptedOutput: validSoapOutput(EXPECTED_GAPS) });
-    for (let attempt = 0; attempt < 5 && !resultA; attempt++) {
+    for (let attempt = 0; attempt < 8 && !resultA; attempt++) {
+      // Backoff: let parallel workers' AI commits settle before re-anchoring.
+      if (attempt > 0) await new Promise((r) => setTimeout(r, 40 * attempt));
       const usedNow = await aiInteractionRepository.sumTokensForUtcDay(startOfUtcDay());
       const budgetNow = usedNow + CALL_COST; // allows exactly ONE more call
       const orchA = makeOrchestrator(providerA, budgetNow);
@@ -82,7 +84,7 @@ describe('M12.1 P0-5 — daily token budget GLOBAL scope', () => {
         // Same cap for user B — a different staffId, fresh limiter/breaker state.
         orchB = makeOrchestrator(providerB, budgetNow);
       } catch (err) {
-        if (!(err instanceof Error && /budget/i.test(err.message)) || attempt === 4) throw err;
+        if (!(err instanceof Error && /budget/i.test(err.message)) || attempt === 7) throw err;
       }
     }
     expect(resultA?.status).toBe('grounded');
