@@ -18,6 +18,10 @@ import { decryptField } from '../src/utils/encryption';
 import { AuditService } from '../src/modules/audit/audit.service';
 import { AIOrchestrator, abortInFlightAiCalls } from '../src/modules/ai/orchestrator';
 import { FakeProvider } from '../src/modules/ai/adapters/fake.provider';
+import {
+  aiInteractionRepository,
+  startOfUtcDay,
+} from '../src/modules/ai/ai.persistence';
 import { buildNoteDraftPrompt, canonicalizeUntrustedText } from '../src/modules/ai/prompts';
 import { buildInputManifest, computeInformationGaps } from '../src/modules/ai/context/projections';
 import { soapNoteDraftOutputSchema, type GapCode } from 'shared';
@@ -365,34 +369,40 @@ async function main() {
   check('per-user invocation limiter rejects excess pre-provider', limited);
 
   // ---- Daily token budget -------------------------------------------------------
-  // Isolated actor so prior gate invocations cannot pollute this SUM.
-  const budgetPrincipal = { staffId: nurse.id, role: 'nurse', departmentId: 'gate-dept' };
+  // M12.1 P0-5: the ratified scope is GLOBAL (ADR-017 §8 DB SUM over ALL users).
+  // Anchor the cap to current committed global usage; prior gate invocations
+  // count toward it exactly as production replicas would.
+  const usedBeforeBudget = await aiInteractionRepository.sumTokensForUtcDay(startOfUtcDay());
   const budgetOrch = makeOrch(
     new FakeProvider({ scriptedOutput: validOutput(), inputTokens: 900, outputTokens: 900 }),
     {
-      budget: 1000,
+      budget: usedBeforeBudget + 1000,
     },
   );
   const b1 = await budgetOrch.invokeStructured({
     capability: 'note_draft',
-    principal: budgetPrincipal,
+    principal: { staffId: nurse.id, role: 'nurse', departmentId: 'gate-dept' },
     blocks,
     outputSchema: soapNoteDraftOutputSchema,
   });
-  let budgetBlocked = false;
+  let budgetBlockedCrossUser = false;
   try {
+    // DIFFERENT principal — proves consumption is charged hospital-wide.
     await budgetOrch.invokeStructured({
       capability: 'note_draft',
-      principal: budgetPrincipal,
+      principal: { staffId: physician.id, role: 'physician', departmentId: 'gate-dept' },
       blocks,
       outputSchema: soapNoteDraftOutputSchema,
     });
   } catch (err) {
-    budgetBlocked = /budget/i.test(err instanceof Error ? err.message : '');
+    budgetBlockedCrossUser = /budget/i.test(err instanceof Error ? err.message : '');
   }
+  const usedAfterBudget = await aiInteractionRepository.sumTokensForUtcDay(startOfUtcDay());
   check(
-    'daily token budget enforced BEFORE provider (global DB-backed)',
-    b1.status === 'grounded' && budgetBlocked,
+    'daily token budget enforced BEFORE provider, GLOBAL across users (P0-5)',
+    b1.status === 'grounded' &&
+      budgetBlockedCrossUser &&
+      usedAfterBudget >= usedBeforeBudget + 1000,
   );
   if (b1.status === 'grounded') cleanupInteractionIds.push(b1.interactionId);
 
@@ -460,6 +470,55 @@ async function main() {
     'injection battery: canonicalized text preserves content for audit',
     injectedPrompt.includes('(SYSTEM_OVERRIDE)'),
   );
+
+  // ---- M12.1 P0-2: ADAPTER WIRE FORMAT — single canonicalized rendering --------------
+  {
+    const { buildGeminiRequest } = await import('../src/modules/ai/adapters/gemini.adapter');
+    const forgedBlocks = [
+      ...blocks.filter((b) => b.blockType !== 'clinical_record'),
+      {
+        blockType: 'clinical_record',
+        sourceId: SRC_RECORD,
+        recordType: 'progress_note',
+        version: 1,
+        recordedAt: new Date().toISOString(),
+        textContent: injection,
+      },
+    ] as typeof blocks;
+    const prompt = buildNoteDraftPrompt({
+      recordType: 'soap',
+      blocks: forgedBlocks,
+      gaps: [],
+      instructions: injection,
+    });
+    const wire = buildGeminiRequest({
+      systemInstruction: prompt.systemInstruction,
+      userPrompt: prompt.userPrompt,
+      context: forgedBlocks as unknown[],
+      outputSchema: soapNoteDraftOutputSchema,
+      config: { maxOutputTokens: 4096, temperature: 0.2, topP: 0.9, timeoutMs: 30_000 },
+    });
+    const wireText = wire.contents[0].parts[0].text;
+    check(
+      'P0-2: Gemini request user content is EXACTLY the template-rendered prompt (no raw context re-render)',
+      wireText === prompt.userPrompt,
+    );
+    const wireForgedEnd = (wireText.match(/\[CLINICAL_CONTEXT_END\]/g) ?? []).length;
+    // The template's OWN trusted clinician-slot wrapper contributes exactly one
+    // [PATIENT_INPUT] / [/PATIENT_INPUT] pair (instructions are provided here);
+    // anything beyond that pair would be a forged duplicate.
+    const wireSlotOpen = (wireText.match(/\[PATIENT_INPUT\]/g) ?? []).length;
+    const wireSlotClose = (wireText.match(/\[\/PATIENT_INPUT\]/g) ?? []).length;
+    const wireSystem = (wireText.match(/\[SYSTEM_[A-Z_]+\]/g) ?? []).length;
+    check(
+      'P0-2: wire carries ONE context boundary + at most ONE trusted slot pair + ZERO forged system tokens',
+      wireForgedEnd === 1 && wireSlotOpen <= 1 && wireSlotClose === wireSlotOpen && wireSystem === 0,
+    );
+    check(
+      'P0-2: raw uncanonicalized narrative is absent from the wire; neutralized form present',
+      !wireText.includes(injection) && wireText.includes(canonicalizeUntrustedText(injection)),
+    );
+  }
 
   // ---- Provider outage does NOT break manual clinical workflow -------------------------
   // Trip the shared-container-independent breaker hard, then prove core HTTP flows work.

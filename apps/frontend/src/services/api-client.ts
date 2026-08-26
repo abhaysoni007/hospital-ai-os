@@ -39,12 +39,22 @@ export class ApiError extends Error {
 }
 
 export interface RequestOptions extends Omit<RequestInit, 'body'> {
+  /** Structured request payload. apiClient OWNS serialization (M12.1 P0-1). */
   body?: unknown;
   skipAuth?: boolean;
 }
 
 export async function apiClient<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
   const { body, skipAuth = false, headers = {}, ...customConfig } = options;
+
+  // M12.1 P0-1 serialization contract: callers provide STRUCTURED objects;
+  // apiClient performs the one and only JSON.stringify. A pre-stringified
+  // body would reach Express as a JSON string and fail Zod validation.
+  if (typeof body === 'string') {
+    throw new TypeError(
+      'apiClient serializes bodies itself — pass a structured object, not JSON.stringify(...) output',
+    );
+  }
 
   const requestHeaders: Record<string, string> = {
     'Content-Type': 'application/json',

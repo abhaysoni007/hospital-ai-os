@@ -12,7 +12,7 @@ export const appointmentService = {
   async bookAppointment(payload: CreateAppointmentRequest): Promise<{ data: AppointmentResponse }> {
     return apiClient('/appointments', {
       method: 'POST',
-      body: JSON.stringify(payload),
+      body: payload,
     });
   },
 
@@ -34,7 +34,7 @@ export const appointmentService = {
   async cancelAppointment(id: string, reason?: string): Promise<{ data: AppointmentResponse }> {
     return apiClient(`/appointments/${id}/cancel`, {
       method: 'PATCH',
-      body: JSON.stringify({ reason }),
+      body: { reason },
     });
   },
 

@@ -30,7 +30,13 @@ Choose audit events and payload rules, encryption reuse and readiness gating, se
 | `AI_DRAFT_GENERATED` | Own short tx with the interaction INSERT | note_draft completes (grounded or validation_failed) |
 | `AI_SEARCH_EXECUTED` | Own short tx with the interaction INSERT | chart_search completes |
 | `AI_DRAFT_ACCEPTED` | **Joins the clinical-record creation business tx** (failure ⇒ full rollback of record + interaction transition + audit) | atomic bind succeeds (ADR-019 B10) |
-| `AI_DRAFT_REJECTED` | Own short tx | clinician rejects via PATCH action |
+| `AI_DRAFT_REJECTED` | Own short tx — **transition + audit in ONE transaction** (M12.1 P0-4: previously non-atomic) | clinician rejects via PATCH action |
+| `AI_DRAFT_EDITED` | Own short tx — transition + audit in ONE transaction (**added M12.1 P0-4**: pending→edited was previously an unaudited mutation) | clinician edit-flags via PATCH action |
+
+> **M12.1 correction:** both PATCH-action transitions are now atomic with their
+> metadata-only audit event; an audit failure rolls the state mutation back,
+> per the ADR-008 fail-safe rule. Payload rules are unchanged and apply to the
+> new event verbatim.
 
 Payloads are **metadata-only**: actor identity (`actorId/actorRole/actorDepartment`), `targetType: 'AI_INTERACTION'`, `targetId`, `patientId?`, and `actionDetail {encounterId?, capability, promptTemplateId, modelProvider, modelName, inputTokens, outputTokens, latencyMs, groundingStatus}` plus `correlationId`. **No clinical narrative, no draft text, no raw PHI in any payload** (security-architecture §10). Rejection reasons: only a bounded reason CATEGORY enters the audit payload; free-text reason remains in the access-controlled `ai_interactions.rejection_reason` column.
 

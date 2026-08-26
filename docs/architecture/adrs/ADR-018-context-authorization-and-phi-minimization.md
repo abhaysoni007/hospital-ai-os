@@ -93,6 +93,15 @@ No AI invocation may enter M10 transactional workflows (result entry, verificati
 
 Clinical text is untrusted data: trusted instruction layer vs delimited untrusted slots, delimiter canonicalization, no tool surface, schema-only output acceptance. Residual risk stated honestly: injection may degrade draft prose (caught by mandatory human review); it cannot mutate state, escalate authorization, fabricate validatable citations, or exfiltrate beyond the caller's own authority.
 
+> **M12.1 correction (Full System Audit finding P0-2):** the versioned prompt
+> template is the SINGLE authoritative rendering path. The Gemini adapter
+> previously prepended its own `JSON.stringify(context)` ahead of the template
+> output, bypassing canonicalization on the real provider wire and doubling
+> context tokens. Adapters now send the template-rendered `userPrompt` verbatim;
+> adversarial wire-format tests (`gemini-adapter.wire.test.ts`, M11 gate, M12.1
+> gate) assert the rendered request contains exactly one canonical context
+> boundary and zero forged slot/system tokens.
+
 ---
 
 ## Alternatives Considered

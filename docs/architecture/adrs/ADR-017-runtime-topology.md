@@ -58,7 +58,17 @@ In-process sliding-window limiter on AI routes (default ≈6 invocations/min/use
 
 ### 7. Daily token budget — GLOBAL via database
 
-Per-user daily token budget checked **before** provider invocation via indexed `SUM(input_tokens + output_tokens)` over committed `ai_interactions WHERE initiated_by = ? AND created_at >= start-of-day`. Because it reads committed rows, this control is **globally correct across replicas**. Breach ⇒ `RateLimitError` (429) with explicit code. Minor race overshoot on simultaneous final-budget calls is bounded by semaphore × replicas and accepted.
+Hospital-wide daily token budget checked **before** provider invocation via an indexed `SUM(input_tokens + output_tokens)` over ALL committed `ai_interactions WHERE created_at >= start-of-day` (UTC day boundary, no user filter). Because it reads committed rows, this control is **globally correct across replicas**. Breach ⇒ `RateLimitError` (429) with explicit code. Minor race overshoot on simultaneous final-budget calls is bounded by semaphore × replicas and accepted.
+
+> **M12.1 correction (Full System Audit finding P0-5):** the original text of this
+> section said "per-user daily token budget" with a `WHERE initiated_by = ?` SQL
+> sketch, contradicting this section's title, the Decision 8 scope table below,
+> and every summary document (PROJECT_STATUS.md, MILESTONE_11_REPORT.md). The
+> ratified contract is GLOBAL: the per-user invocation limiter (Decision 6)
+> bounds individual abuse; the daily budget exists to bound TOTAL hospital spend.
+> The implementation was corrected to the GLOBAL SUM in M12.1; cross-user
+> enforcement is proven by `budget-scope.global.test.ts`, the M11 gate, and the
+> M12.1 gate.
 
 ### 8. Control-scope classification (multi-replica honesty)
 
@@ -110,7 +120,7 @@ The existing graceful-shutdown hook must fire `AbortController.abort()` on in-fl
 ## Consequences
 
 - AI failure modes are bounded, observable, and incapable of degrading clinical workflows (no shared locks, no shared transactions, 503-family errors only).
-- Cost exposure is capped per-user-per-day and globally observable from day one via persisted token accounting.
+- Cost exposure is capped hospital-wide per day (GLOBAL budget, Decision 7/8) and observable from day one via persisted token accounting; per-user invocation frequency is separately capped by Decision 6.
 - Horizontal scaling requires no coordination beyond what Decision 8 documents.
 - Migration path to async preserved: orchestrator is invocation-shaped (not HTTP-shaped), so a future BullMQ worker calls it unchanged.
 

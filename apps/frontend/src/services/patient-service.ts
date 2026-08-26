@@ -18,7 +18,7 @@ export const patientService = {
   async registerPatient(payload: RegisterPatientRequest): Promise<{ data: PatientResponse }> {
     return apiClient('/patients', {
       method: 'POST',
-      body: JSON.stringify(payload),
+      body: payload,
     });
   },
 

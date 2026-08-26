@@ -4,17 +4,46 @@ import {
   noteDraftRequestPrimitiveSchema,
   uuidSchema,
   AuthenticationError,
+  ConflictError,
   NotFoundError,
   ValidationError,
 } from 'shared';
 
+import { db } from '../../db';
 import { aiOrchestrator } from './ai.container';
 import { AiNoteDraftService } from './capabilities/note-draft.service';
 import { aiInteractionRepository } from './ai.persistence';
-import { AI_AUDIT_EVENTS, buildAiInteractionAuditEvent } from './ai.audit';
+import {
+  AI_AUDIT_EVENTS,
+  AiInteractionAuditDetail,
+  buildAiInteractionAuditEvent,
+} from './ai.audit';
 import { auditService } from '../audit/audit.service';
 
 const noteDraftService = new AiNoteDraftService(aiOrchestrator);
+
+/** Metadata-only audit detail derived from a stored interaction row (ADR-020 §1). */
+function aiInteractionAuditDetail(row: {
+  interactionType: string;
+  promptTemplateId: string | null;
+  modelProvider: string;
+  modelName: string;
+  inputTokens: number;
+  outputTokens: number;
+  latencyMs: number;
+  groundingStatus: string;
+}): AiInteractionAuditDetail {
+  return {
+    capability: row.interactionType,
+    promptTemplateId: row.promptTemplateId ?? 'unknown',
+    modelProvider: row.modelProvider,
+    modelName: row.modelName,
+    inputTokens: row.inputTokens,
+    outputTokens: row.outputTokens,
+    latencyMs: row.latencyMs,
+    groundingStatus: row.groundingStatus,
+  };
+}
 
 function requireUser(req: Request) {
   const user = req.user;
@@ -65,43 +94,67 @@ export class AiController {
         throw new NotFoundError('AI interaction not found', { code: 'INTERACTION_NOT_FOUND' });
       }
 
+      // M12.1 P0-4: BOTH lifecycle transitions are state-changing and therefore
+      // atomic with their metadata-only audit event — audit failure rolls the
+      // transition back (ADR-008 fail-safe rule, ADR-020 §1 transaction
+      // discipline). Previously 'edited' was unaudited and 'rejected' was
+      // audited non-atomically; both paths now share one short transaction.
       if (action.action === 'edited') {
-        await aiInteractionRepository.transitionGuarded(id.data, 'pending', 'edited');
+        await db.transaction(async (tx) => {
+          const updated = await aiInteractionRepository.transitionGuarded(
+            id.data,
+            'pending',
+            'edited',
+            undefined,
+            tx,
+          );
+          if (updated === 0) {
+            throw new ConflictError('Interaction is not in a pending state.', {
+              code: 'INVALID_TRANSITION',
+            });
+          }
+          await auditService.logEvent(
+            buildAiInteractionAuditEvent({
+              eventType: AI_AUDIT_EVENTS.DRAFT_EDITED,
+              actor: { staffId: user.staffId, role: user.role, departmentId: user.departmentId },
+              interactionId: id.data,
+              patientId: row.patientId,
+              detail: aiInteractionAuditDetail(row),
+            }),
+            correlation(req),
+            tx,
+          );
+        });
         return res.status(200).json({ data: { id: id.data, userAction: 'edited' } });
       }
 
-      const updated = await aiInteractionRepository.transitionGuarded(
-        id.data,
-        'pending',
-        'rejected',
-        {
-          rejectionReasonCategory: `${action.reasonCategory}${action.reasonNote ? `: ${action.reasonNote}` : ''}`,
-        },
-      );
-      if (updated === 0) {
-        throw new ValidationError('Interaction is not in a pending state.', {
-          code: 'INVALID_TRANSITION',
-        });
-      }
-      await auditService.logEvent(
-        buildAiInteractionAuditEvent({
-          eventType: AI_AUDIT_EVENTS.DRAFT_REJECTED,
-          actor: { staffId: user.staffId, role: user.role, departmentId: user.departmentId },
-          interactionId: id.data,
-          patientId: row.patientId,
-          detail: {
-            capability: row.interactionType,
-            promptTemplateId: row.promptTemplateId ?? 'unknown',
-            modelProvider: row.modelProvider,
-            modelName: row.modelName,
-            inputTokens: row.inputTokens,
-            outputTokens: row.outputTokens,
-            latencyMs: row.latencyMs,
-            groundingStatus: row.groundingStatus,
+      await db.transaction(async (tx) => {
+        const updated = await aiInteractionRepository.transitionGuarded(
+          id.data,
+          'pending',
+          'rejected',
+          {
+            rejectionReasonCategory: `${action.reasonCategory}${action.reasonNote ? `: ${action.reasonNote}` : ''}`,
           },
-        }),
-        correlation(req),
-      );
+          tx,
+        );
+        if (updated === 0) {
+          throw new ConflictError('Interaction is not in a pending state.', {
+            code: 'INVALID_TRANSITION',
+          });
+        }
+        await auditService.logEvent(
+          buildAiInteractionAuditEvent({
+            eventType: AI_AUDIT_EVENTS.DRAFT_REJECTED,
+            actor: { staffId: user.staffId, role: user.role, departmentId: user.departmentId },
+            interactionId: id.data,
+            patientId: row.patientId,
+            detail: aiInteractionAuditDetail(row),
+          }),
+          correlation(req),
+          tx,
+        );
+      });
       res.status(200).json({ data: { id: id.data, userAction: 'rejected' } });
     } catch (err) {
       next(err);

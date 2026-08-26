@@ -103,19 +103,38 @@ export class AppointmentService {
       // ADR-012: token allocated BEFORE the insert, inside this transaction.
       const tokenNumber = await allocateToken(tx, payload.doctorId, payload.scheduledDate);
 
-      const [appointment] = await tx
-        .insert(appointments)
-        .values({
-          patientId: payload.patientId,
-          doctorId: payload.doctorId,
-          departmentId: payload.departmentId,
-          scheduledDate: payload.scheduledDate,
-          scheduledTime: payload.scheduledTime,
-          tokenNumber,
-          status: 'booked',
-          createdBy: creatorId,
-        })
-        .returning();
+      // M12.1 P0-3: migration 0005 (uq_appointments_active_slot) is the final
+      // authority against concurrent double-booking — the SELECT above cannot
+      // see a row another in-flight transaction has not yet inserted. A unique
+      // violation here means the slot was claimed concurrently; it is mapped to
+      // the SAME public error contract as the pre-check (no postgres leak).
+      let appointment;
+      try {
+        [appointment] = await tx
+          .insert(appointments)
+          .values({
+            patientId: payload.patientId,
+            doctorId: payload.doctorId,
+            departmentId: payload.departmentId,
+            scheduledDate: payload.scheduledDate,
+            scheduledTime: payload.scheduledTime,
+            tokenNumber,
+            status: 'booked',
+            createdBy: creatorId,
+          })
+          .returning();
+      } catch (err) {
+        // Drizzle wraps driver errors: the pg code may sit on err.code or
+        // err.cause.code depending on the drizzle/postgres-js versions.
+        const pgCode =
+          (err as { code?: string }).code ?? (err as { cause?: { code?: string } }).cause?.code;
+        if (pgCode === '23505') {
+          throw new ConflictError('This slot is no longer available.', {
+            code: 'SLOT_UNAVAILABLE',
+          });
+        }
+        throw err;
+      }
 
       await auditService.logEvent(
         {

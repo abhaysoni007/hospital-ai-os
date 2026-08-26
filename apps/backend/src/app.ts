@@ -22,6 +22,7 @@ import {
 } from './modules/diagnostics/diagnostics.routes';
 // M5 Authorization test probe — infrastructure/testing ONLY, no business logic
 import { authorizationProbeRoutes } from './modules/authorization-probe/probe.routes';
+import { config } from './config';
 
 export const app = express();
 
@@ -52,8 +53,11 @@ app.use('/api/v1/encounters/:encounterId/clinical-records', clinicalRoutes);
 app.use('/api/v1/encounters/:encounterId/diagnostic-orders', diagnosticEncounterRoutes);
 app.use('/api/v1/diagnostic-orders', diagnosticOrderRoutes);
 app.use('/api/v1/ai', aiRoutes);
-// M5 test infrastructure only — no business logic, no patient data
-app.use('/api/v1/_test/authz-probe', authorizationProbeRoutes);
+// M5 test infrastructure only — no business logic, no patient data.
+// M12.1: mounted ONLY outside production (test/development environments).
+if (config.NODE_ENV !== 'production') {
+  app.use('/api/v1/_test/authz-probe', authorizationProbeRoutes);
+}
 
 // 6. global error handler
 app.use(errorHandlerMiddleware);

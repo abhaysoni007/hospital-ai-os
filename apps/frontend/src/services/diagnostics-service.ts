@@ -27,7 +27,7 @@ export const diagnosticsService = {
   ): Promise<{ data: DiagnosticOrderResponse }> {
     return apiClient(`/encounters/${encounterId}/diagnostic-orders`, {
       method: 'POST',
-      body: JSON.stringify(payload),
+      body: payload,
     });
   },
 
@@ -59,7 +59,7 @@ export const diagnosticsService = {
   ): Promise<{ data: DiagnosticOrderResponse }> {
     return apiClient(`/diagnostic-orders/${id}/cancel`, {
       method: 'PATCH',
-      body: JSON.stringify(payload ?? {}),
+      body: payload ?? {},
     });
   },
 
@@ -69,7 +69,7 @@ export const diagnosticsService = {
   ): Promise<{ data: DiagnosticResultResponse }> {
     return apiClient(`/diagnostic-orders/${orderId}/result`, {
       method: 'POST',
-      body: JSON.stringify(payload),
+      body: payload,
     });
   },
 
@@ -80,7 +80,7 @@ export const diagnosticsService = {
   async verifyResult(orderId: string): Promise<{ data: DiagnosticResultResponse }> {
     return apiClient(`/diagnostic-orders/${orderId}/result/verify`, {
       method: 'POST',
-      body: JSON.stringify({}),
+      body: {},
     });
   },
 };

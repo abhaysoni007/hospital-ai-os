@@ -12,6 +12,7 @@ import { staff } from '../../../db/schema/staff';
 import { AuditService } from '../../audit/audit.service';
 import { AIOrchestrator } from '../orchestrator';
 import { FakeProvider } from '../adapters/fake.provider';
+import { aiInteractionRepository, startOfUtcDay } from '../ai.persistence';
 import { baseBlocks, validSoapOutput } from './fixtures';
 
 /**
@@ -145,20 +146,32 @@ describe('M11 Orchestrator — governed invocation pipeline', () => {
     expect(provider.calls).toBe(1);
   });
 
-  it('daily token budget is enforced BEFORE the provider call', async () => {
+  it('daily token budget is enforced BEFORE the provider call (GLOBAL scope)', async () => {
     const provider = new FakeProvider({
       scriptedOutput: validSoapOutput(EXPECTED_GAPS),
       inputTokens: 500,
       outputTokens: 500,
     });
-    const orch = makeOrchestrator(provider, { budget: 1000 });
 
-    // First call passes (0 used < 1000) and commits ~1000 tokens.
-    const first = await invoke(orch);
-    if (first.status === 'grounded') createdInteractionIds.push(first.interactionId);
+    // M12.1 P0-5: the budget SUM is GLOBAL (all users, committed rows). Parallel
+    // vitest workers may commit AI rows concurrently, so the FIRST call retries
+    // with a freshly-anchored cap; once grounded, ANY further call must block
+    // regardless of concurrent writers (they can only push the sum upward).
+    let orch = makeOrchestrator(provider);
+    for (let attempt = 0; attempt < 5 && provider.calls === 0; attempt++) {
+      const usedBefore = await aiInteractionRepository.sumTokensForUtcDay(startOfUtcDay());
+      orch = makeOrchestrator(provider, { budget: usedBefore + 1000 });
+      try {
+        const first = await invoke(orch);
+        if (first.status === 'grounded') createdInteractionIds.push(first.interactionId);
+        break;
+      } catch (err) {
+        if (!(err instanceof Error && /budget/i.test(err.message)) || attempt === 4) throw err;
+      }
+    }
     expect(provider.calls).toBe(1);
 
-    // Second call is rejected pre-provider.
+    // Second call is rejected pre-provider — global day total now ≥ budget.
     await expect(invoke(orch)).rejects.toThrow(/budget/i);
     expect(provider.calls).toBe(1); // provider never invoked again
   }, 30_000);

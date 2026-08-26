@@ -122,10 +122,9 @@ export class AIOrchestrator {
     }
 
     // 2) GLOBAL daily token budget — DB-backed, correct across replicas.
-    const used = await aiInteractionRepository.sumTokensSince(
-      params.principal.staffId,
-      startOfUtcDay(),
-    );
+    // M12.1 P0-5: the SUM spans ALL users (ADR-017 §8 GLOBAL scope); the
+    // previous per-user filter understated total exposure.
+    const used = await aiInteractionRepository.sumTokensForUtcDay(startOfUtcDay());
     if (used >= this.budget) {
       throw new RateLimitError('Daily AI token budget exhausted');
     }

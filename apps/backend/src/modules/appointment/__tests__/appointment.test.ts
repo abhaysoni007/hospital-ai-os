@@ -570,6 +570,68 @@ describe('M8 Appointment Module (booking / token / cancel / check-in)', () => {
     expect(linkedEncounters.length).toBe(3);
   });
 
+  it('K2. P0-3 MIGRATION AUTHORITY: uq_appointments_active_slot exists', async () => {
+    const indexes = await db.execute(
+      sql`SELECT indexname FROM pg_indexes WHERE tablename = 'appointments' AND indexname = 'uq_appointments_active_slot'`,
+    );
+    expect(indexes as unknown as Array<{ indexname: string }>).toHaveLength(1);
+  });
+
+  it('K3. P0-3 CONCURRENCY: 20 parallel SAME-SLOT bookings → exactly 1 success, 19 SLOT_UNAVAILABLE, loser tokens rolled back', async () => {
+    const date = futureDate(1000 + Math.floor(Math.random() * 1000)); // unique per run
+    const time = '07:30';
+
+    const results = await Promise.allSettled(
+      Array.from({ length: 20 }, () =>
+        appointmentService.bookAppointment(
+          {
+            patientId,
+            doctorId: physicianId,
+            departmentId: deptId,
+            scheduledDate: date,
+            scheduledTime: time,
+          },
+          receptionistId,
+          crypto.randomUUID(),
+          receptionistCtx(),
+        ),
+      ),
+    );
+
+    const succeeded = results.filter((r) => r.status === 'fulfilled');
+    const failed = results.filter((r) => r.status === 'rejected');
+    expect(succeeded).toHaveLength(1);
+    expect(failed).toHaveLength(19);
+    for (const f of failed as PromiseRejectedResult[]) {
+      // Deterministic public error — the raw postgres unique violation never leaks.
+      expect((f.reason as { code?: string }).code).toBe('SLOT_UNAVAILABLE');
+    }
+
+    // Database is the final authority: exactly ONE row occupies the slot.
+    const slotRows = await db.query.appointments.findMany({
+      where: and(
+        eq(appointments.doctorId, physicianId),
+        eq(appointments.scheduledDate, date),
+        eq(appointments.scheduledTime, time),
+      ),
+    });
+    expect(slotRows).toHaveLength(1);
+
+    // Losers allocated tokens inside their own transactions; those rolled back.
+    const counter = (
+      await db
+        .select()
+        .from(appointmentTokenCounters)
+        .where(
+          and(
+            eq(appointmentTokenCounters.doctorId, physicianId),
+            eq(appointmentTokenCounters.scheduledDate, date),
+          ),
+        )
+    )[0];
+    expect(counter.lastToken).toBe(1); // winner's token only — ADR-012 rollback contract
+  });
+
   it('L. Department scope: receptionist cannot book outside own department', async () => {
     await expect(
       appointmentService.bookAppointment(

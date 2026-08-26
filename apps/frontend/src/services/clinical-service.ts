@@ -13,7 +13,7 @@ export const clinicalService = {
   ): Promise<{ data: ClinicalRecordResponse }> {
     return apiClient(`/encounters/${encounterId}/clinical-records`, {
       method: 'POST',
-      body: JSON.stringify(payload),
+      body: payload,
     });
   },
 
@@ -37,7 +37,7 @@ export const clinicalService = {
   ): Promise<{ data: ClinicalRecordResponse }> {
     return apiClient(`/encounters/${encounterId}/clinical-records/${recordId}`, {
       method: 'PATCH',
-      body: JSON.stringify(payload),
+      body: payload,
     });
   },
 
@@ -48,7 +48,7 @@ export const clinicalService = {
   ): Promise<{ data: ClinicalRecordResponse }> {
     return apiClient(`/encounters/${encounterId}/clinical-records/${recordId}/sign`, {
       method: 'POST',
-      body: JSON.stringify({ expectedVersion }),
+      body: { expectedVersion },
     });
   },
 };

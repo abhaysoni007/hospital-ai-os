@@ -11,7 +11,7 @@ export const aiService = {
   ): Promise<any> {
     return apiClient<AiNoteDraftResponse>('/ai/note-draft', {
       method: 'POST',
-      body: JSON.stringify({ encounterId, recordType, instructions: instructions || undefined }),
+      body: { encounterId, recordType, instructions: instructions || undefined },
     });
   },
 
@@ -22,11 +22,11 @@ export const aiService = {
   ): Promise<void> {
     await apiClient(`/ai/interactions/${interactionId}/action`, {
       method: 'PATCH',
-      body: JSON.stringify({
+      body: {
         action: 'rejected',
         reasonCategory,
         reasonNote: reasonNote || undefined,
-      }),
+      },
     });
   },
 };

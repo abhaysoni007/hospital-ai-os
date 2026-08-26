@@ -149,8 +149,8 @@ Superseded by §2.10 admin endpoints at M20.
 | GET | `/encounters` | List encounters | Required | `encounter:read` | — |
 | GET | `/encounters/:id` | Get encounter details | Required | `encounter:read` | — |
 | PATCH | `/encounters/:id/activate` | Start consultation | Required | `encounter:update` | `ENCOUNTER_ACTIVATED` |
-| PATCH | `/encounters/:id/initiate-discharge` | Begin discharge workflow | Required | `encounter:discharge` | `ENCOUNTER_DISCHARGE_INITIATED` |
-| PATCH | `/encounters/:id/authorize-discharge` | Approve discharge | Required | `encounter:discharge` | `DISCHARGE_AUTHORIZED` |
+| PATCH | `/encounters/:id/initiate-discharge` | Begin discharge workflow (**PLANNED — M13, NOT IMPLEMENTED**) | Required | `encounter:discharge` | `ENCOUNTER_DISCHARGE_INITIATED` |
+| PATCH | `/encounters/:id/authorize-discharge` | Approve discharge (**PLANNED — M13, NOT IMPLEMENTED**) | Required | `encounter:discharge` | `DISCHARGE_AUTHORIZED` |
 
 **GET /encounters/:id**
 ```
@@ -244,6 +244,8 @@ Side effects:
 ### 2.8 AI Features (`/api/v1/ai`)
 
 > **Ratified by ADR-017/018/019/020 (Phase 5).** Binding refinements: (1) draft **accept is the atomic bind-at-clinical-record-creation act carrying optional `aiDraftId`** — the PATCH endpoint below handles reject/edit-flag lifecycle operations only (ADR-019 supersedes the earlier accept-via-PATCH implication); (2) `/ai/discharge-draft` is DEFERRED to M13; (3) OCR is REJECTED for v1; (4) runtime, authorization and audit rules per ADR-017/018/020.
+>
+> **IMPLEMENTATION STATUS (M12.1):** only `/ai/note-draft` and `/ai/interactions/:id/action` are mounted. `/ai/chart-search` is a ratified capability whose prompt template and shared contracts ship, but the route/service is NOT implemented yet. The PATCH action emits `AI_DRAFT_REJECTED` or `AI_DRAFT_EDITED` (both transitions are audited atomically — M12.1 P0-4 / ADR-020 §1).
 
 | Method | Path | Purpose | Auth | Permission | Audit Event |
 |:---|:---|:---|:---|:---|:---|
@@ -251,7 +253,7 @@ Side effects:
 | POST | `/ai/discharge-draft` | Generate discharge summary draft (**DEFERRED — M13**) | Required | `ai_interaction:invoke` | `AI_DRAFT_GENERATED` |
 | POST | `/ai/chart-search` | Search patient chart via AI (grounded chart brief; read-only) | Required | `ai_interaction:invoke` + ADR-018 capability gate | `AI_SEARCH_EXECUTED` |
 | POST | `/ai/ocr` | Extract text from document image (**REJECTED for v1 — ADR-017**) | Required | `ai_interaction:invoke` | `AI_DRAFT_GENERATED` |
-| PATCH | `/ai/interactions/:id/action` | Reject / edit-flag an AI interaction (**never "accept"** — accept is atomic binding per ADR-019) | Required | `ai_interaction:invoke` (initiator only) | `AI_DRAFT_REJECTED` |
+| PATCH | `/ai/interactions/:id/action` | Reject / edit-flag an AI interaction (**never "accept"** — accept is atomic binding per ADR-019) | Required | `ai_interaction:invoke` (initiator only) | `AI_DRAFT_REJECTED` / `AI_DRAFT_EDITED` |
 
 **POST /ai/note-draft**
 ```
@@ -265,6 +267,8 @@ Errors: 503 AI_SERVICE_UNAVAILABLE (circuit breaker open)
 
 ### 2.9 Tasks & Notifications (`/api/v1/tasks`, `/api/v1/notifications`)
 
+> **IMPLEMENTATION STATUS (M12.1): PLANNED — NOT IMPLEMENTED.** No backend module is mounted; the `tasks` and `notifications` tables exist and `notifications` rows are written by the M10 critical-value outbox, but no read/acknowledge API exists yet.
+
 | Method | Path | Purpose | Auth | Permission |
 |:---|:---|:---|:---|:---|
 | GET | `/tasks` | List my assigned tasks | Required | `task:read` |
@@ -276,25 +280,29 @@ Errors: 503 AI_SERVICE_UNAVAILABLE (circuit breaker open)
 
 ### 2.10 Administration (`/api/v1/admin`)
 
+> **IMPLEMENTATION STATUS (M12.1):** the staff/department management rows are **PLANNED (M20) — NOT IMPLEMENTED**. The audit query endpoint IS implemented but mounted at **`GET /api/v1/audit`** (not `/admin/audit-events`); permission `audit_event:read` as documented.
+
 | Method | Path | Purpose | Auth | Permission |
 |:---|:---|:---|:---|:---|
-| GET | `/admin/staff` | List all staff | Required | `staff:manage` |
-| POST | `/admin/staff` | Create staff member | Required | `staff:manage` |
-| PATCH | `/admin/staff/:id` | Update staff (role, dept, status) | Required | `staff:manage` |
+| GET | `/admin/staff` | List all staff (**PLANNED — NOT IMPLEMENTED**) | Required | `staff:manage` |
+| POST | `/admin/staff` | Create staff member (**PLANNED — NOT IMPLEMENTED**) | Required | `staff:manage` |
+| PATCH | `/admin/staff/:id` | Update staff (role, dept, status) (**PLANNED — NOT IMPLEMENTED**) | Required | `staff:manage` |
 | GET | `/admin/departments` | List departments | Required | `staff:manage` |
 | POST | `/admin/departments` | Create department | Required | `staff:manage` |
-| GET | `/admin/audit-events` | Query audit log | Required | `audit_event:read` |
+| GET | `/admin/audit-events` | Query audit log — **IMPLEMENTED AT `GET /api/v1/audit`** (path differs from this catalog; M12.1 correction) | Required | `audit_event:read` |
 
 ---
 
 ### 2.11 Break-Glass (`/api/v1/break-glass`)
 
+> **IMPLEMENTATION STATUS (M12.1): PLANNED (M15) — NOT IMPLEMENTED.** Permissions `break_glass:activate`/`break_glass:review` exist in the M5 matrix and the probe route only.
+
 | Method | Path | Purpose | Auth | Permission | Audit Event |
 |:---|:---|:---|:---|:---|:---|
-| POST | `/break-glass` | Activate emergency access | Required | `break_glass:activate` | `BREAK_GLASS_ACTIVATED` |
-| DELETE | `/break-glass/:id` | Deactivate session | Required | `break_glass:activate` | `BREAK_GLASS_DEACTIVATED` |
-| GET | `/break-glass` | List active sessions (admin) | Required | `break_glass:review` | — |
-| PATCH | `/break-glass/:id/review` | Review a session | Required | `break_glass:review` | `BREAK_GLASS_REVIEWED` |
+| POST | `/break-glass` | Activate emergency access (**PLANNED — NOT IMPLEMENTED**) | Required | `break_glass:activate` | `BREAK_GLASS_ACTIVATED` |
+| DELETE | `/break-glass/:id` | Deactivate session (**PLANNED — NOT IMPLEMENTED**) | Required | `break_glass:activate` | `BREAK_GLASS_DEACTIVATED` |
+| GET | `/break-glass` | List active sessions (admin) (**PLANNED — NOT IMPLEMENTED**) | Required | `break_glass:review` | — |
+| PATCH | `/break-glass/:id/review` | Review a session (**PLANNED — NOT IMPLEMENTED**) | Required | `break_glass:review` | `BREAK_GLASS_REVIEWED` |
 
 **POST /break-glass**
 ```

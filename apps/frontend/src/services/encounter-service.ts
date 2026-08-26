@@ -31,7 +31,7 @@ export const encounterService = {
   ): Promise<{ data: { id: string; status: EncounterStatusValue; version: number } }> {
     return apiClient(`/encounters/${id}/activate`, {
       method: 'PATCH',
-      body: JSON.stringify({ expectedVersion }),
+      body: { expectedVersion },
     });
   },
 };

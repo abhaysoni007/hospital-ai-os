@@ -619,7 +619,9 @@ export class DiagnosticsService {
   }
 
   private assertReadScope(departmentId: string, authContext: AuthContext): void {
-    const allowed = ['physician', 'nurse', 'lab_technician'];
+    // M12.1: pharmacist added — the frozen M5 matrix grants pharmacists
+    // diagnostic_result:read; the previous exclusion made that grant dead.
+    const allowed = ['physician', 'nurse', 'lab_technician', 'pharmacist'];
     if (!allowed.includes(authContext.role) || departmentId !== authContext.departmentId) {
       throw new AuthorizationError('Not permitted to access diagnostics for this department.');
     }

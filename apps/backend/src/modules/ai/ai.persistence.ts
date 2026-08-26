@@ -1,4 +1,5 @@
 import { and, eq, gte, sql } from 'drizzle-orm';
+
 import { db } from '../../db';
 import { aiInteractions } from '../../db/schema/ai';
 
@@ -51,16 +52,22 @@ export const aiInteractionRepository = {
     return row.id;
   },
 
-  /** Globally-correct daily token accounting (ADR-017 §7) — committed rows only. */
-  async sumTokensSince(initiatedBy: string, sinceUtc: Date): Promise<number> {
+  /**
+   * Globally-correct daily token accounting (ADR-017 §7/§8) — committed rows only.
+   *
+   * M12.1 P0-5: this SUM is GLOBAL by ratified contract (ADR-017 §8 control-scope
+   * table: "Daily token budget | GLOBAL (DB SUM) | Exact across replicas"). The
+   * previous implementation filtered `initiated_by = ?`, silently reducing the
+   * hospital-wide cap to a per-user cap; that user filter was removed so the
+   * budget bounds total daily spend exactly as documented.
+   */
+  async sumTokensForUtcDay(sinceUtc: Date): Promise<number> {
     const rows = await db
       .select({
         total: sql<number>`coalesce(sum(${aiInteractions.inputTokens} + ${aiInteractions.outputTokens}), 0)::int`,
       })
       .from(aiInteractions)
-      .where(
-        and(eq(aiInteractions.initiatedBy, initiatedBy), gte(aiInteractions.createdAt, sinceUtc)),
-      );
+      .where(gte(aiInteractions.createdAt, sinceUtc));
     return rows[0]?.total ?? 0;
   },
 
