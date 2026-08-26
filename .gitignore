@@ -16,3 +16,6 @@ keys/
 playwright-report/
 test-results/
 tests/e2e/.auth/
+
+# Demo seed credentials (local only — never commit)
+.demo-credentials.txt
