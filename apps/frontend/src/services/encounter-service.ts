@@ -34,4 +34,14 @@ export const encounterService = {
       body: { expectedVersion },
     });
   },
+
+  async dischargeEncounter(
+    id: string,
+    payload: { expectedVersion: number; summary: string },
+  ): Promise<{ data: { id: string; status: EncounterStatusValue; version: number } }> {
+    return apiClient(`/encounters/${id}/discharge`, {
+      method: 'POST',
+      body: payload,
+    });
+  },
 };

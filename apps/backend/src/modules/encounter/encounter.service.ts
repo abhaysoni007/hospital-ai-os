@@ -3,7 +3,9 @@ import { db } from '../../db';
 import { appointments, encounters } from '../../db/schema/appointments';
 import { patients } from '../../db/schema/patients';
 import { staff } from '../../db/schema/staff';
-import { CreateEncounterRequest, GetEncountersQuery, EncounterListItem } from 'shared';
+import { CreateEncounterRequest, GetEncountersQuery, EncounterListItem, DischargeEncounterRequest } from 'shared';
+import { diagnosticOrders } from '../../db/schema/diagnostics';
+import { clinicalRecords } from '../../db/schema/clinical';
 import { AuthorizationError, ConflictError, NotFoundError } from 'shared/src/errors/AppError';
 import { auditService } from '../audit/audit.service';
 import type { Permission, StaffRole } from '../../middleware/rbac/permissions';
@@ -299,6 +301,138 @@ export class EncounterService {
       await auditService.logEvent(
         {
           eventType: 'ENCOUNTER_ACTIVATED',
+          actorId,
+          actorRole: authContext.role,
+          actorDepartment: authContext.departmentId,
+          targetType: 'ENCOUNTER',
+          targetId: id,
+          patientId: existing.patientId,
+          actionDetail: { previousVersion: existing.version, newVersion: existing.version + 1 },
+        },
+        correlationId,
+        tx,
+      );
+
+      return updated[0];
+    });
+  }
+
+  /**
+   * M13 Discharge. Phase 1A atomic transaction.
+   * Asserts assignment, expectedVersion, active state, and diagnostic order resolution.
+   * Atomically creates the signed discharge summary and transitions to discharged.
+   */
+  async dischargeEncounter(
+    id: string,
+    payload: DischargeEncounterRequest,
+    actorId: string,
+    correlationId: string,
+    authContext: AuthContext,
+  ) {
+    if (authContext.role !== 'physician') {
+      throw new AuthorizationError('Only physicians may discharge patients.');
+    }
+
+    return await db.transaction(async (tx) => {
+      const existing = await tx.query.encounters.findFirst({ where: eq(encounters.id, id) });
+      if (!existing) {
+        throw new NotFoundError('Encounter not found', { code: 'ENCOUNTER_NOT_FOUND' });
+      }
+
+      // 5. Preserve BOTH authorization requirements: encounter:discharge AND assigned physician.
+      if (existing.doctorId !== actorId) {
+        throw new AuthorizationError('Only the assigned physician may discharge this encounter.');
+      }
+
+      if (existing.status !== 'active') {
+        throw new ConflictError(`Cannot discharge an encounter in status '${existing.status}'.`, {
+          code: 'INVALID_TRANSITION',
+        });
+      }
+
+      // 4. EVERY diagnostic order for the encounter must have status: completed OR cancelled.
+      const orders = await tx.query.diagnosticOrders.findMany({
+        where: eq(diagnosticOrders.encounterId, id),
+      });
+      for (const order of orders) {
+        if (order.status !== 'completed' && order.status !== 'cancelled') {
+          throw new ConflictError(
+            `Cannot discharge encounter because diagnostic order '${order.testName}' is still '${order.status}'. All orders must be completed or cancelled.`,
+            { code: 'UNRESOLVED_DIAGNOSTICS' },
+          );
+        }
+      }
+
+      const now = new Date();
+      // 6. Optimistic concurrency at the database update boundary.
+      const updated = await tx
+        .update(encounters)
+        .set({
+          status: 'discharged',
+          dischargedAt: now,
+          updatedAt: now,
+          version: existing.version + 1,
+        })
+        .where(
+          and(
+            eq(encounters.id, id),
+            eq(encounters.version, payload.expectedVersion),
+            eq(encounters.status, 'active'),
+          ),
+        )
+        .returning();
+
+      if (updated.length === 0) {
+        if (existing.version !== payload.expectedVersion) {
+          throw new ConflictError('Encounter was modified concurrently.', {
+            code: 'VERSION_CONFLICT',
+          });
+        }
+        throw new ConflictError(`Cannot discharge an encounter in status '${existing.status}'.`, {
+          code: 'INVALID_TRANSITION',
+        });
+      }
+
+      // Atomically create the signed discharge summary
+      const [record] = await tx
+        .insert(clinicalRecords)
+        .values({
+          encounterId: id,
+          patientId: existing.patientId,
+          recordType: 'discharge_summary',
+          content: { narrative: payload.summary },
+          status: 'signed',
+          version: 1,
+          createdBy: actorId,
+          signedBy: actorId,
+          signedAt: now,
+        })
+        .returning();
+
+      // Emit audits
+      await auditService.logEvent(
+        {
+          eventType: 'CLINICAL_RECORD_CREATED',
+          actorId,
+          actorRole: authContext.role,
+          actorDepartment: authContext.departmentId,
+          targetType: 'CLINICAL_RECORD',
+          targetId: record.id,
+          patientId: existing.patientId,
+          actionDetail: {
+            encounterId: id,
+            recordType: record.recordType,
+            resultingVersion: record.version,
+            note: 'Created as a signed discharge summary during discharge transition.',
+          },
+        },
+        correlationId,
+        tx,
+      );
+
+      await auditService.logEvent(
+        {
+          eventType: 'ENCOUNTER_DISCHARGED',
           actorId,
           actorRole: authContext.role,
           actorDepartment: authContext.departmentId,

@@ -32,3 +32,9 @@ encounterRoutes.patch(
   requirePermission('encounter:update'),
   encounterController.activateEncounter.bind(encounterController),
 );
+
+encounterRoutes.post(
+  '/:id/discharge',
+  requirePermission('encounter:discharge'),
+  encounterController.dischargeEncounter.bind(encounterController),
+);

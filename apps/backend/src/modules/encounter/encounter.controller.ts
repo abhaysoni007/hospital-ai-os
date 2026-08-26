@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { encounterService } from './encounter.service';
-import { createEncounterSchema, getEncountersQuerySchema, activateEncounterSchema } from 'shared';
+import { createEncounterSchema, getEncountersQuerySchema, activateEncounterSchema, dischargeEncounterSchema } from 'shared';
 import { AuthenticationError } from 'shared/src/errors/AppError';
 
 export class EncounterController {
@@ -71,6 +71,29 @@ export class EncounterController {
       const encounter = await encounterService.activateEncounter(
         id,
         payload.expectedVersion,
+        user.staffId,
+        correlationId,
+        { role: user.role, departmentId: user.departmentId },
+      );
+
+      res.status(200).json({ data: encounter });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async dischargeEncounter(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      const payload = dischargeEncounterSchema.parse(req.body);
+      const user = req.user;
+      if (!user) throw new AuthenticationError('Unauthorized');
+
+      const correlationId = (req.headers['x-correlation-id'] as string) || crypto.randomUUID();
+
+      const encounter = await encounterService.dischargeEncounter(
+        id,
+        payload,
         user.staffId,
         correlationId,
         { role: user.role, departmentId: user.departmentId },

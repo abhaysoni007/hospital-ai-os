@@ -60,9 +60,17 @@ export default function EncounterDetailPage() {
   const [acting, setActing] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
 
+  const [isDischargeModalOpen, setIsDischargeModalOpen] = useState(false);
+  const [dischargeSummary, setDischargeSummary] = useState('');
+  const [discharging, setDischarging] = useState(false);
+  const [dischargeError, setDischargeError] = useState<string | null>(null);
+
   const canReadClinical = hasPermission(role, 'clinical_record:read');
   const canActivate =
     hasPermission(role, 'encounter:update') && (role === 'physician' || role === 'nurse');
+
+  const canDischarge = role === 'physician' && hasPermission(role, 'encounter:discharge');
+  const isAssignedPhysician = encounter ? user?.staffId === encounter.doctorId : false;
 
   // M9 — clinical records section (permission-gated sub-endpoint)
   const physicianWrite = role === 'physician' && hasPermission(role, 'clinical_record:write');
@@ -184,6 +192,33 @@ export default function EncounterDetailPage() {
     }
   };
 
+  const handleDischarge = async () => {
+    if (!encounter) return;
+    setDischarging(true);
+    setDischargeError(null);
+    try {
+      await encounterService.dischargeEncounter(encounter.id, {
+        expectedVersion: encounter.version,
+        summary: dischargeSummary.trim(),
+      });
+      setIsDischargeModalOpen(false);
+      await fetchEncounter();
+      await fetchRecords();
+    } catch (err) {
+      const apiErr = err as Error & { code?: string; message?: string };
+      if (apiErr.code === 'UNRESOLVED_DIAGNOSTICS') {
+        setDischargeError(apiErr.message || 'Cannot discharge: Unresolved diagnostic orders.');
+      } else if (apiErr.code === 'VERSION_CONFLICT' || apiErr.code === 'INVALID_TRANSITION') {
+        await fetchEncounter();
+        setDischargeError('The encounter was modified by someone else. Please review the updated state and try again.');
+      } else {
+        setDischargeError(apiErr.message || 'Failed to discharge patient. Please try again.');
+      }
+    } finally {
+      setDischarging(false);
+    }
+  };
+
   if (loading) {
     return (
       <AppShell breadcrumbs={['Operations', 'Encounters']} requiredPermission="encounter:read">
@@ -222,16 +257,27 @@ export default function EncounterDetailPage() {
               : undefined
           }
           actions={
-            canActivate && encounter.status === 'registered' ? (
-              <Button
-                variant="primary"
-                size="md"
-                isLoading={acting}
-                onClick={() => void handleStartConsultation()}
-              >
-                Start consultation
-              </Button>
-            ) : undefined
+            <>
+              {canActivate && encounter.status === 'registered' && (
+                <Button
+                  variant="primary"
+                  size="md"
+                  isLoading={acting}
+                  onClick={() => void handleStartConsultation()}
+                >
+                  Start consultation
+                </Button>
+              )}
+              {canDischarge && encounter.status === 'active' && isAssignedPhysician && (
+                <Button
+                  variant="danger"
+                  size="md"
+                  onClick={() => setIsDischargeModalOpen(true)}
+                >
+                  Discharge patient
+                </Button>
+              )}
+            </>
           }
           meta={
             <>
@@ -551,6 +597,42 @@ export default function EncounterDetailPage() {
           immutable clinical record.
         </p>
       </div>
+
+      {isDischargeModalOpen && (
+        <ConfirmDialog
+          isOpen
+          title="Discharge patient"
+          confirmLabel="Discharge and lock record"
+          variant="danger"
+          isLoading={discharging}
+          onConfirm={() => void handleDischarge()}
+          onCancel={() => setIsDischargeModalOpen(false)}
+        >
+          <div className={styles.dischargeModalContent}>
+            <p>
+              Discharging this patient will <strong>permanently lock</strong> the encounter. 
+              No further clinical records or diagnostic orders can be added. 
+              This action cannot be undone.
+            </p>
+            {dischargeError && (
+              <AlertBanner severity="error" title="Discharge failed" dismissible onDismiss={() => setDischargeError(null)}>
+                {dischargeError}
+              </AlertBanner>
+            )}
+            <div className={styles.summaryField}>
+              <label htmlFor="discharge-summary">Discharge summary (required)</label>
+              <textarea
+                id="discharge-summary"
+                value={dischargeSummary}
+                onChange={(e) => setDischargeSummary(e.target.value)}
+                rows={5}
+                placeholder="Enter the final discharge summary..."
+                className={styles.textarea}
+              />
+            </div>
+          </div>
+        </ConfirmDialog>
+      )}
     </AppShell>
   );
 }

@@ -53,6 +53,18 @@ export const activateEncounterSchema = z.object({
 export type ActivateEncounterRequest = z.infer<typeof activateEncounterSchema>;
 
 /**
+ * M13 Discharge endpoint contract.
+ * Requires the expected version for optimistic concurrency,
+ * and the final discharge summary clinical narrative.
+ */
+export const dischargeEncounterSchema = z.object({
+  expectedVersion: z.number().int().positive(),
+  summary: z.string().trim().min(1).max(20000), // corresponds to dischargeSummaryContentSchema.narrative
+});
+
+export type DischargeEncounterRequest = z.infer<typeof dischargeEncounterSchema>;
+
+/**
  * Bounded patient demographic block embeddable under encounter responses.
  * Every role holding `encounter:read` also holds `patient:read` (M5 matrix),
  * so this block never widens authorization. See ADR-013.
