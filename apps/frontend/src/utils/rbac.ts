@@ -92,12 +92,19 @@ export interface NavItemConfig {
   label: string;
   href: string;
   iconName: string;
-  badge?: string | number;
   section: 'operations' | 'clinical' | 'workspace' | 'administration';
   requiredPermission?: Permission;
-  requiredRoles?: StaffRole[];
 }
 
+/**
+ * M13 — Operational navigation contract.
+ *
+ * Every entry MUST resolve to an implemented, permission-gated backend
+ * capability (M6–M12.2). Destinations whose modules are not yet implemented
+ * (chart search / tasks inbox / AI workspace index / staff admin / audit
+ * viewer / break-glass review — M14/M15/M20 scope) are deliberately absent:
+ * an unimplemented screen must never be exposed as an operational destination.
+ */
 export const ALL_NAV_ITEMS: readonly NavItemConfig[] = [
   // Operations Section
   {
@@ -134,66 +141,15 @@ export const ALL_NAV_ITEMS: readonly NavItemConfig[] = [
 
   // Clinical Section
   {
-    id: 'clinical-records',
-    label: 'Clinical Records',
-    href: '/clinical-records',
-    iconName: 'FileText',
-    section: 'clinical',
-    requiredPermission: 'clinical_record:read',
-  },
-  {
     id: 'diagnostics',
     label: 'Diagnostics',
     href: '/diagnostics',
+    // Matches the lab-queue page gate AND the GET /diagnostic-orders backend
+    // grant. Pharmacists hold result-read only and have no order-facing route,
+    // so the nav must not advertise this destination to them.
     iconName: 'Activity',
     section: 'clinical',
-    requiredPermission: 'diagnostic_result:read',
-  },
-
-  // Workspace Section
-  {
-    id: 'tasks',
-    label: 'Tasks',
-    href: '/tasks',
-    iconName: 'CheckSquare',
-    section: 'workspace',
-    requiredPermission: 'task:read',
-    badge: '6',
-  },
-  {
-    id: 'ai-workspace',
-    label: 'AI Workspace',
-    href: '/ai-workspace',
-    iconName: 'Sparkles',
-    section: 'workspace',
-    requiredPermission: 'ai_interaction:invoke',
-    badge: 'Beta',
-  },
-
-  // Administration Section
-  {
-    id: 'staff-admin',
-    label: 'Staff Management',
-    href: '/admin/staff',
-    iconName: 'UserCheck',
-    section: 'administration',
-    requiredPermission: 'staff:manage',
-  },
-  {
-    id: 'audit-log',
-    label: 'Audit Log',
-    href: '/admin/audit',
-    iconName: 'ShieldAlert',
-    section: 'administration',
-    requiredPermission: 'audit_event:read',
-  },
-  {
-    id: 'security',
-    label: 'Security & Access',
-    href: '/admin/security',
-    iconName: 'Lock',
-    section: 'administration',
-    requiredPermission: 'break_glass:review',
+    requiredPermission: 'diagnostic_order:read',
   },
 ] as const;
 
@@ -213,9 +169,6 @@ export function hasPermission(role: StaffRole | undefined, permission: Permissio
 export function getNavItemsForRole(role: StaffRole | undefined): NavItemConfig[] {
   if (!role) return [];
   return ALL_NAV_ITEMS.filter((item) => {
-    if (item.requiredRoles && !item.requiredRoles.includes(role)) {
-      return false;
-    }
     if (item.requiredPermission && !hasPermission(role, item.requiredPermission)) {
       return false;
     }

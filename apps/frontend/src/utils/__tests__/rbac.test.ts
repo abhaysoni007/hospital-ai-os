@@ -1,0 +1,81 @@
+import { describe, expect, it } from 'vitest';
+
+import { ALL_NAV_ITEMS, getNavItemsForRole, hasPermission } from '../rbac';
+import type { StaffRole } from '../../types/auth';
+
+/**
+ * M13 — navigation contract tests.
+ * The sidebar must ONLY advertise destinations that are implemented AND
+ * permitted for the role. Unimplemented modules (tasks inbox, AI workspace
+ * index, staff admin, audit viewer, break-glass review) must never appear,
+ * regardless of role.
+ */
+describe('M13 navigation contract', () => {
+  const IMPLEMENTED_PREFIXES = [
+    '/dashboard',
+    '/patients',
+    '/appointments',
+    '/encounters',
+    '/diagnostics',
+  ];
+
+  it('every nav item resolves to an implemented destination', () => {
+    for (const item of ALL_NAV_ITEMS) {
+      expect(IMPLEMENTED_PREFIXES.some((p) => item.href.startsWith(p))).toBe(true);
+    }
+  });
+
+  it('exposes no fake badges or counts', () => {
+    for (const item of ALL_NAV_ITEMS) {
+      expect((item as unknown as { badge?: string | number }).badge).toBeUndefined();
+    }
+  });
+
+  const roles: StaffRole[] = [
+    'physician',
+    'nurse',
+    'pharmacist',
+    'lab_technician',
+    'receptionist',
+    'hospital_admin',
+    'security_admin',
+  ];
+
+  it('every role sees at least the dashboard', () => {
+    for (const role of roles) {
+      const items = getNavItemsForRole(role);
+      expect(items.map((i) => i.href)).toContain('/dashboard');
+    }
+  });
+
+  it('lab queue requires diagnostic_order:read — pharmacists are never shown it', () => {
+    const diagnosticsItem = ALL_NAV_ITEMS.find((i) => i.id === 'diagnostics');
+    expect(diagnosticsItem?.requiredPermission).toBe('diagnostic_order:read');
+
+    expect(hasPermission('pharmacist', 'diagnostic_result:read')).toBe(true);
+    expect(hasPermission('pharmacist', 'diagnostic_order:read')).toBe(false);
+
+    const pharmacistItems = getNavItemsForRole('pharmacist').map((i) => i.href);
+    expect(pharmacistItems).not.toContain('/diagnostics');
+  });
+
+  it('receptionists see scheduling surfaces but not clinical AI or lab internals', () => {
+    const items = getNavItemsForRole('receptionist').map((i) => i.href);
+    expect(items).toEqual(expect.arrayContaining(['/patients', '/appointments', '/encounters']));
+    expect(items).not.toContain('/diagnostics');
+  });
+
+  it('physicians see the full operational surface', () => {
+    const items = getNavItemsForRole('physician').map((i) => i.href);
+    expect(items).toEqual(expect.arrayContaining(['/patients', '/encounters', '/diagnostics']));
+  });
+
+  it('security_admin sees only honest, implemented destinations', () => {
+    const items = getNavItemsForRole('security_admin').map((i) => i.href);
+    expect(items).toEqual(['/dashboard']);
+  });
+
+  it('returns empty nav for unauthenticated users rather than leaking structure', () => {
+    expect(getNavItemsForRole(undefined)).toEqual([]);
+  });
+});

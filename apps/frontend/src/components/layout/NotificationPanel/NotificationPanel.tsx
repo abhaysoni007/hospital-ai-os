@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import Link from 'next/link';
 import {
   Bell,
-  Check,
+  RefreshCw,
   AlertOctagon,
   AlertTriangle,
   Info,
@@ -27,7 +27,7 @@ export interface NotificationPanelProps {
 }
 
 /**
- * M12.2 — REAL notification inbox (critical-result loop).
+ * M12.2 — REAL notification inbox (critical-result loop), refined in M13.
  * Data comes exclusively from GET /api/v1/notifications (server-derived
  * recipient scope). No fabricated content anywhere.
  */
@@ -51,7 +51,24 @@ export function NotificationPanel({
   onAcknowledge,
   onReload,
 }: NotificationPanelProps) {
-  const [ackedErrorId, setAckedErrorId] = useState<string | null>(null);
+  const [ackedErrorId, setAckedErrorId] = React.useState<string | null>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  // Escape closes and focus returns to the invoking bell button.
+  useEffect(() => {
+    if (!isOpen) return undefined;
+    const previouslyFocused = document.activeElement as HTMLElement | null;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      e.stopPropagation();
+      onClose();
+    };
+    document.addEventListener('keydown', handleKeyDown, true);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown, true);
+      previouslyFocused?.focus();
+    };
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
@@ -67,19 +84,19 @@ export function NotificationPanel({
   const getSeverityIcon = (priority: string) => {
     switch (priority) {
       case 'critical':
-        return <AlertOctagon size={16} className={styles.criticalIcon} />;
+        return <AlertOctagon size={16} className={styles.criticalIcon} aria-hidden="true" />;
       case 'urgent':
-        return <AlertTriangle size={16} className={styles.urgentIcon} />;
+        return <AlertTriangle size={16} className={styles.urgentIcon} aria-hidden="true" />;
       default:
-        return <Info size={16} className={styles.infoIcon} />;
+        return <Info size={16} className={styles.infoIcon} aria-hidden="true" />;
     }
   };
 
   return (
-    <div className={styles.panel} role="dialog" aria-label="Notifications Panel">
+    <div ref={panelRef} className={styles.panel} role="dialog" aria-label="Notifications">
       <div className={styles.header}>
         <div className={styles.titleRow}>
-          <h3 className={styles.title}>Notifications</h3>
+          <h2 className={styles.title}>Notifications</h2>
           {unreadCount > 0 && (
             <span className={styles.unreadBadge} aria-live="polite">
               {unreadCount} new
@@ -93,7 +110,7 @@ export function NotificationPanel({
             onClick={onReload}
             aria-label="Refresh notifications"
           >
-            <Check size={14} /> Refresh
+            <RefreshCw size={13} /> Refresh
           </button>
           <button
             type="button"
@@ -136,7 +153,7 @@ export function NotificationPanel({
                 ? `/diagnostics/${item.relatedOrderId}`
                 : null;
             return (
-              <div
+              <article
                 key={item.id}
                 className={`${styles.item} ${isUnread ? styles.unreadItem : ''} ${styles[item.priority === 'normal' ? 'info' : item.priority]}`}
               >
@@ -144,15 +161,12 @@ export function NotificationPanel({
                   <div className={styles.itemHeaderLeft}>
                     {getSeverityIcon(item.priority)}
                     <span className={styles.itemTitle}>{item.title}</span>
-                    {!isUnread && (
-                      <span className={styles.metaDot} aria-label={`Status: ${item.status}`} />
-                    )}
                   </div>
-                  {isUnread && <span className={styles.unreadDot} aria-hidden="true" />}
+                  {isUnread && <span className={styles.unreadDot} role="img" aria-label="Unread" />}
                 </div>
                 <p className={styles.itemMessage}>{item.body}</p>
                 <div className={styles.itemFooter}>
-                  <Clock size={12} />
+                  <Clock size={12} aria-hidden="true" />
                   <span>{formatTime(item.createdAt)}</span>
                   <span className={styles.metaDot} aria-hidden="true" />
                   <span>{isUnread ? 'Requires attention' : `Acknowledged`}</span>
@@ -181,7 +195,7 @@ export function NotificationPanel({
                     Could not acknowledge — it may already be acknowledged. Refresh and try again.
                   </p>
                 )}
-              </div>
+              </article>
             );
           })
         )}

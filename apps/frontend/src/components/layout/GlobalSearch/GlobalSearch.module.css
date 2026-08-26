@@ -1,14 +1,14 @@
 .overlay {
   position: fixed;
   inset: 0;
-  background-color: rgba(15, 23, 42, 0.6);
+  background-color: var(--backdrop-scrim);
   backdrop-filter: blur(4px);
-  z-index: 2000;
+  z-index: var(--z-modal);
   display: flex;
   align-items: flex-start;
   justify-content: center;
   padding-top: 100px;
-  animation: fadeIn 0.15s ease-out;
+  animation: fadeIn var(--duration-fast) ease-out;
 }
 
 .modal {
@@ -67,19 +67,12 @@
   color: var(--text-secondary);
   padding: 2px 6px;
   border-radius: var(--radius-xs);
-  cursor: pointer;
 }
 
 .resultsContainer {
   max-height: 420px;
   overflow-y: auto;
   padding: var(--space-3) var(--space-4);
-}
-
-.recentSection {
-  margin-bottom: var(--space-4);
-  padding-bottom: var(--space-3);
-  border-bottom: 1px dashed var(--border-subtle);
 }
 
 .sectionHeader {
@@ -96,27 +89,10 @@
   padding: 0 var(--space-2);
 }
 
-.recentTags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-  padding: 0 var(--space-2);
-}
-
-.recentTag {
-  background-color: var(--bg-subtle);
-  border: 1px solid var(--border-subtle);
-  padding: 4px 10px;
-  border-radius: var(--radius-full);
-  font-size: var(--font-size-sm);
-  color: var(--text-secondary);
-  transition: all 0.15s ease;
-}
-
-.recentTag:hover {
-  background-color: var(--color-primary-50);
-  border-color: var(--color-primary-200);
-  color: var(--color-primary-700);
+.resultCount {
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: normal;
 }
 
 .resultsList {
@@ -129,14 +105,17 @@
   display: flex;
   align-items: center;
   gap: var(--space-3);
+  width: 100%;
+  text-align: left;
   padding: var(--space-3);
   border-radius: var(--radius-md);
   cursor: pointer;
-  transition: background-color 0.12s ease;
+  transition: background-color var(--duration-fast) ease;
 }
 
 .resultItem:hover,
-.resultItem:focus-visible {
+.resultItem:focus-visible,
+.resultItemActive {
   background-color: var(--bg-subtle);
   outline: none;
 }
@@ -154,31 +133,6 @@
 .patients {
   background-color: var(--color-primary-50);
   color: var(--color-primary-600);
-}
-
-.appointments {
-  background-color: #FFF7ED;
-  color: #EA580C;
-}
-
-.records {
-  background-color: #F0FDF4;
-  color: #16A34A;
-}
-
-.diagnostics {
-  background-color: #FEF2F2;
-  color: #DC2626;
-}
-
-.tasks {
-  background-color: #F8FAFC;
-  color: #475569;
-}
-
-.ai {
-  background-color: #F5F3FF;
-  color: #7C3AED;
 }
 
 .itemInfo {
@@ -212,16 +166,6 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-.selectIcon {
-  color: var(--text-tertiary);
-  opacity: 0;
-  transition: opacity 0.15s ease;
-}
-
-.resultItem:hover .selectIcon {
-  opacity: 1;
 }
 
 .emptyState {
@@ -262,11 +206,21 @@
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes scaleUp {
-  from { transform: scale(0.97); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
+  from {
+    transform: scale(0.97);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
 }

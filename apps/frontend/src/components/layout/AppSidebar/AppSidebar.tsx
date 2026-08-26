@@ -7,13 +7,7 @@ import {
   Users,
   Calendar,
   Stethoscope,
-  FileText,
   Activity,
-  CheckSquare,
-  Sparkles,
-  UserCheck,
-  ShieldAlert,
-  Lock,
   ChevronLeft,
   ChevronRight,
   HeartPulse,
@@ -27,10 +21,18 @@ import styles from './AppSidebar.module.css';
 export interface AppSidebarProps {
   isMobileOpen?: boolean;
   onMobileClose?: () => void;
+  isCollapsed?: boolean;
+  onToggleCollapse?: () => void;
 }
 
-export function AppSidebar({ isMobileOpen = false, onMobileClose }: AppSidebarProps) {
-  const [isCollapsed, setIsCollapsed] = useState(false);
+export function AppSidebar({
+  isMobileOpen = false,
+  onMobileClose,
+  isCollapsed: collapsedProp,
+  onToggleCollapse,
+}: AppSidebarProps) {
+  const [internalCollapsed, setInternalCollapsed] = useState(false);
+  const isCollapsed = collapsedProp ?? internalCollapsed;
   const pathname = usePathname();
   const { user } = useAuth();
 
@@ -52,20 +54,8 @@ export function AppSidebar({ isMobileOpen = false, onMobileClose }: AppSidebarPr
         return <Calendar size={18} />;
       case 'Stethoscope':
         return <Stethoscope size={18} />;
-      case 'FileText':
-        return <FileText size={18} />;
       case 'Activity':
         return <Activity size={18} />;
-      case 'CheckSquare':
-        return <CheckSquare size={18} />;
-      case 'Sparkles':
-        return <Sparkles size={18} />;
-      case 'UserCheck':
-        return <UserCheck size={18} />;
-      case 'ShieldAlert':
-        return <ShieldAlert size={18} />;
-      case 'Lock':
-        return <Lock size={18} />;
       default:
         return <LayoutDashboard size={18} />;
     }
@@ -89,7 +79,6 @@ export function AppSidebar({ isMobileOpen = false, onMobileClose }: AppSidebarPr
                 (item.href !== '/dashboard' && pathname.startsWith(item.href))
               }
               isCollapsed={isCollapsed}
-              badge={item.badge}
               onClick={onMobileClose}
             />
           ))}
@@ -149,7 +138,9 @@ export function AppSidebar({ isMobileOpen = false, onMobileClose }: AppSidebarPr
           <button
             type="button"
             className={styles.collapseButton}
-            onClick={() => setIsCollapsed((prev) => !prev)}
+            onClick={() =>
+              onToggleCollapse ? onToggleCollapse() : setInternalCollapsed((p) => !p)
+            }
             aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           >
             {isCollapsed ? (

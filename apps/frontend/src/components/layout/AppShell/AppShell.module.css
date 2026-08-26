@@ -4,6 +4,25 @@
   background-color: var(--bg-app);
 }
 
+.skipLink {
+  position: absolute;
+  top: -48px;
+  left: var(--space-4);
+  z-index: calc(var(--z-toast) + 1);
+  padding: var(--space-2) var(--space-4);
+  background-color: var(--color-primary-600);
+  color: #ffffff;
+  font-size: var(--font-size-body);
+  font-weight: 600;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  transition: top var(--duration-fast) var(--ease-standard);
+}
+
+.skipLink:focus {
+  top: var(--space-2);
+}
+
 .mainWrapper {
   flex: 1;
   display: flex;

@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Search, Bell, HelpCircle, LogOut, Menu, User } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Search, Bell, LogOut, Menu } from 'lucide-react';
 import { useAuth } from '../../../hooks/useAuth';
 import { ROLE_DISPLAY_NAMES } from '../../../utils/rbac';
 import { Avatar } from '../../ui/Avatar/Avatar';
@@ -30,7 +30,7 @@ export function AppHeader({
   const { user, logout } = useAuth();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
-  // M12.2: REAL unread state — replaces the previous hardcoded "(2 unread)".
+  // M12.2: REAL unread state — server-derived scope, no fabricated counts.
   const {
     items: notifications,
     unreadCount,
@@ -39,6 +39,18 @@ export function AppHeader({
     acknowledge,
     reload: reloadNotifications,
   } = useNotifications();
+
+  // The advertised Cmd/Ctrl+K shortcut is real and wired here.
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setIsSearchOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   const fullName =
     user?.firstName && user?.lastName
@@ -63,18 +75,27 @@ export function AppHeader({
           )}
 
           <nav className={styles.breadcrumbs} aria-label="Breadcrumbs">
-            {breadcrumbs.map((crumb, idx) => (
-              <React.Fragment key={idx}>
-                {idx > 0 && <span className={styles.breadcrumbSeparator}>/</span>}
-                <span
-                  className={
-                    idx === breadcrumbs.length - 1 ? styles.breadcrumbActive : styles.breadcrumbItem
-                  }
-                >
-                  {crumb}
-                </span>
-              </React.Fragment>
-            ))}
+            <ol className={styles.breadcrumbList}>
+              {breadcrumbs.map((crumb, idx) => (
+                <li key={idx} className={styles.breadcrumbCrumb}>
+                  {idx > 0 && (
+                    <span className={styles.breadcrumbSeparator} aria-hidden="true">
+                      /
+                    </span>
+                  )}
+                  <span
+                    className={
+                      idx === breadcrumbs.length - 1
+                        ? styles.breadcrumbActive
+                        : styles.breadcrumbItem
+                    }
+                    aria-current={idx === breadcrumbs.length - 1 ? 'page' : undefined}
+                  >
+                    {crumb}
+                  </span>
+                </li>
+              ))}
+            </ol>
           </nav>
         </div>
 
@@ -84,11 +105,24 @@ export function AppHeader({
             type="button"
             className={styles.searchTrigger}
             onClick={() => setIsSearchOpen(true)}
-            aria-label="Open global search (Cmd+K)"
+            aria-label="Search patients (Control+K)"
+            aria-keyshortcuts="Control+K Meta+K"
           >
-            <Search size={16} className={styles.searchIcon} />
-            <span className={styles.searchText}>Search patients, orders, tasks...</span>
-            <kbd className={styles.searchKbd}>⌘K</kbd>
+            <Search size={16} className={styles.searchIcon} aria-hidden="true" />
+            <span className={styles.searchText}>Search patients…</span>
+            <kbd className={styles.searchKbd} aria-hidden="true">
+              ⌘K
+            </kbd>
+          </button>
+
+          {/* Compact search entry for small viewports */}
+          <button
+            type="button"
+            className={styles.searchIconButton}
+            onClick={() => setIsSearchOpen(true)}
+            aria-label="Search patients"
+          >
+            <Search size={18} />
           </button>
 
           {/* Notifications Trigger */}
@@ -105,6 +139,7 @@ export function AppHeader({
                   ? `Open notifications (${unreadCount} unread)`
                   : 'Open notifications'
               }
+              aria-expanded={isNotificationsOpen}
             >
               <Bell size={18} />
               {unreadCount > 0 && <span className={styles.notificationDot} />}
@@ -120,16 +155,6 @@ export function AppHeader({
               onReload={() => void reloadNotifications()}
             />
           </div>
-
-          {/* Help Button */}
-          <button
-            type="button"
-            className={styles.iconButton}
-            aria-label="Help and clinical guidelines"
-            title="Help & Guidelines"
-          >
-            <HelpCircle size={18} />
-          </button>
 
           <div className={styles.divider} />
 
@@ -154,8 +179,6 @@ export function AppHeader({
                   </Badge>
                 </div>
               </div>
-              <DropdownDivider />
-              <DropdownItem icon={<User size={16} />}>Staff Profile & Security</DropdownItem>
               <DropdownDivider />
               <DropdownItem icon={<LogOut size={16} />} variant="danger" onClick={() => logout()}>
                 Sign Out

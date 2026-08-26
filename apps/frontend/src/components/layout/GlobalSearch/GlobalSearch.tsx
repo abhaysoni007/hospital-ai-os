@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Search, X, Users, AlertOctagon } from 'lucide-react';
 import { useAuth } from '../../../hooks/useAuth';
@@ -17,8 +17,9 @@ export interface GlobalSearchProps {
 /**
  * M12.2 — REAL global search over the patient directory.
  * Uses the existing permission-controlled GET /patients endpoint (patient:read).
- * No fabricated records: loading, error and empty states are truthful, and an
- * AbortController prevents stale responses from overwriting newer ones.
+ * No fabricated records: loading, error and empty states are truthful, an
+ * AbortController prevents stale responses, and M13 adds a focus trap with
+ * full keyboard navigation (↑/↓ + Enter).
  */
 
 const MIN_QUERY_LENGTH = 2;
@@ -29,7 +30,9 @@ export function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
   const [isSearching, setIsSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [searched, setSearched] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(-1);
   const inputRef = useRef<HTMLInputElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
   const { user } = useAuth();
   const router = useRouter();
@@ -45,18 +48,41 @@ export function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
     setResults([]);
     setSearched(false);
     setSearchError(null);
+    setActiveIndex(-1);
     return undefined;
   }, [isOpen]);
 
-  // Global keydown for Escape
+  // Focus trap: keep Tab cycling inside the dialog while open.
   useEffect(() => {
+    if (!isOpen) return undefined;
+    const previouslyFocused = document.activeElement as HTMLElement | null;
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isOpen) {
+      if (e.key === 'Escape') {
         onClose();
+        return;
+      }
+      if (e.key !== 'Tab' || !dialogRef.current) return;
+      const focusables = Array.from(
+        dialogRef.current.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), input:not([disabled]), [href], [tabindex]:not([tabindex="-1"])',
+        ),
+      );
+      if (focusables.length === 0) return;
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
       }
     };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    document.addEventListener('keydown', handleKeyDown, true);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown, true);
+      previouslyFocused?.focus();
+    };
   }, [isOpen, onClose]);
 
   // Debounced real search with stale-response protection
@@ -80,6 +106,7 @@ export function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
         if (controller.signal.aborted) return;
         setResults(res.data as unknown as PatientResponse[]);
         setSearched(true);
+        setActiveIndex(-1);
       } catch (err) {
         if (controller.signal.aborted) return;
         setResults([]);
@@ -96,16 +123,40 @@ export function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
     return () => clearTimeout(timer);
   }, [query, isOpen, canSearchPatients]);
 
-  if (!isOpen) return null;
+  const openPatient = useCallback(
+    (id: string) => {
+      onClose();
+      router.push(`/patients/${id}`);
+    },
+    [onClose, router],
+  );
 
-  const openPatient = (id: string) => {
-    onClose();
-    router.push(`/patients/${id}`);
+  const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!canSearchPatients || results.length === 0) return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setActiveIndex((prev) => (prev + 1) % results.length);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setActiveIndex((prev) => (prev <= 0 ? results.length - 1 : prev - 1));
+    } else if (e.key === 'Enter' && activeIndex >= 0 && activeIndex < results.length) {
+      e.preventDefault();
+      openPatient(results[activeIndex].id);
+    }
   };
 
+  if (!isOpen) return null;
+
   return (
-    <div className={styles.overlay} onClick={onClose} role="dialog" aria-modal="true">
-      <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+    <div className={styles.overlay} onClick={onClose}>
+      <div
+        ref={dialogRef}
+        className={styles.modal}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Patient search"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className={styles.searchHeader}>
           <Search size={20} className={styles.searchIcon} aria-hidden="true" />
           <input
@@ -119,32 +170,37 @@ export function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
             }
             value={query}
             onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={handleInputKeyDown}
             aria-label="Global search query"
+            aria-controls="global-search-results"
             disabled={!canSearchPatients}
           />
           {query && (
             <button
               type="button"
               className={styles.clearButton}
-              onClick={() => setQuery('')}
+              onClick={() => {
+                setQuery('');
+                inputRef.current?.focus();
+              }}
               aria-label="Clear search query"
             >
               <X size={16} />
             </button>
           )}
-          <kbd className={styles.escKey} onClick={onClose}>
+          <kbd className={styles.escKey} aria-hidden="true">
             ESC
           </kbd>
         </div>
 
-        <div className={styles.resultsContainer}>
+        <div id="global-search-results" className={styles.resultsContainer} aria-live="polite">
           {!canSearchPatients ? (
             <div className={styles.emptyState} role="status">
               <p>Your role does not include patient directory access.</p>
               <span className={styles.emptySubtext}>Use the sidebar to reach your workflows.</span>
             </div>
           ) : isSearching ? (
-            <div className={styles.emptyState} role="status" aria-live="polite">
+            <div className={styles.emptyState} role="status">
               <p>Searching…</p>
             </div>
           ) : searchError ? (
@@ -170,20 +226,16 @@ export function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
                 <span>Patients</span>
                 <span className={styles.resultCount}>{results.length} found</span>
               </div>
-              <div className={styles.resultsList}>
-                {results.map((p) => (
+              <div className={styles.resultsList} role="listbox" aria-label="Search results">
+                {results.map((p, idx) => (
                   <button
                     key={p.id}
                     type="button"
-                    className={styles.resultItem}
-                    style={{
-                      width: '100%',
-                      textAlign: 'left',
-                      cursor: 'pointer',
-                      background: 'none',
-                      border: 'none',
-                    }}
+                    role="option"
+                    aria-selected={idx === activeIndex}
+                    className={`${styles.resultItem} ${idx === activeIndex ? styles.resultItemActive : ''}`}
                     onClick={() => openPatient(p.id)}
+                    onMouseEnter={() => setActiveIndex(idx)}
                   >
                     <div className={`${styles.itemCategoryIcon} ${styles.patients}`}>
                       <Users size={16} />
@@ -209,6 +261,10 @@ export function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
         <div className={styles.searchFooter}>
           <span className={styles.shortcutHint}>
             <kbd>esc</kbd> to dismiss
+          </span>
+          <span className={styles.shortcutHint}>
+            <kbd>↑</kbd>
+            <kbd>↓</kbd> to navigate · <kbd>enter</kbd> to open
           </span>
         </div>
       </div>

@@ -8,7 +8,7 @@
   padding: 0 var(--space-6);
   position: sticky;
   top: 0;
-  z-index: 50;
+  z-index: var(--z-sticky);
 }
 
 .leftSection {
@@ -34,8 +34,24 @@
 .breadcrumbs {
   display: flex;
   align-items: center;
+  min-width: 0;
+}
+
+.breadcrumbList {
+  display: flex;
+  align-items: center;
   gap: var(--space-2);
   font-size: var(--font-size-sm);
+  list-style: none;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.breadcrumbCrumb {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  white-space: nowrap;
 }
 
 .breadcrumbSeparator {
@@ -98,6 +114,22 @@
   padding: 1px 5px;
   border-radius: var(--radius-xs);
   color: var(--text-tertiary);
+}
+
+/* Compact search entry for small viewports (trigger row collapses). */
+.searchIconButton {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+}
+
+.searchIconButton:hover {
+  background-color: var(--bg-subtle);
+  color: var(--text-primary);
 }
 
 .notificationWrapper {
@@ -208,6 +240,12 @@
   }
 }
 
+@media (max-width: 1024px) {
+  .searchTrigger {
+    width: 200px;
+  }
+}
+
 @media (max-width: 768px) {
   .header {
     padding: 0 var(--space-4);
@@ -217,6 +255,9 @@
   }
   .searchTrigger {
     display: none;
+  }
+  .searchIconButton {
+    display: inline-flex;
   }
   .userInfo {
     display: none;
