@@ -1,13 +1,15 @@
 'use client';
 
-import React from 'react';
-import { AppShell } from '../components/layout/AppShell/AppShell';
-import { DashboardShell } from '../components/dashboard/DashboardShell';
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
-export default function RootPage() {
-  return (
-    <AppShell breadcrumbs={['Operations', 'Dashboard']}>
-      <DashboardShell />
-    </AppShell>
-  );
+/**
+ * The authenticated workspace begins at /dashboard; this route only forwards.
+ */
+export default function RootRedirect() {
+  const router = useRouter();
+  useEffect(() => {
+    router.replace('/dashboard');
+  }, [router]);
+  return null;
 }

@@ -1,161 +1,85 @@
 .container {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-6);
-  padding: var(--spacing-6);
-  height: 100%;
+  gap: var(--space-5);
 }
 
-.header {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-3);
+.queueNote {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  font-weight: 500;
 }
 
-.title {
+.queueStatNote {
   display: inline-flex;
   align-items: center;
-  gap: var(--spacing-2);
-  font-size: var(--font-size-2xl);
-  font-weight: var(--font-weight-600);
-  color: var(--color-slate-900);
+  gap: var(--space-2);
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  background-color: var(--status-critical-bg);
+  border: 1px solid var(--status-critical-border);
+  color: var(--status-critical-text);
+  font-size: var(--font-size-caption);
+  font-weight: 600;
 }
 
 .filters {
   display: flex;
-  gap: var(--spacing-4);
-  background: var(--color-white);
-  padding: var(--spacing-4);
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--color-slate-200);
   align-items: flex-end;
+  gap: var(--space-4);
   flex-wrap: wrap;
+  padding: var(--space-4);
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
 }
 
-.filterField {
+.filters > * {
+  min-width: 170px;
+}
+
+/* STAT rows carry a left rail + tint in addition to the badge */
+.rowStat {
+  box-shadow: inset 4px 0 0 var(--status-critical-badge);
+  background-color: rgba(220, 38, 38, 0.03);
+}
+
+.testCell {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-1);
-  font-size: var(--font-size-sm);
-  font-weight: 500;
-  color: var(--color-slate-700);
-}
-
-.filterField select,
-.filterField input {
-  min-width: 150px;
-  padding: var(--spacing-2) var(--spacing-3);
-  border: 1px solid var(--color-slate-300);
-  border-radius: var(--radius-md);
-  font-size: var(--font-size-sm);
-  height: 40px;
-  background: var(--color-white);
-}
-
-.tableContainer {
-  background: var(--color-white);
-  border: 1px solid var(--color-slate-200);
-  border-radius: var(--radius-lg);
-  overflow-x: auto;
-  flex: 1;
-}
-
-.table {
-  width: 100%;
-  border-collapse: collapse;
-  text-align: left;
-}
-
-.table th {
-  background: var(--color-slate-50);
-  padding: var(--spacing-3) var(--spacing-4);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-600);
-  color: var(--color-slate-500);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  border-bottom: 1px solid var(--color-slate-200);
-  white-space: nowrap;
-}
-
-.table td {
-  padding: var(--spacing-4);
-  font-size: var(--font-size-sm);
-  color: var(--color-slate-700);
-  border-bottom: 1px solid var(--color-slate-100);
-  vertical-align: middle;
-}
-
-.row {
-  cursor: pointer;
-}
-
-.row:hover {
-  background: var(--color-slate-50);
-}
-
-/* STAT rows carry a strong left rule + tinted background — icon + text + tone,
-   never color alone. */
-.rowStat {
-  box-shadow: inset 4px 0 0 var(--color-critical-600);
-  background: color-mix(in srgb, var(--color-critical-600) 4%, transparent);
+  gap: 1px;
+  min-width: 0;
 }
 
 .testName {
-  display: block;
-  font-weight: var(--font-weight-500);
-  color: var(--color-slate-900);
+  font-weight: 600;
+  color: var(--text-primary);
 }
 
 .code {
-  font-size: var(--font-size-xs);
-  color: var(--color-slate-500);
-  font-family: monospace;
-}
-
-.priorityChip {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--spacing-1);
-  padding: var(--spacing-1) var(--spacing-2);
-  border-radius: var(--radius-md);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-600);
-}
-
-.priority_routine {
-  background: var(--color-slate-100);
-  color: var(--color-slate-600);
-}
-
-.priority_urgent {
-  background: var(--color-warning-100, #fef3c7);
-  color: var(--color-warning-700, #b45309);
-}
-
-.priority_stat {
-  background: var(--color-critical-600);
-  color: var(--color-white);
-  letter-spacing: 0.08em;
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-caption);
+  color: var(--text-tertiary);
 }
 
 .collected {
   display: inline-flex;
   align-items: center;
-  gap: var(--spacing-1);
-  color: var(--color-primary-700);
+  gap: 4px;
+  color: var(--color-success-main);
+  font-size: var(--font-size-sm);
 }
 
 .pending {
   display: inline-flex;
   align-items: center;
-  gap: var(--spacing-1);
-  color: var(--color-slate-500);
+  gap: 4px;
+  color: var(--text-tertiary);
+  font-size: var(--font-size-sm);
 }
 
-@media (max-width: 900px) {
-  .table th:nth-child(4),
-  .table td:nth-child(4) {
-    display: none; /* degrade gracefully: ordered time hidden on narrow view */
-  }
+.rowActions {
+  display: inline-flex;
+  gap: var(--space-2);
+  justify-content: flex-end;
 }

@@ -1,83 +1,20 @@
 .container {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-6);
-  padding: var(--spacing-6);
-  height: 100%;
-}
-
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.title {
-  font-size: var(--font-size-2xl);
-  font-weight: var(--font-weight-600);
-  color: var(--color-slate-900);
+  gap: var(--space-5);
+  width: 100%;
 }
 
 .searchBar {
-  display: flex;
-  gap: var(--spacing-4);
-  background: var(--color-white);
-  padding: var(--spacing-4);
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--color-slate-200);
-  align-items: center;
+  max-width: 480px;
 }
 
-.tableContainer {
-  background: var(--color-white);
-  border: 1px solid var(--color-slate-200);
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-  flex: 1;
-}
-
-.table {
-  width: 100%;
-  border-collapse: collapse;
-  text-align: left;
-}
-
-.table th {
-  background: var(--color-slate-50);
-  padding: var(--spacing-3) var(--spacing-4);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-600);
-  color: var(--color-slate-500);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  border-bottom: 1px solid var(--color-slate-200);
-}
-
-.table td {
-  padding: var(--spacing-4);
+.resultNote {
   font-size: var(--font-size-sm);
-  color: var(--color-slate-700);
-  border-bottom: 1px solid var(--color-slate-100);
-  vertical-align: middle;
+  color: var(--text-tertiary);
+  margin-bottom: var(--space-2);
 }
 
-.table tr:last-child td {
-  border-bottom: none;
-}
-
-.table tbody tr:hover {
-  background: var(--color-slate-50);
-  cursor: pointer;
-}
-
-.patientName {
-  font-weight: var(--font-weight-500);
-  color: var(--color-slate-900);
-  margin-bottom: var(--spacing-1);
-}
-
-.mrn {
-  font-size: var(--font-size-xs);
-  color: var(--color-slate-500);
-  font-family: monospace;
+.capitalize {
+  text-transform: capitalize;
 }

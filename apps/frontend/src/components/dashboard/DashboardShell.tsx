@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
   Calendar,
@@ -10,27 +10,41 @@ import {
   ArrowUpRight,
   Clock,
   ChevronRight,
+  FlaskConical,
+  CheckCircle2,
 } from 'lucide-react';
 import type { AppointmentListItem, EncounterListItem } from 'shared';
 import { useAuth } from '../../hooks/useAuth';
 import { useNotifications } from '../../hooks/useNotifications';
 import { ROLE_DISPLAY_NAMES, hasPermission } from '../../utils/rbac';
-import { appointmentStatusLabel, mapAppointmentRows, todayIsoDate } from '../../utils/dashboard';
+import { mapAppointmentRows, todayIsoDate } from '../../utils/dashboard';
 import { appointmentService } from '../../services/appointment-service';
 import { encounterService } from '../../services/encounter-service';
 import { diagnosticsService } from '../../services/diagnostics-service';
 import { Card, CardHeader, CardContent } from '../ui/Card/Card';
 import { Badge } from '../ui/Badge/Badge';
-import { Button } from '../ui/Button/Button';
 import { AlertBanner } from '../ui/Alert/AlertBanner';
-import { Skeleton } from '../ui/Skeleton/Skeleton';
+import { MetricCard, MetricRetry } from '../ui/MetricCard/MetricCard';
+import { PatientIdentity } from '../ui/Identity/Identity';
+import {
+  Table,
+  THead,
+  TH,
+  TBody,
+  TR,
+  TD,
+  NumericTD,
+  RowLink,
+  TableSkeleton,
+} from '../ui/Table/Table';
+import { AppointmentStatusBadge } from '../ui/SemanticBadges/SemanticBadges';
 import styles from './DashboardShell.module.css';
 
 /**
- * M12.2 Part B — REAL dashboard. Every number on this screen comes from a
- * live backend endpoint; blocks render only for roles holding the matching
- * M5 permission. There are NO fabricated values: loading shows skeletons,
- * failures show truthful errors, and empty means empty.
+ * M13 — REAL dashboard, attention-first.
+ * Every number comes from a live backend endpoint; blocks render only for
+ * roles holding the matching M5 permission. There are NO fabricated values:
+ * loading shows skeletons, failures show truthful errors, empty means empty.
  */
 
 type LoadState = 'loading' | 'ready' | 'error';
@@ -38,6 +52,12 @@ type LoadState = 'loading' | 'ready' | 'error';
 interface Block<T> {
   state: LoadState;
   data: T | null;
+}
+
+function greetingForHour(hour: number): string {
+  if (hour < 12) return 'Good morning';
+  if (hour < 17) return 'Good afternoon';
+  return 'Good evening';
 }
 
 export function DashboardShell() {
@@ -49,7 +69,6 @@ export function DashboardShell() {
 
   // Critical notifications (any authenticated role — server derives scope).
   const notifications = useNotifications(20);
-  const [alertDismissed, setAlertDismissed] = useState(false);
 
   const [appointments, setAppointments] = useState<Block<AppointmentListItem[]>>({
     state: canReadAppointments ? 'loading' : 'ready',
@@ -107,15 +126,10 @@ export function DashboardShell() {
     }
   }, [canReadDiagnostics]);
 
-  const mounted = useRef(true);
   useEffect(() => {
-    mounted.current = true;
     void loadAppointments();
     void loadEncounters();
     void loadPendingDiagnostics();
-    return () => {
-      mounted.current = false;
-    };
   }, [loadAppointments, loadEncounters, loadPendingDiagnostics]);
 
   const greetingName =
@@ -123,255 +137,266 @@ export function DashboardShell() {
       ? `${user.firstName} ${user.lastName}`
       : user?.email.split('@')[0] || 'Clinician';
   const roleTitle = role ? ROLE_DISPLAY_NAMES[role] : 'Staff';
-  const activeEncounterCount = encounters.data?.length ?? 0;
 
   const criticalItems = notifications.items.filter(
     (n) => n.priority === 'critical' && n.status !== 'acknowledged',
   );
-  const topCritical = criticalItems[0];
+
+  const appointmentRows =
+    appointments.state === 'ready' ? mapAppointmentRows(appointments.data ?? []) : [];
 
   return (
     <div className={styles.dashboardContainer}>
-      {/* 1. Greeting */}
+      {/* 1. Greeting + real date */}
       <div className={styles.greetingBanner}>
-        <div className={styles.greetingText}>
-          <h1 className={styles.greetingTitle}>Welcome back, {greetingName}</h1>
+        <div>
+          <h1 className={styles.greetingTitle}>
+            {greetingForHour(new Date().getHours())}, {greetingName}
+          </h1>
           <p className={styles.greetingSubtitle}>
+            {new Date().toLocaleDateString(undefined, {
+              weekday: 'long',
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric',
+            })}
+            {' · '}
             {roleTitle}
-            {canReadEncounters && appointments.state === 'ready'
-              ? ` • ${activeEncounterCount} active encounter${activeEncounterCount === 1 ? '' : 's'} in your department`
+            {criticalItems.length > 0
+              ? ` · ${criticalItems.length} critical result${criticalItems.length === 1 ? '' : 's'} awaiting review`
               : ''}
           </p>
         </div>
       </div>
 
-      {/* 2. REAL critical alert banner (only when the backend reports one) */}
-      {!alertDismissed && notifications.error && (
+      {/* 2. CRITICAL ATTENTION — only what the backend actually reports */}
+      {notifications.isLoading && (
+        <div className={styles.alertSection} role="status" aria-label="Loading critical alerts">
+          <div className={styles.criticalSkeleton} />
+        </div>
+      )}
+      {notifications.error && (
         <div className={styles.alertSection}>
-          <AlertBanner severity="warning" title="Notifications unavailable">
-            Critical alert data could not be loaded.
+          <AlertBanner severity="warning" title="Critical alert queue unavailable">
+            The system could not verify whether critical results are waiting. Retry from the
+            notification panel.
           </AlertBanner>
         </div>
       )}
-      {!alertDismissed && !notifications.isLoading && topCritical && (
-        <div className={styles.alertSection}>
-          <AlertBanner
-            severity="critical"
-            title="CRITICAL LAB VALUE REQUIRES REVIEW"
-            dismissible
-            onDismiss={() => setAlertDismissed(true)}
-            action={
-              topCritical.relatedOrderId ? (
-                <Link
-                  href={`/diagnostics/${topCritical.relatedOrderId}`}
-                  style={{ all: 'unset', cursor: 'pointer' }}
-                >
-                  <Button variant="danger" size="sm" iconRight={<ArrowUpRight size={14} />}>
-                    Review result
-                  </Button>
-                </Link>
-              ) : undefined
-            }
-          >
-            {topCritical.title} — {topCritical.body}
-          </AlertBanner>
-        </div>
-      )}
+      {!notifications.isLoading &&
+        !notifications.error &&
+        (criticalItems.length > 0 ? (
+          <section aria-labelledby="critical-attention-heading" className={styles.alertSection}>
+            <h2 id="critical-attention-heading" className={styles.sectionLabel}>
+              Critical attention
+            </h2>
+            <ul className={styles.criticalList}>
+              {criticalItems.slice(0, 3).map((n) => (
+                <li key={n.id} className={styles.criticalItem}>
+                  <span className={styles.criticalIconWrap}>
+                    <AlertOctagon size={18} aria-hidden="true" />
+                  </span>
+                  <div className={styles.criticalBody}>
+                    <span className={styles.criticalTitle}>{n.title}</span>
+                    <span className={styles.criticalMeta}>{n.body}</span>
+                    <span className={styles.criticalTime}>
+                      <Clock size={11} aria-hidden="true" />
+                      {new Date(n.createdAt).toLocaleTimeString([], {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </span>
+                  </div>
+                  {n.relatedOrderId && (
+                    <Link href={`/diagnostics/${n.relatedOrderId}`} className={styles.criticalCta}>
+                      Review result
+                      <ArrowUpRight size={14} aria-hidden="true" />
+                    </Link>
+                  )}
+                </li>
+              ))}
+              {criticalItems.length > 3 && (
+                <li className={styles.criticalMore}>
+                  + {criticalItems.length - 3} more in the work queue below
+                </li>
+              )}
+            </ul>
+          </section>
+        ) : (
+          <div className={styles.allClear} role="status">
+            <CheckCircle2 size={16} aria-hidden="true" />
+            No critical results require your attention right now.
+          </div>
+        ))}
 
-      {/* 3. KPI grid — every value is real */}
-      <div className={styles.kpiGrid}>
+      {/* 3. Today at a glance — every metric is real and navigates */}
+      <section aria-label="Today's operational summary" className={styles.metricGrid}>
         {canReadAppointments && (
-          <Card elevation="xs" padding="md" className={styles.kpiCard}>
-            <div className={styles.kpiHeader}>
-              <span className={styles.kpiLabel}>Today&apos;s Appointments</span>
-              <div className={`${styles.kpiIconWrapper} ${styles.blue}`}>
-                <Calendar size={18} />
-              </div>
-            </div>
-            {appointments.state === 'loading' ? (
-              <Skeleton width="64px" height="32px" />
-            ) : appointments.state === 'error' ? (
-              <button
-                type="button"
-                className={styles.kpiSubtext}
-                onClick={() => void loadAppointments()}
-                aria-label="Retry loading appointments"
-              >
-                Retry
-              </button>
-            ) : (
-              <div className={styles.kpiValue}>{appointments.data?.length ?? 0}</div>
-            )}
-            <div className={styles.kpiFooter}>
-              <span className={styles.kpiSubtext}>scheduled today (your department)</span>
-            </div>
-          </Card>
+          <MetricCard
+            label="Today's schedule"
+            icon={<Calendar size={16} aria-hidden="true" />}
+            tone="primary"
+            href="/appointments"
+            value={
+              appointments.state === 'loading' ? (
+                <span className={styles.metricSkeleton}>—</span>
+              ) : appointments.state === 'error' ? (
+                <MetricRetry onRetry={() => void loadAppointments()} label="Retry" />
+              ) : (
+                appointmentRows.length
+              )
+            }
+            hint={
+              appointments.state === 'ready'
+                ? appointmentRows.length === 0
+                  ? 'Nothing booked for today'
+                  : 'appointments today (your department)'
+                : undefined
+            }
+          />
         )}
-
         {canReadEncounters && (
-          <Card elevation="xs" padding="md" className={styles.kpiCard}>
-            <div className={styles.kpiHeader}>
-              <span className={styles.kpiLabel}>Active Encounters</span>
-              <div className={`${styles.kpiIconWrapper} ${styles.indigo}`}>
-                <Stethoscope size={18} />
-              </div>
-            </div>
-            {encounters.state === 'loading' ? (
-              <Skeleton width="64px" height="32px" />
-            ) : encounters.state === 'error' ? (
-              <button
-                type="button"
-                className={styles.kpiSubtext}
-                onClick={() => void loadEncounters()}
-                aria-label="Retry loading active encounters"
-              >
-                Retry
-              </button>
-            ) : (
-              <div className={styles.kpiValue}>{encounters.data?.length ?? 0}</div>
-            )}
-            <div className={styles.kpiFooter}>
-              <span className={styles.kpiSubtext}>most recent shown below</span>
-            </div>
-          </Card>
+          <MetricCard
+            label="Active encounters"
+            icon={<Stethoscope size={16} aria-hidden="true" />}
+            tone="info"
+            href="/encounters"
+            value={
+              encounters.state === 'loading' ? (
+                <span className={styles.metricSkeleton}>—</span>
+              ) : encounters.state === 'error' ? (
+                <MetricRetry onRetry={() => void loadEncounters()} label="Retry" />
+              ) : (
+                (encounters.data?.length ?? 0)
+              )
+            }
+            hint={encounters.state === 'ready' ? 'in progress right now' : undefined}
+          />
         )}
-
         {canReadDiagnostics && (
-          <Card elevation="xs" padding="md" className={styles.kpiCard}>
-            <div className={styles.kpiHeader}>
-              <span className={styles.kpiLabel}>Pending Lab Work</span>
-              <div className={`${styles.kpiIconWrapper} ${styles.amber}`}>
-                <Stethoscope size={18} />
-              </div>
-            </div>
-            {pendingDiagnostics.state === 'loading' ? (
-              <Skeleton width="64px" height="32px" />
-            ) : pendingDiagnostics.state === 'error' ? (
-              <button
-                type="button"
-                className={styles.kpiSubtext}
-                onClick={() => void loadPendingDiagnostics()}
-                aria-label="Retry loading pending diagnostics"
-              >
-                Retry
-              </button>
-            ) : (
-              <div className={styles.kpiValue}>
-                {(pendingDiagnostics.data?.[0] ?? 0) + (pendingDiagnostics.data?.[1] ?? 0)}
-              </div>
-            )}
-            <div className={styles.kpiFooter}>
-              <span className={styles.kpiSubtext}>awaiting collection / processing</span>
-            </div>
-          </Card>
+          <MetricCard
+            label="Pending lab work"
+            icon={<FlaskConical size={16} aria-hidden="true" />}
+            tone="warning"
+            href="/diagnostics"
+            value={
+              pendingDiagnostics.state === 'loading' ? (
+                <span className={styles.metricSkeleton}>—</span>
+              ) : pendingDiagnostics.state === 'error' ? (
+                <MetricRetry onRetry={() => void loadPendingDiagnostics()} label="Retry" />
+              ) : (
+                (pendingDiagnostics.data?.[0] ?? 0) + (pendingDiagnostics.data?.[1] ?? 0)
+              )
+            }
+            hint={
+              pendingDiagnostics.state === 'ready' ? 'awaiting collection / processing' : undefined
+            }
+          />
         )}
-
-        <Card elevation="xs" padding="md" className={styles.kpiCard}>
-          <div className={styles.kpiHeader}>
-            <span className={styles.kpiLabel}>Critical Alerts</span>
-            <div className={`${styles.kpiIconWrapper} ${styles.red}`}>
-              <AlertOctagon size={18} />
-            </div>
-          </div>
-          {notifications.isLoading ? (
-            <Skeleton width="64px" height="32px" />
-          ) : (
-            <div className={styles.kpiValue} aria-live="polite">
-              <span className={criticalItems.length > 0 ? styles.redText : ''}>
-                {criticalItems.length}
-              </span>
-            </div>
-          )}
-          <div className={styles.kpiFooter}>
-            <span className={styles.kpiSubtext}>assigned to you, unacknowledged</span>
-          </div>
-        </Card>
-      </div>
+        <MetricCard
+          label="Unacknowledged critical alerts"
+          icon={<AlertOctagon size={16} aria-hidden="true" />}
+          tone={criticalItems.length > 0 ? 'critical' : 'success'}
+          liveValue
+          value={
+            notifications.isLoading ? (
+              <span className={styles.metricSkeleton}>—</span>
+            ) : (
+              criticalItems.length
+            )
+          }
+          hint={
+            !notifications.isLoading && criticalItems.length === 0
+              ? 'queue is clear'
+              : 'assigned to you · unacknowledged'
+          }
+        />
+      </section>
 
       {/* 4. Operational split */}
       <div className={styles.splitLayout}>
         <div className={styles.leftColumn}>
-          {canReadAppointments ? (
+          {canReadAppointments && (
             <Card elevation="xs" padding="none">
               <div className={styles.sectionCardHeader}>
                 <div className={styles.sectionHeaderTitle}>
-                  <h3>Today&apos;s Schedule</h3>
-                  <p>Your department • live booking data</p>
+                  <h3>Today&apos;s schedule</h3>
+                  <p>Your department · live booking data</p>
                 </div>
                 {appointments.state === 'ready' && (
-                  <Badge variant="primary" size="md">
-                    {appointments.data?.length ?? 0}
-                  </Badge>
+                  <Link href="/appointments" className={styles.viewAllLink}>
+                    View all <ChevronRight size={12} aria-hidden="true" />
+                  </Link>
                 )}
               </div>
               {appointments.state === 'loading' ? (
-                <CardContent>
-                  <Skeleton width="100%" height="120px" />
-                </CardContent>
+                <TableSkeleton rows={4} />
               ) : appointments.state === 'error' ? (
                 <CardContent>
-                  <AlertBanner severity="warning" title="Could not load schedule">
-                    The schedule service did not respond.
+                  <AlertBanner severity="warning" title="Could not load the schedule">
+                    The scheduling service did not respond.
                   </AlertBanner>
                 </CardContent>
-              ) : (appointments.data?.length ?? 0) === 0 ? (
+              ) : appointmentRows.length === 0 ? (
                 <CardContent>
-                  <p className={styles.kpiSubtext}>No appointments scheduled for today.</p>
+                  <p className={styles.quietEmpty}>No appointments scheduled for today.</p>
                 </CardContent>
               ) : (
-                <div className={styles.tableContainer}>
-                  <table className={styles.queueTable} aria-label="Today's appointment schedule">
-                    <thead>
-                      <tr>
-                        <th>Token</th>
-                        <th>Patient</th>
-                        <th>Time</th>
-                        <th>Status</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {mapAppointmentRows(appointments.data ?? []).map((row) => (
-                        <tr key={row.id}>
-                          <td className={styles.tokenCell}>
-                            {row.token !== null ? `#${String(row.token).padStart(2, '0')}` : '—'}
-                          </td>
-                          <td>
-                            <div className={styles.patientCell}>
-                              <span className={styles.patientName}>{row.patientName}</span>
-                              <span className={styles.patientMrn}>{row.mrn}</span>
-                            </div>
-                          </td>
-                          <td className={styles.timeCell}>
-                            <div className={styles.timeWrapper}>
-                              <Clock size={12} />
-                              <span>{row.time}</span>
-                            </div>
-                          </td>
-                          <td>{appointmentStatusLabel(row.status)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                <Table ariaLabel="Today's appointment schedule">
+                  <THead>
+                    <tr>
+                      <TH width="72px">Token</TH>
+                      <TH>Patient</TH>
+                      <TH width="88px">Time</TH>
+                      <TH>Status</TH>
+                    </tr>
+                  </THead>
+                  <TBody>
+                    {appointmentRows.map((row) => (
+                      <TR key={row.id}>
+                        <NumericTD>
+                          {row.token !== null ? `#${String(row.token).padStart(2, '0')}` : '—'}
+                        </NumericTD>
+                        <TD>
+                          <PatientIdentity
+                            compact
+                            firstName={row.patientName.split(' ')[0]}
+                            lastName={row.patientName.split(' ').slice(1).join(' ')}
+                            mrn={row.mrn}
+                          />
+                        </TD>
+                        <TD>
+                          <span className={styles.timeCell}>
+                            <Clock size={12} aria-hidden="true" />
+                            {row.time}
+                          </span>
+                        </TD>
+                        <TD>
+                          <AppointmentStatusBadge status={row.status} size="sm" />
+                        </TD>
+                      </TR>
+                    ))}
+                  </TBody>
+                </Table>
               )}
             </Card>
-          ) : canReadEncounters ? (
+          )}
+
+          {!canReadAppointments && canReadEncounters && (
             <Card elevation="xs" padding="none">
               <div className={styles.sectionCardHeader}>
                 <div className={styles.sectionHeaderTitle}>
-                  <h3>Active Encounters</h3>
-                  <p>Your department • most recent first</p>
+                  <h3>Active encounters</h3>
+                  <p>Your department · most recent first</p>
                 </div>
                 {encounters.state === 'ready' && (
-                  <Badge variant="primary" size="md">
-                    {encounters.data?.length ?? 0}
-                  </Badge>
+                  <Link href="/encounters" className={styles.viewAllLink}>
+                    View all <ChevronRight size={12} aria-hidden="true" />
+                  </Link>
                 )}
               </div>
               {encounters.state === 'loading' ? (
-                <CardContent>
-                  <Skeleton width="100%" height="120px" />
-                </CardContent>
+                <TableSkeleton rows={4} />
               ) : encounters.state === 'error' ? (
                 <CardContent>
                   <AlertBanner severity="warning" title="Could not load encounters">
@@ -380,57 +405,122 @@ export function DashboardShell() {
                 </CardContent>
               ) : (encounters.data?.length ?? 0) === 0 ? (
                 <CardContent>
-                  <p className={styles.kpiSubtext}>No active encounters right now.</p>
+                  <p className={styles.quietEmpty}>No active encounters right now.</p>
                 </CardContent>
               ) : (
-                <div className={styles.tableContainer}>
-                  <table className={styles.queueTable} aria-label="Active encounters">
-                    <thead>
-                      <tr>
-                        <th>Type</th>
-                        <th>Patient</th>
-                        <th>Status</th>
-                        <th aria-label="Open" />
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {(encounters.data ?? []).map((e) => (
-                        <tr key={e.id}>
-                          <td>{e.encounterType.toUpperCase()}</td>
-                          <td>
-                            <div className={styles.patientCell}>
-                              <span className={styles.patientName}>
-                                {e.patient?.firstName} {e.patient?.lastName}
-                              </span>
-                              <span className={styles.patientMrn}>{e.patient?.mrn}</span>
-                            </div>
-                          </td>
-                          <td>{e.status}</td>
-                          <td>
-                            <Link
-                              href={`/encounters/${e.id}`}
-                              className={styles.markAllButton ?? undefined}
-                              aria-label={`Open encounter`}
-                            >
-                              Open <ChevronRight size={12} />
-                            </Link>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                <Table ariaLabel="Active encounters">
+                  <THead>
+                    <tr>
+                      <TH>Patient</TH>
+                      <TH>Type</TH>
+                      <TH>Status</TH>
+                      <TH aria-label="Open" />
+                    </tr>
+                  </THead>
+                  <TBody>
+                    {(encounters.data ?? []).map((e) => (
+                      <TR key={e.id}>
+                        <TD>
+                          <PatientIdentity
+                            compact
+                            firstName={e.patient.firstName}
+                            lastName={e.patient.lastName}
+                            mrn={e.patient.mrn}
+                          />
+                        </TD>
+                        <TD>{e.encounterType.replace('_', ' ')}</TD>
+                        <TD>
+                          <Badge variant="primary" size="sm">
+                            Active
+                          </Badge>
+                        </TD>
+                        <TD align="right">
+                          <RowLink href={`/encounters/${e.id}`} aria-label={`Open encounter`}>
+                            Open
+                          </RowLink>
+                        </TD>
+                      </TR>
+                    ))}
+                  </TBody>
+                </Table>
               )}
             </Card>
-          ) : null}
+          )}
+
+          {canReadAppointments && canReadEncounters && (
+            <Card elevation="xs" padding="none">
+              <div className={styles.sectionCardHeader}>
+                <div className={styles.sectionHeaderTitle}>
+                  <h3>Active clinical work</h3>
+                  <p>Encounters currently in progress</p>
+                </div>
+                {encounters.state === 'ready' && (
+                  <Link href="/encounters" className={styles.viewAllLink}>
+                    View all <ChevronRight size={12} aria-hidden="true" />
+                  </Link>
+                )}
+              </div>
+              {encounters.state === 'loading' ? (
+                <TableSkeleton rows={3} />
+              ) : encounters.state === 'error' ? (
+                <CardContent>
+                  <AlertBanner severity="warning" title="Could not load encounters">
+                    The encounter service did not respond.
+                  </AlertBanner>
+                </CardContent>
+              ) : (encounters.data?.length ?? 0) === 0 ? (
+                <CardContent>
+                  <p className={styles.quietEmpty}>
+                    No active encounters. New consultations appear here after check-in.
+                  </p>
+                </CardContent>
+              ) : (
+                <Table ariaLabel="Active clinical work">
+                  <THead>
+                    <tr>
+                      <TH>Patient</TH>
+                      <TH>Type</TH>
+                      <TH>Status</TH>
+                      <TH aria-label="Open" />
+                    </tr>
+                  </THead>
+                  <TBody>
+                    {(encounters.data ?? []).slice(0, 5).map((e) => (
+                      <TR key={e.id}>
+                        <TD>
+                          <PatientIdentity
+                            compact
+                            firstName={e.patient.firstName}
+                            lastName={e.patient.lastName}
+                            mrn={e.patient.mrn}
+                          />
+                        </TD>
+                        <TD>{e.encounterType.replace('_', ' ')}</TD>
+                        <TD>
+                          <Badge variant="primary" size="sm">
+                            Active
+                          </Badge>
+                        </TD>
+                        <TD align="right">
+                          <RowLink href={`/encounters/${e.id}`} aria-label={`Open encounter`}>
+                            Open
+                          </RowLink>
+                        </TD>
+                      </TR>
+                    ))}
+                  </TBody>
+                </Table>
+              )}
+            </Card>
+          )}
         </div>
 
         {/* Right column: real critical work queue + honest AI card */}
         <div className={styles.rightColumn}>
           <Card elevation="xs" padding="md">
             <CardHeader
-              title="Critical Result Work Queue"
-              subtitle="Assigned to you • unacknowledged"
+              title="Critical result work queue"
+              subtitle="Assigned to you · unacknowledged"
               action={
                 <Badge variant={criticalItems.length > 0 ? 'critical' : 'stable'} size="sm">
                   {notifications.isLoading ? '…' : criticalItems.length}
@@ -439,7 +529,9 @@ export function DashboardShell() {
             />
             <CardContent>
               {notifications.isLoading ? (
-                <Skeleton width="100%" height="96px" />
+                <div role="status" aria-label="Loading work queue">
+                  <div className={styles.queueSkeleton} />
+                </div>
               ) : notifications.error ? (
                 <div role="alert">
                   <AlertBanner severity="warning" title="Queue unavailable">
@@ -447,49 +539,48 @@ export function DashboardShell() {
                   </AlertBanner>
                 </div>
               ) : criticalItems.length === 0 ? (
-                <p className={styles.kpiSubtext}>No critical results awaiting your review.</p>
+                <p className={styles.quietEmpty}>No critical results awaiting your review.</p>
               ) : (
-                <div className={styles.taskList}>
+                <ul className={styles.taskList}>
                   {criticalItems.map((n) => (
-                    <div key={n.id} className={styles.taskItem}>
-                      <div className={styles.taskInfo}>
-                        <span className={styles.taskTitle}>{n.title}</span>
-                        <div className={styles.taskMeta}>
-                          <Clock size={12} />
-                          <span>
-                            {new Date(n.createdAt).toLocaleTimeString([], {
-                              hour: '2-digit',
-                              minute: '2-digit',
-                            })}
-                          </span>
-                          <span className={styles.metaDot}>•</span>
-                          <Badge variant="critical" size="sm">
-                            CRITICAL
-                          </Badge>
-                        </div>
-                        <div className={styles.taskMeta}>
-                          {n.relatedOrderId && (
-                            <Link
-                              href={`/diagnostics/${n.relatedOrderId}`}
-                              className={styles.markAllButton ?? undefined}
-                              aria-label={`Review result for ${n.title}`}
-                            >
-                              Review result <ChevronRight size={12} />
-                            </Link>
-                          )}
-                          <button
-                            type="button"
-                            className={styles.markAllButton}
-                            onClick={() => void notifications.acknowledge(n.id)}
-                            aria-label={`Acknowledge ${n.title}`}
-                          >
-                            Acknowledge
-                          </button>
-                        </div>
+                    <li key={n.id} className={styles.taskItem}>
+                      <span className={styles.taskTitle}>{n.title}</span>
+                      <div className={styles.taskMeta}>
+                        <Clock size={12} aria-hidden="true" />
+                        <span>
+                          {new Date(n.createdAt).toLocaleTimeString([], {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
+                        </span>
+                        <span className={styles.metaDot} aria-hidden="true">
+                          •
+                        </span>
+                        <Badge variant="critical" size="sm">
+                          CRITICAL
+                        </Badge>
                       </div>
-                    </div>
+                      <div className={styles.taskActions}>
+                        {n.relatedOrderId && (
+                          <RowLink
+                            href={`/diagnostics/${n.relatedOrderId}`}
+                            aria-label={`Review result for ${n.title}`}
+                          >
+                            Review result
+                          </RowLink>
+                        )}
+                        <button
+                          type="button"
+                          className={styles.textButton}
+                          onClick={() => void notifications.acknowledge(n.id)}
+                          aria-label={`Acknowledge ${n.title}`}
+                        >
+                          Acknowledge
+                        </button>
+                      </div>
+                    </li>
                   ))}
-                </div>
+                </ul>
               )}
             </CardContent>
           </Card>
@@ -497,32 +588,23 @@ export function DashboardShell() {
           <Card elevation="xs" padding="md" className={styles.aiCard}>
             <div className={styles.aiHeader}>
               <div className={styles.aiIconCircle}>
-                <Sparkles size={20} />
+                <Sparkles size={20} aria-hidden="true" />
               </div>
               <div className={styles.aiTitleBlock}>
-                <div className={styles.aiBadgeRow}>
-                  <Badge variant="ai-assist" size="sm">
-                    AI Clinical Assistant
-                  </Badge>
-                </div>
-                <h4 className={styles.aiTitle}>SOURCE-GROUNDED Note Drafting</h4>
+                <Badge variant="ai-assist" size="sm">
+                  Clinical AI — governed
+                </Badge>
+                <h4 className={styles.aiTitle}>SOURCE-GROUNDED note drafting</h4>
               </div>
             </div>
             <p className={styles.aiDesc}>
-              Commission AI-drafted SOAP and progress notes inside an active encounter — with
-              verifiable citations, system-computed gaps, and mandatory clinician review before any
-              signature.
+              Commission an AI-drafted SOAP or progress note inside an active encounter — with
+              verifiable citations, system-computed documentation gaps, and mandatory clinician
+              review before anything is signed.
             </p>
-            <Link href="/encounters" style={{ textDecoration: 'none' }}>
-              <Button
-                variant="outline"
-                size="md"
-                fullWidth
-                iconRight={<ArrowUpRight size={16} />}
-                className={styles.aiButton}
-              >
-                Go to Encounters
-              </Button>
+            <Link href="/encounters" className={styles.aiButton}>
+              Open an encounter to begin
+              <ArrowUpRight size={14} aria-hidden="true" />
             </Link>
           </Card>
         </div>

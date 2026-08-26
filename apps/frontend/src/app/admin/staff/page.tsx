@@ -3,9 +3,13 @@
 import React from 'react';
 import { AppShell } from '../../../components/layout/AppShell/AppShell';
 import { EmptyState } from '../../../components/ui/EmptyState/EmptyState';
-import { UserCheck, UserPlus } from 'lucide-react';
-import { Button } from '../../../components/ui/Button/Button';
+import { UserCheck } from 'lucide-react';
 
+/**
+ * M13 — Honest placeholder. Staff administration endpoints are M20 scope;
+ * no staff-management API is implemented beyond the read-only identity
+ * projection. This screen never pretends otherwise.
+ */
 export default function StaffAdminPage() {
   return (
     <AppShell
@@ -14,13 +18,8 @@ export default function StaffAdminPage() {
     >
       <EmptyState
         icon={<UserCheck size={32} />}
-        title="Staff & Role Administration"
-        description="Provision accounts, assign departmental roles, and manage hospital workforce credentials."
-        action={
-          <Button variant="primary" size="md" iconLeft={<UserPlus size={16} />}>
-            Add Staff Member
-          </Button>
-        }
+        title="Staff administration — coming in a future release"
+        description="Account provisioning and role assignment will be available once the administration service is enabled."
       />
     </AppShell>
   );

@@ -82,11 +82,11 @@ export default function NewDiagnosticOrderPage() {
 
   return (
     <AppShell
-      breadcrumbs={['Clinical', 'Encounters', 'Order Diagnostic']}
+      breadcrumbs={['Operations', 'Encounters', 'Order diagnostic']}
       requiredPermission="diagnostic_order:create"
     >
       <div className={styles.container}>
-        <h1 className={styles.title}>Order Diagnostic</h1>
+        <h1 className={styles.title}>Order diagnostic</h1>
 
         {error && (
           <AlertBanner
@@ -103,7 +103,7 @@ export default function NewDiagnosticOrderPage() {
           <form onSubmit={handleSubmit} noValidate>
             <div className={styles.fieldGroup}>
               <label htmlFor="catalog" className={styles.label}>
-                Common tests
+                Quick fill (common panels)
               </label>
               <select
                 id="catalog"
@@ -111,14 +111,17 @@ export default function NewDiagnosticOrderPage() {
                 value={TEST_CATALOG.some((t) => t.code === testCode) ? testCode : ''}
                 onChange={(e) => handleCatalogSelect(e.target.value)}
               >
-                <option value="">Select a test…</option>
+                <option value="">Type a custom test…</option>
                 {TEST_CATALOG.map((t) => (
                   <option key={t.code} value={t.code}>
                     {t.name} ({t.code})
                   </option>
                 ))}
               </select>
-              <span className={styles.hint}>Or enter a custom test code below.</span>
+              <span className={styles.hint}>
+                Shortcuts that pre-fill the code and name — edit freely; the laboratory catalog is
+                authoritative.
+              </span>
             </div>
 
             <div className={styles.grid}>

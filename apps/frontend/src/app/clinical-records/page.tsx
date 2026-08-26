@@ -3,25 +3,24 @@
 import React from 'react';
 import { AppShell } from '../../components/layout/AppShell/AppShell';
 import { EmptyState } from '../../components/ui/EmptyState/EmptyState';
-import { FileText, Plus } from 'lucide-react';
-import { Button } from '../../components/ui/Button/Button';
+import { FileText, Lock } from 'lucide-react';
 
+/**
+ * M13 — Honest placeholder. Encounter-scoped clinical documentation lives
+ * inside each encounter workspace; a cross-encounter record index is not part
+ * of any implemented backend capability (M9 scope). No fake data, no dead CTAs.
+ */
 export default function ClinicalRecordsPage() {
   return (
-    <AppShell
-      breadcrumbs={['Clinical', 'Clinical Records']}
-      requiredPermission="clinical_record:read"
-    >
+    <AppShell breadcrumbs={['Clinical', 'Records']} requiredPermission="clinical_record:read">
       <EmptyState
         icon={<FileText size={32} />}
-        title="Electronic Health Records (EHR)"
-        description="Structured SOAP progress notes, surgical reports, telemetry logs, and signed discharge summaries."
-        action={
-          <Button variant="primary" size="md" iconLeft={<Plus size={16} />}>
-            Create Progress Note
-          </Button>
-        }
+        title="Clinical records live inside encounters"
+        description="SOAP notes, progress notes, and vitals are documented within each encounter workspace. Open a patient's active encounter to view or continue documentation."
       />
+      <p className="sr-only">
+        <Lock aria-hidden="true" /> Signed records are immutable.
+      </p>
     </AppShell>
   );
 }

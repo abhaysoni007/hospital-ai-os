@@ -4,26 +4,31 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { AppShell } from '../../../components/layout/AppShell/AppShell';
 import { Button } from '../../../components/ui/Button/Button';
-import { Badge } from '../../../components/ui/Badge/Badge';
 import { Card } from '../../../components/ui/Card/Card';
 import { Skeleton } from '../../../components/ui/Skeleton/Skeleton';
 import { ErrorState } from '../../../components/ui/ErrorState/ErrorState';
 import { AlertBanner } from '../../../components/ui/Alert/AlertBanner';
-import { Lock, AlertTriangle, RefreshCw, ShieldCheck } from 'lucide-react';
+import { ConfirmDialog } from '../../../components/ui/ConfirmDialog/ConfirmDialog';
+import { PageHeader } from '../../../components/ui/PageHeader/PageHeader';
+import {
+  OrderStatusBadge,
+  PriorityBadge,
+  ResultStatusBadge,
+} from '../../../components/ui/SemanticBadges/SemanticBadges';
+import { Lock, AlertTriangle, RefreshCw } from 'lucide-react';
 import { diagnosticsService } from '../../../services/diagnostics-service';
 import { getStaffIdentities } from '../../../services/staff-service';
 import type { DiagnosticOrderResponse, DiagnosticResultResponse } from 'shared';
 import styles from './order-detail.module.css';
 import { useAuth } from '../../../hooks/useAuth';
-import { canVerifyResults, RESULT_STATUS_LABELS } from '../../../utils/diagnostics';
-import { StaffRole } from '../../../types/auth';
+import { canEnterResults, canVerifyResults } from '../../../utils/diagnostics';
 
 export default function DiagnosticOrderDetailPage() {
   const params = useParams<{ orderId: string }>();
   const router = useRouter();
   const orderId = params?.orderId;
   const { user } = useAuth();
-  const role = user?.role as StaffRole | undefined;
+  const role = user?.role;
 
   const [order, setOrder] = useState<DiagnosticOrderResponse | null>(null);
   const [result, setResult] = useState<DiagnosticResultResponse | null>(null);
@@ -98,7 +103,7 @@ export default function DiagnosticOrderDetailPage() {
   if (loading) {
     return (
       <AppShell
-        breadcrumbs={['Operations', 'Lab Queue', 'Order']}
+        breadcrumbs={['Operations', 'Diagnostics']}
         requiredPermission="diagnostic_order:read"
       >
         <div className={styles.container}>
@@ -111,13 +116,13 @@ export default function DiagnosticOrderDetailPage() {
   if (error || !order) {
     return (
       <AppShell
-        breadcrumbs={['Operations', 'Lab Queue', 'Order']}
+        breadcrumbs={['Operations', 'Diagnostics']}
         requiredPermission="diagnostic_order:read"
       >
         <div className={styles.container}>
           <ErrorState
-            title="Could not load diagnostic order"
-            message={error?.message ?? 'Not found.'}
+            title="This order is no longer available"
+            message={error?.message ?? 'It may not exist or your role may not permit access.'}
             onRetry={fetchData}
           />
         </div>
@@ -141,18 +146,20 @@ export default function DiagnosticOrderDetailPage() {
 
   return (
     <AppShell
-      breadcrumbs={['Operations', 'Lab Queue', 'Order']}
+      breadcrumbs={['Operations', 'Diagnostics', order.testCode]}
       requiredPermission="diagnostic_order:read"
     >
       <div className={styles.container}>
-        <div className={styles.header}>
-          <h1 className={styles.title}>{order.testName}</h1>
-          <span
-            className={`${styles.orderChip} ${order.priority === 'stat' ? styles.orderChipStat : ''}`}
-          >
-            {order.priority.toUpperCase()}
-          </span>
-        </div>
+        <PageHeader
+          title={order.testName}
+          meta={
+            <>
+              <PriorityBadge priority={order.priority} size="sm" />
+              <OrderStatusBadge status={order.status} size="sm" />
+              {result && <ResultStatusBadge status={result.status} size="sm" />}
+            </>
+          }
+        />
 
         {critical && (
           <div className={styles.criticalBanner} role="alert">
@@ -165,7 +172,7 @@ export default function DiagnosticOrderDetailPage() {
                 This result was flagged by deterministic critical-value rules and requires clinical
                 attention.
                 {!verified && ' Independent verification is pending.'}
-                {verified && ' It has been independently verified.'}
+                {verified && ' It has been independently verified and locked.'}
               </p>
             </div>
           </div>
@@ -205,12 +212,6 @@ export default function DiagnosticOrderDetailPage() {
         <Card>
           <div className={styles.metaGrid}>
             <div>
-              <span className={styles.metaLabel}>Status</span>
-              <Badge variant={order.status === 'ordered' ? 'stable' : 'neutral'}>
-                {order.status.replace(/_/g, ' ')}
-              </Badge>
-            </div>
-            <div>
               <span className={styles.metaLabel}>Ordered</span>
               {new Date(order.createdAt).toLocaleString()}
             </div>
@@ -218,14 +219,6 @@ export default function DiagnosticOrderDetailPage() {
               <span className={styles.metaLabel}>Collected</span>
               {order.collectedAt ? new Date(order.collectedAt).toLocaleString() : '—'}
             </div>
-            {result && (
-              <div>
-                <span className={styles.metaLabel}>Result status</span>
-                <strong style={{ textTransform: 'capitalize' }}>
-                  {(RESULT_STATUS_LABELS[result.status] ?? result.status).split('—')[0].trim()}
-                </strong>
-              </div>
-            )}
           </div>
         </Card>
 
@@ -323,34 +316,33 @@ export default function DiagnosticOrderDetailPage() {
             {verified && (
               <div className={styles.lockedNotice} role="status">
                 <Lock size={16} aria-hidden="true" />
-                <ShieldCheck size={16} aria-hidden="true" />
-                VERIFIED &amp; LOCKED — this result is final and cannot be modified.
+                <span>
+                  VERIFIED &amp; LOCKED — this result is final, independently verified, and cannot
+                  be modified.
+                </span>
               </div>
             )}
 
+            {showVerify && (
+              <ConfirmDialog
+                isOpen={confirmVerify}
+                title="Verify this result?"
+                confirmLabel="Confirm verification"
+                isLoading={verifying}
+                onConfirm={() => void handleVerify()}
+                onCancel={() => setConfirmVerify(false)}
+              >
+                Verification certifies the values as accurate and complete under your identity and
+                locks the result permanently.
+              </ConfirmDialog>
+            )}
+
             <div className={styles.actionsBar}>
-              {showVerify &&
-                (!confirmVerify ? (
-                  <Button variant="primary" onClick={() => setConfirmVerify(true)}>
-                    Verify Result
-                  </Button>
-                ) : (
-                  <>
-                    <span className={styles.confirmText} role="status">
-                      Verify this diagnostic result as accurate and complete?
-                    </span>
-                    <Button
-                      variant="outline"
-                      onClick={() => setConfirmVerify(false)}
-                      disabled={verifying}
-                    >
-                      Cancel
-                    </Button>
-                    <Button variant="primary" onClick={handleVerify} disabled={verifying}>
-                      {verifying ? 'Verifying…' : 'Confirm Verification'}
-                    </Button>
-                  </>
-                ))}
+              {showVerify && !confirmVerify && (
+                <Button variant="primary" onClick={() => setConfirmVerify(true)}>
+                  Verify result
+                </Button>
+              )}
               {!showVerify && !verified && result.status !== 'verified' && isEnterer && (
                 <span className={styles.fourEyesNote}>
                   Independent verification required — the entering technician cannot verify this
@@ -365,12 +357,12 @@ export default function DiagnosticOrderDetailPage() {
             <p className={styles.pendingNote}>
               No result entered yet. Values become available after the laboratory enters them.
             </p>
-            {canVerifyResults(role) && role === 'lab_technician' && (
+            {canEnterResults(role) && (
               <Button
                 variant="primary"
                 onClick={() => router.push(`/diagnostics/${orderId}/result/new`)}
               >
-                Enter Result
+                Enter result
               </Button>
             )}
           </Card>

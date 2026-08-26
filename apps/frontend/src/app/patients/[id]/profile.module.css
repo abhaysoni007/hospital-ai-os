@@ -1,60 +1,96 @@
 .container {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-6);
-  padding: var(--spacing-6);
-  height: 100%;
+  gap: var(--space-5);
+  width: 100%;
 }
 
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
+.loadingWrap {
+  padding: var(--space-2) 0;
 }
 
-.patientName {
-  font-size: var(--font-size-2xl);
-  font-weight: var(--font-weight-600);
-  color: var(--color-slate-900);
-  margin-bottom: var(--spacing-2);
-}
-
-.mrnRow {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-3);
-  font-family: monospace;
-  color: var(--color-slate-600);
+.metaItem {
   font-size: var(--font-size-sm);
+  color: var(--text-secondary);
 }
 
 .grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--spacing-6);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-5);
 }
 
-.section {
+.fullWidth {
+  grid-column: 1 / -1;
+}
+
+.capitalize {
+  text-transform: capitalize;
+}
+
+.infoList {
+  margin: 0;
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-4);
+  gap: var(--space-3);
 }
 
 .infoRow {
   display: flex;
   justify-content: space-between;
-  padding: var(--spacing-2) 0;
-  border-bottom: 1px solid var(--color-slate-100);
+  gap: var(--space-4);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.infoRow:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
 }
 
 .infoLabel {
   font-size: var(--font-size-sm);
-  color: var(--color-slate-500);
-  font-weight: var(--font-weight-500);
+  color: var(--text-tertiary);
+  font-weight: 500;
+  flex-shrink: 0;
 }
 
 .infoValue {
   font-size: var(--font-size-sm);
-  color: var(--color-slate-900);
-  font-weight: var(--font-weight-500);
+  color: var(--text-primary);
+  font-weight: 500;
+  text-align: right;
+}
+
+.sectionCardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-4) var(--space-5);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.sectionTitleGroup h3 {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-size-h4);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.sectionTitleGroup svg {
+  color: var(--color-primary-600);
+}
+
+.sectionSub {
+  font-size: var(--font-size-caption);
+  color: var(--text-tertiary);
+  margin-top: 1px;
+}
+
+@media (max-width: 900px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
 }

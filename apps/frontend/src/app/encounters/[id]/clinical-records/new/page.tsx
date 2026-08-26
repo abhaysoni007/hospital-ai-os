@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { Suspense, useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { AppShell } from '../../../../../components/layout/AppShell/AppShell';
 import { Button } from '../../../../../components/ui/Button/Button';
@@ -8,6 +8,9 @@ import { Card } from '../../../../../components/ui/Card/Card';
 import { Input } from '../../../../../components/ui/Input/Input';
 import { AlertBanner } from '../../../../../components/ui/Alert/AlertBanner';
 import { ErrorState } from '../../../../../components/ui/ErrorState/ErrorState';
+import { ConfirmDialog } from '../../../../../components/ui/ConfirmDialog/ConfirmDialog';
+import { PageHeader } from '../../../../../components/ui/PageHeader/PageHeader';
+import { Skeleton } from '../../../../../components/ui/Skeleton/Skeleton';
 import { clinicalService } from '../../../../../services/clinical-service';
 import { createClinicalRecordSchema, type Vitals } from 'shared';
 import styles from './new-clinical-record.module.css';
@@ -28,6 +31,23 @@ const VITAL_FIELDS: Array<{ key: keyof Vitals; label: string; step: string }> = 
 ];
 
 export default function NewClinicalRecordPage() {
+  return (
+    <Suspense
+      fallback={
+        <AppShell
+          breadcrumbs={['Operations', 'Encounters']}
+          requiredPermission="clinical_record:write"
+        >
+          <Skeleton variant="rectangular" height={320} />
+        </AppShell>
+      }
+    >
+      <NewRecordForm />
+    </Suspense>
+  );
+}
+
+function NewRecordForm() {
   const params = useParams<{ id: string }>();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -36,6 +56,7 @@ export default function NewClinicalRecordPage() {
 
   const [loading, setLoading] = useState(false);
   const [dirty, setDirty] = useState(false);
+  const [leaveOpen, setLeaveOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
@@ -104,8 +125,9 @@ export default function NewClinicalRecordPage() {
     return false;
   };
 
-  const guardNavigation = (action: () => void) => {
-    if (!dirty || window.confirm('You have unsaved changes. Leave without saving?')) action();
+  const requestLeave = (action: () => void) => {
+    if (!dirty) action();
+    else setLeaveOpen(true);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -133,32 +155,37 @@ export default function NewClinicalRecordPage() {
   if (!validType) {
     return (
       <AppShell
-        breadcrumbs={['Clinical', 'Encounters', 'New Record']}
+        breadcrumbs={['Operations', 'Encounters', 'Documentation']}
         requiredPermission="clinical_record:write"
       >
         <div className={styles.container}>
           <ErrorState
             title="Unknown record type"
-            message="Use the buttons on the encounter screen to open the correct note type."
+            message="Use the buttons on the encounter workspace to open the correct note type."
           />
         </div>
       </AppShell>
     );
   }
 
+  const sectionError = fieldErrors['content.sections'];
+
   return (
     <AppShell
-      breadcrumbs={['Clinical', 'Encounters', 'New Record']}
+      breadcrumbs={['Operations', 'Encounters', 'New documentation']}
       requiredPermission="clinical_record:write"
     >
       <div className={styles.container}>
-        <h1 className={styles.title}>
-          {validType === 'soap'
-            ? 'New SOAP Note'
-            : validType === 'progress_note'
-              ? 'New Progress Note'
-              : 'Record Vital Signs'}
-        </h1>
+        <PageHeader
+          title={
+            validType === 'soap'
+              ? 'New SOAP note'
+              : validType === 'progress_note'
+                ? 'New progress note'
+                : 'Record vital signs'
+          }
+          description="Saved as a draft under your name. Signing later makes the document permanent."
+        />
 
         {error && (
           <AlertBanner
@@ -171,16 +198,12 @@ export default function NewClinicalRecordPage() {
           </AlertBanner>
         )}
 
-        <Card>
+        <Card elevation="xs">
           <form onSubmit={handleSubmit} noValidate>
             {validType === 'soap' &&
               SOAP_HEADINGS.map((h) => (
                 <div key={h} className={styles.fieldGroup}>
-                  <label
-                    htmlFor={`soap-${h}`}
-                    className={styles.label}
-                    style={{ textTransform: 'capitalize' }}
-                  >
+                  <label htmlFor={`soap-${h}`} className={`${styles.label} ${styles.capitalize}`}>
                     {h}
                   </label>
                   <textarea
@@ -195,8 +218,10 @@ export default function NewClinicalRecordPage() {
                     rows={4}
                     placeholder={`${h.charAt(0).toUpperCase() + h.slice(1)} findings…`}
                   />
-                  {fieldErrors[`content.sections`] && (
-                    <span className={styles.fieldError}>{fieldErrors['content.sections']}</span>
+                  {sectionError && (
+                    <span className={styles.fieldError} role="alert">
+                      {sectionError}
+                    </span>
                   )}
                 </div>
               ))}
@@ -219,7 +244,9 @@ export default function NewClinicalRecordPage() {
                   placeholder="Progress note…"
                 />
                 {fieldErrors['content.narrative'] && (
-                  <span className={styles.fieldError}>{fieldErrors['content.narrative']}</span>
+                  <span className={styles.fieldError} role="alert">
+                    {fieldErrors['content.narrative']}
+                  </span>
                 )}
               </div>
             )}
@@ -243,9 +270,11 @@ export default function NewClinicalRecordPage() {
                   ))}
                 </div>
                 {fieldErrors['vitals'] && (
-                  <span className={styles.fieldError}>{fieldErrors['vitals']}</span>
+                  <span className={styles.fieldError} role="alert">
+                    {fieldErrors['vitals']}
+                  </span>
                 )}
-                <div className={styles.fieldGroup} style={{ marginTop: 16 }}>
+                <div className={`${styles.fieldGroup} ${styles.mt}`}>
                   <label htmlFor="vnote" className={styles.label}>
                     Remark (optional)
                   </label>
@@ -267,18 +296,29 @@ export default function NewClinicalRecordPage() {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => guardNavigation(() => router.back())}
+                onClick={() => requestLeave(() => router.back())}
                 disabled={loading}
               >
                 Cancel
               </Button>
-              <Button type="submit" variant="primary" disabled={loading}>
-                {loading ? 'Saving…' : 'Save Draft'}
+              <Button type="submit" variant="primary" isLoading={loading}>
+                Save draft
               </Button>
             </div>
           </form>
         </Card>
       </div>
+
+      <ConfirmDialog
+        isOpen={leaveOpen}
+        title="Leave with unsaved changes?"
+        confirmLabel="Discard & leave"
+        variant="danger"
+        onCancel={() => setLeaveOpen(false)}
+        onConfirm={() => router.back()}
+      >
+        Your entries have not been saved. Leaving this page will discard them.
+      </ConfirmDialog>
     </AppShell>
   );
 }

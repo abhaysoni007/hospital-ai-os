@@ -3,24 +3,20 @@
 import React from 'react';
 import { AppShell } from '../../../components/layout/AppShell/AppShell';
 import { EmptyState } from '../../../components/ui/EmptyState/EmptyState';
-import { Lock, AlertTriangle } from 'lucide-react';
-import { Button } from '../../../components/ui/Button/Button';
+import { Lock } from 'lucide-react';
 
-export default function SecurityPage() {
+/**
+ * M13 — Honest placeholder. Break-glass review belongs to the emergency-access
+ * workflow (M15 scope); no review API is implemented. This screen never
+ * pretends otherwise.
+ */
+export default function SecurityAdminPage() {
   return (
-    <AppShell
-      breadcrumbs={['Administration', 'Security & Emergency Access']}
-      requiredPermission="break_glass:review"
-    >
+    <AppShell breadcrumbs={['Administration', 'Security']} requiredPermission="break_glass:review">
       <EmptyState
         icon={<Lock size={32} />}
-        title="Break-Glass & Security Review"
-        description="Monitor emergency privilege escalations, active overrides, and system-wide security anomalies."
-        action={
-          <Button variant="danger" size="md" iconLeft={<AlertTriangle size={16} />}>
-            Review Active Overrides
-          </Button>
-        }
+        title="Emergency access review — coming in a future release"
+        description="Break-glass activation is already audited end to end. The review console for security administrators will be enabled with the emergency-access milestone."
       />
     </AppShell>
   );

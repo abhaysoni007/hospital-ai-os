@@ -9,8 +9,12 @@ import { Input } from '../../../../../components/ui/Input/Input';
 import { AlertBanner } from '../../../../../components/ui/Alert/AlertBanner';
 import { ErrorState } from '../../../../../components/ui/ErrorState/ErrorState';
 import { Skeleton } from '../../../../../components/ui/Skeleton/Skeleton';
-import { Badge } from '../../../../../components/ui/Badge/Badge';
-import { PRIORITY_META, buildResultPayload } from '../../../../../utils/diagnostics';
+import { PageHeader } from '../../../../../components/ui/PageHeader/PageHeader';
+import {
+  OrderStatusBadge,
+  PriorityBadge,
+} from '../../../../../components/ui/SemanticBadges/SemanticBadges';
+import { buildResultPayload } from '../../../../../utils/diagnostics';
 import { diagnosticsService } from '../../../../../services/diagnostics-service';
 import type { DiagnosticOrderResponse } from 'shared';
 import styles from './result-entry.module.css';
@@ -99,7 +103,7 @@ export default function ResultEntryPage() {
   if (loading) {
     return (
       <AppShell
-        breadcrumbs={['Operations', 'Lab Queue', 'Result Entry']}
+        breadcrumbs={['Operations', 'Diagnostics', 'Result entry']}
         requiredPermission="diagnostic_result:enter"
       >
         <div className={styles.container}>
@@ -112,7 +116,7 @@ export default function ResultEntryPage() {
   if (error || !order) {
     return (
       <AppShell
-        breadcrumbs={['Operations', 'Lab Queue', 'Result Entry']}
+        breadcrumbs={['Operations', 'Diagnostics', 'Result entry']}
         requiredPermission="diagnostic_result:enter"
       >
         <div className={styles.container}>
@@ -130,7 +134,7 @@ export default function ResultEntryPage() {
   if (enteredResultId) {
     return (
       <AppShell
-        breadcrumbs={['Operations', 'Lab Queue', 'Result Entry']}
+        breadcrumbs={['Operations', 'Diagnostics', 'Result entry']}
         requiredPermission="diagnostic_result:enter"
       >
         <div className={styles.container}>
@@ -165,29 +169,25 @@ export default function ResultEntryPage() {
     );
   }
 
-  const pm = PRIORITY_META[order.priority];
-
   return (
     <AppShell
-      breadcrumbs={['Operations', 'Lab Queue', 'Result Entry']}
+      breadcrumbs={['Operations', 'Diagnostics', 'Result entry']}
       requiredPermission="diagnostic_result:enter"
     >
       <div className={styles.container}>
-        <div className={styles.header}>
-          <h1 className={styles.title}>Enter Result</h1>
-          <Badge variant="stable">{ORDER_STATUS_LABEL(order.status)}</Badge>
-        </div>
+        <PageHeader
+          title="Enter result"
+          description={`${order.testName} (${order.testCode})`}
+          meta={
+            <>
+              <PriorityBadge priority={order.priority} size="sm" />
+              <OrderStatusBadge status={order.status} size="sm" />
+            </>
+          }
+        />
 
         <Card>
           <div className={styles.meta}>
-            <div>
-              <span className={styles.metaLabel}>Test</span>
-              <strong>{order.testName}</strong>
-            </div>
-            <div>
-              <span className={styles.metaLabel}>Priority</span>
-              <span>{pm.label}</span>
-            </div>
             <div>
               <span className={styles.metaLabel}>Sample collected</span>
               <span>{order.collectedAt ? new Date(order.collectedAt).toLocaleString() : '—'}</span>
@@ -229,7 +229,6 @@ export default function ResultEntryPage() {
                     step="any"
                     value={row.value}
                     onChange={(e) => updateRow(idx, { value: e.target.value })}
-                    error={undefined}
                   />
                   <Input
                     id={`unit-${idx}`}
@@ -280,7 +279,7 @@ export default function ResultEntryPage() {
                 </div>
                 <div>
                   <dt>Priority</dt>
-                  <dd>{pm.label}</dd>
+                  <dd>{order.priority}</dd>
                 </div>
                 {rows
                   .filter((r) => r.parameterName.trim())
@@ -303,8 +302,8 @@ export default function ResultEntryPage() {
               <Button variant="outline" onClick={() => setReviewing(false)} disabled={submitting}>
                 Back to editing
               </Button>
-              <Button variant="primary" onClick={handleEnterResult} disabled={submitting}>
-                {submitting ? 'Entering…' : 'Enter Result'}
+              <Button variant="primary" onClick={handleEnterResult} isLoading={submitting}>
+                Enter result
               </Button>
             </div>
           </>
@@ -312,15 +311,4 @@ export default function ResultEntryPage() {
       </div>
     </AppShell>
   );
-}
-
-function ORDER_STATUS_LABEL(status: string): string {
-  const labels: Record<string, string> = {
-    ordered: 'Ordered',
-    sample_collected: 'Sample collected',
-    in_progress: 'In progress',
-    completed: 'Completed',
-    cancelled: 'Cancelled',
-  };
-  return labels[status] ?? status;
 }

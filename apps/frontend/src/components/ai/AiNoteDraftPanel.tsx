@@ -1,10 +1,31 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import {
+  Sparkles,
+  FileText,
+  AlertTriangle,
+  Link2,
+  RefreshCw,
+  Check,
+  X,
+  ShieldCheck,
+  TriangleAlert,
+} from 'lucide-react';
 import { aiService } from '@/services/ai-service';
 import { clinicalService } from '@/services/clinical-service';
-import type { AiNoteDraftResponse, SoapNoteDraftOutput, ProgressNoteDraftOutput } from 'shared';
+import { Button } from '../ui/Button/Button';
+import { Badge } from '../ui/Badge/Badge';
+import { Skeleton } from '../ui/Skeleton/Skeleton';
+import { Select } from '../ui/Input/Select';
+import type {
+  AiNoteDraftResponse,
+  SoapNoteDraftOutput,
+  ProgressNoteDraftOutput,
+  RejectionReasonCategory,
+} from 'shared';
+import styles from './AiNoteDraftPanel.module.css';
 
 type PanelState = 'idle' | 'generating' | 'ready' | 'error';
 
@@ -14,9 +35,35 @@ const CITATION_HREF: Record<string, (encounterId: string, sourceId: string) => s
   DIAGNOSTIC_RESULT: (_e, id) => `/diagnostics/${id}`,
 };
 
+const REJECTION_REASONS: { value: RejectionReasonCategory; label: string }[] = [
+  { value: 'INACCURATE_CLINICAL_CONTENT', label: 'Inaccurate clinical content' },
+  { value: 'MISSING_RELEVANT_CONTEXT', label: 'Missing relevant context' },
+  { value: 'HALLUCINATION_SUSPECTED', label: 'Suspected fabrication' },
+  { value: 'POOR_STRUCTURE', label: 'Poor structure' },
+  { value: 'CLINICIAN_PREFERENCE', label: 'Clinician preference' },
+];
+
+function sourceLabel(sourceType: string): string {
+  switch (sourceType) {
+    case 'CLINICAL_RECORD':
+      return 'Clinical record';
+    case 'DIAGNOSTIC_ORDER':
+      return 'Diagnostic order';
+    case 'DIAGNOSTIC_RESULT':
+      return 'Diagnostic result';
+    default:
+      return sourceType;
+  }
+}
+
 /**
- * M12 HERO — AI note-draft side panel (ADR-018/019 UX rulings).
- * Never auto-signs; binding is an explicit clinician action.
+ * M12 HERO · M13 presentation — governed clinical AI.
+ *
+ * SOURCE-GROUNDED note drafting embedded in the encounter workspace:
+ * every statement carries verifiable citations to authorized sources;
+ * system-computed gaps are surfaced as a trust feature ("not documented");
+ * the clinician explicitly accepts (binds), regenerates, or rejects with a
+ * coded reason that is audited server-side. Nothing is ever auto-signed.
  */
 export function AiNoteDraftPanel({
   encounterId,
@@ -32,6 +79,10 @@ export function AiNoteDraftPanel({
   const [result, setResult] = useState<AiNoteDraftResponse | null>(null);
   const [errorMsg, setErrorMsg] = useState('');
   const [binding, setBinding] = useState(false);
+  const [discardOpen, setDiscardOpen] = useState(false);
+  const [rejectReason, setRejectReason] = useState<RejectionReasonCategory>(
+    'INACCURATE_CLINICAL_CONTENT',
+  );
 
   async function generate() {
     setState('generating');
@@ -41,12 +92,11 @@ export function AiNoteDraftPanel({
       setResult(r);
       setState('ready');
     } catch (err) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const code = (err as any)?.code ?? '';
+      const code = (err as { code?: string })?.code ?? '';
       setErrorMsg(
         code === 'AI_VALIDATION_FAILED'
-          ? 'AI produced an unusable draft. You can retry or continue manually.'
-          : 'AI unavailable — continue manually.',
+          ? 'The draft failed provenance validation and was discarded by the system — nothing was saved. You can retry or continue documenting manually.'
+          : 'AI assistance is temporarily unavailable. Your documentation continues normally without it.',
       );
       setState('error');
     }
@@ -57,115 +107,307 @@ export function AiNoteDraftPanel({
     setBinding(true);
     try {
       const draft = result.draft as SoapNoteDraftOutput & Partial<ProgressNoteDraftOutput>;
-      const payload =
+      // The server validated this draft against the strict AI schema (exactly
+      // the four SOAP headings), so the tuple shape is guaranteed upstream.
+      const payload: Parameters<typeof clinicalService.createClinicalRecord>[1] =
         recordType === 'soap'
           ? {
               recordType,
               content: {
-                sections: draft.sections.map(({ heading, content }) => ({ heading, content })),
+                sections: draft.sections.map(({ heading, content }) => ({
+                  heading,
+                  content,
+                })) as SoapNoteDraftOutput['sections'],
               },
               aiDraftId: result.interactionId,
             }
           : {
               recordType,
-              content: { narrative: draft.narrative },
+              content: { narrative: draft.narrative ?? '' },
               aiDraftId: result.interactionId,
             };
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const rec = await (clinicalService as any).createClinicalRecord(encounterId, payload);
-      onBound?.(rec.id);
-      router.push(`/encounters/${encounterId}/clinical-records/${rec.id}`);
+      const rec = await clinicalService.createClinicalRecord(encounterId, payload);
+      onBound?.(rec.data.id);
+      router.push(`/encounters/${encounterId}/clinical-records/${rec.data.id}`);
     } catch {
       setBinding(false);
+      setState('error');
+      setErrorMsg(
+        'The draft could not be attached to the chart. Nothing was lost — you can retry or copy the content manually.',
+      );
     }
   }
 
+  async function confirmDiscard() {
+    if (!result) return;
+    const interactionId = result.interactionId;
+    setResult(null);
+    setDiscardOpen(false);
+    setState('idle');
+    try {
+      await aiService.rejectInteraction(interactionId, rejectReason);
+    } catch {
+      /* rejection audit is best-effort client-side; server keeps authoritative state */
+    }
+  }
+
+  const citations =
+    result && 'sections' in result.draft
+      ? result.draft.sections.flatMap((s) => s.citations)
+      : ((result?.draft as ProgressNoteDraftOutput | undefined)?.citations ?? []);
+
+  // Unique citation list for the sources panel.
+  const uniqueSources = Array.from(
+    new Map(citations.map((c) => [`${c.sourceType}:${c.sourceId}`, c])).values(),
+  );
+
   return (
-    <aside
-      aria-label="AI draft assistant"
-      style={{ border: '1px solid var(--border, #d4d4d8)', borderRadius: 8, padding: 16 }}
-    >
-      <h3>AI Draft Assistant</h3>
-      <p>
-        <strong>SOURCE-GROUNDED</strong>{' '}
-        <span style={{ fontSize: 12 }}>(provenance-verified — not a clinical decision)</span>
-      </p>
+    <div className={styles.panel} aria-label="AI clinical assistance">
+      {/* Header */}
+      <div className={styles.header}>
+        <span className={styles.headerIcon}>
+          <Sparkles size={16} aria-hidden="true" />
+        </span>
+        <div className={styles.headerTitles}>
+          <h3 className={styles.title}>
+            AI-drafted {recordType === 'soap' ? 'SOAP note' : 'progress note'}
+          </h3>
+          <div className={styles.badgeRow}>
+            <Badge variant="ai-assist" size="sm">
+              <ShieldCheck size={11} aria-hidden="true" /> SOURCE-GROUNDED
+            </Badge>
+            <Badge variant="neutral" size="sm">
+              Clinician-owned
+            </Badge>
+          </div>
+        </div>
+      </div>
 
-      {state === 'idle' && <button onClick={generate}>Draft with AI</button>}
-
-      {state === 'generating' && <p role="status">Generating draft…</p>}
-
-      {state === 'error' && (
-        <div role="alert">
-          <p>{errorMsg}</p>
-          <button onClick={generate}>Retry</button>
+      {/* IDLE */}
+      {state === 'idle' && (
+        <div className={styles.body}>
+          <p className={styles.lede}>
+            Commission a draft from the authorized context of this encounter. Every statement will
+            carry citations to real records, and missing information is reported honestly — never
+            invented.
+          </p>
+          <Button
+            variant="primary"
+            size="md"
+            iconLeft={<Sparkles size={15} />}
+            onClick={() => void generate()}
+          >
+            Draft with AI
+          </Button>
+          <p className={styles.microcopy}>
+            Generation is audited and consumes governed budget. You review everything before it
+            touches the chart.
+          </p>
         </div>
       )}
 
+      {/* GENERATING */}
+      {state === 'generating' && (
+        <div className={styles.body} role="status" aria-live="polite">
+          <p className={styles.lede}>Assembling authorized context and generating the draft…</p>
+          <Skeleton variant="text" height={14} width="90%" />
+          <Skeleton variant="text" height={14} width="75%" />
+          <Skeleton variant="text" height={14} width="82%" />
+        </div>
+      )}
+
+      {/* ERROR */}
+      {state === 'error' && (
+        <div className={styles.body} role="alert">
+          <div className={styles.errorBox}>
+            <TriangleAlert size={16} aria-hidden="true" />
+            <p>{errorMsg}</p>
+          </div>
+          <div className={styles.actionRow}>
+            <Button
+              variant="outline"
+              size="sm"
+              iconLeft={<RefreshCw size={13} />}
+              onClick={() => void generate()}
+            >
+              Retry draft
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => setState('idle')}>
+              Dismiss
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* READY */}
       {state === 'ready' && result && (
-        <div>
-          <p style={{ fontWeight: 600 }}>
-            AI-GENERATED DRAFT — requires your review before signing.
+        <div className={styles.body}>
+          <p className={styles.reviewNotice}>
+            AI-generated draft — requires your review before signing. Accepting copies it into a
+            draft clinical record under your name.
           </p>
 
+          {/* Draft document */}
           {'sections' in result.draft ? (
-            result.draft.sections.map((s) => (
-              <section key={s.heading}>
-                <h4>{s.heading}</h4>
-                <p>{s.content}</p>
-                <ul>
-                  {s.citations.map((c, i) => (
-                    <li key={i}>
-                      <a href={CITATION_HREF[c.sourceType]?.(encounterId, c.sourceId) ?? '#'}>
-                        [{c.sourceType.replace('DIAGNOSTIC_', 'DIAG ')} {c.sourceId.slice(0, 8)}]
-                      </a>{' '}
-                      <em>{c.excerpt}</em>
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            ))
+            <article className={styles.noteDoc}>
+              {result.draft.sections.map((s) => (
+                <section key={s.heading} className={styles.noteSection}>
+                  <h4 className={styles.noteHeading}>{s.heading}</h4>
+                  <p className={styles.noteContent}>{s.content}</p>
+                  {s.citations.length > 0 && (
+                    <div className={styles.chipRow}>
+                      {s.citations.map((c, i) => {
+                        const href = CITATION_HREF[c.sourceType]?.(encounterId, c.sourceId);
+                        return href ? (
+                          <a key={i} className={styles.citationChip} href={href}>
+                            <Link2 size={10} aria-hidden="true" />
+                            {sourceLabel(c.sourceType)}
+                          </a>
+                        ) : null;
+                      })}
+                    </div>
+                  )}
+                </section>
+              ))}
+            </article>
           ) : (
-            <p>{result.draft.narrative}</p>
+            <article className={styles.noteDoc}>
+              <h4 className={styles.noteHeading}>Narrative</h4>
+              <p className={styles.noteContent}>{result.draft.narrative}</p>
+              <div className={styles.chipRow}>
+                {citations.map((c, i) => {
+                  const href = CITATION_HREF[c.sourceType]?.(encounterId, c.sourceId);
+                  return href ? (
+                    <a key={i} className={styles.citationChip} href={href}>
+                      <Link2 size={10} aria-hidden="true" />
+                      {sourceLabel(c.sourceType)}
+                    </a>
+                  ) : null;
+                })}
+              </div>
+            </article>
           )}
 
-          {result.computedGaps.length > 0 && (
-            <div
-              role="note"
-              style={{ background: 'var(--warning-bg, #fef9c3)', padding: 8, borderRadius: 6 }}
-            >
-              <strong>SYSTEM-COMPUTED GAPS — Not documented:</strong>
-              <ul>
+          {/* Sources panel */}
+          {uniqueSources.length > 0 && (
+            <details className={styles.sourcesPanel} open>
+              <summary className={styles.summaryRow}>
+                <FileText size={13} aria-hidden="true" />
+                Sources ({uniqueSources.length})
+              </summary>
+              <ul className={styles.sourceList}>
+                {uniqueSources.map((c) => {
+                  const href = CITATION_HREF[c.sourceType]?.(encounterId, c.sourceId);
+                  return (
+                    <li key={`${c.sourceType}:${c.sourceId}`} className={styles.sourceItem}>
+                      <span className={styles.sourceType}>{sourceLabel(c.sourceType)}</span>
+                      <span className={styles.sourceExcerpt}>“{c.excerpt}”</span>
+                      {href && (
+                        <a
+                          className={styles.sourceLink}
+                          href={href}
+                          aria-label={`Open ${sourceLabel(c.sourceType)}`}
+                        >
+                          Open source
+                        </a>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            </details>
+          )}
+
+          {/* Documented gaps — trust feature */}
+          {result.computedGaps.length > 0 ? (
+            <div className={styles.gapsPanel} role="note">
+              <div className={styles.gapsHeader}>
+                <AlertTriangle size={14} aria-hidden="true" />
+                Not documented in this encounter
+                <span className={styles.gapsHint}>
+                  system-computed — the draft cannot cite what does not exist
+                </span>
+              </div>
+              <ul className={styles.gapList}>
                 {result.computedGaps.map((g) => (
                   <li key={g}>{g.replace(/_/g, ' ').toLowerCase()}</li>
                 ))}
               </ul>
             </div>
+          ) : (
+            <div className={styles.gapsClear} role="status">
+              <Check size={13} aria-hidden="true" /> No documentation gaps detected in the
+              authorized context.
+            </div>
           )}
 
-          <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-            <button onClick={bind} disabled={binding}>
-              {binding ? 'Binding…' : 'Use this draft in the clinical note'}
-            </button>
-            <button onClick={generate} disabled={binding}>
-              Regenerate
-            </button>
-            <button
-              onClick={() => {
-                void aiService.rejectInteraction(result.interactionId, 'CLINICIAN_PREFERENCE');
-                setResult(null);
-                setState('idle');
-              }}
-              disabled={binding}
+          {/* Actions */}
+          {!discardOpen ? (
+            <div className={styles.actionRow}>
+              <Button
+                variant="primary"
+                size="md"
+                iconLeft={<Check size={15} />}
+                isLoading={binding}
+                onClick={() => void bind()}
+              >
+                Use this draft
+              </Button>
+              <Button
+                variant="outline"
+                size="md"
+                iconLeft={<RefreshCw size={14} />}
+                disabled={binding}
+                onClick={() => void generate()}
+              >
+                Regenerate
+              </Button>
+              <Button
+                variant="ghost"
+                size="md"
+                iconLeft={<X size={14} />}
+                disabled={binding}
+                onClick={() => setDiscardOpen(true)}
+              >
+                Discard
+              </Button>
+            </div>
+          ) : (
+            <div
+              className={styles.discardPanel}
+              role="group"
+              aria-label="Discard draft with reason"
             >
-              Discard
-            </button>
-          </div>
-          <p style={{ fontSize: 12, marginTop: 8 }}>
-            Model: {result.model} · Prompt: {result.promptTemplateId}
-          </p>
+              <Select
+                id="reject-reason"
+                label="Why are you discarding this draft? (audited)"
+                value={rejectReason}
+                onChange={(e) => setRejectReason(e.target.value as RejectionReasonCategory)}
+                options={REJECTION_REASONS}
+              />
+              <div className={styles.actionRow}>
+                <Button variant="ghost" size="sm" onClick={() => setDiscardOpen(false)}>
+                  Keep draft
+                </Button>
+                <Button
+                  variant="danger"
+                  size="sm"
+                  iconLeft={<X size={13} />}
+                  onClick={() => void confirmDiscard()}
+                >
+                  Discard &amp; report reason
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Provenance footer */}
+          <footer className={styles.provenance}>
+            Provenance: model {result.model} · prompt {result.promptTemplateId} ·{' '}
+            {(result.latencyMs / 1000).toFixed(1)}s · grounded
+          </footer>
         </div>
       )}
-    </aside>
+    </div>
   );
 }

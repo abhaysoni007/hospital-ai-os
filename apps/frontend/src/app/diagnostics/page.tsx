@@ -4,39 +4,44 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AppShell } from '../../components/layout/AppShell/AppShell';
 import { Button } from '../../components/ui/Button/Button';
-import { Badge } from '../../components/ui/Badge/Badge';
-import { Skeleton } from '../../components/ui/Skeleton/Skeleton';
+import { Select } from '../../components/ui/Input/Select';
+import { Input } from '../../components/ui/Input/Input';
+import { PageHeader } from '../../components/ui/PageHeader/PageHeader';
 import { EmptyState } from '../../components/ui/EmptyState/EmptyState';
 import { ErrorState } from '../../components/ui/ErrorState/ErrorState';
 import { AlertBanner } from '../../components/ui/Alert/AlertBanner';
-import { TestTubes, AlertTriangle, CheckCircle2, Clock, FlaskConical } from 'lucide-react';
+import { ConfirmDialog } from '../../components/ui/ConfirmDialog/ConfirmDialog';
+import { Table, THead, TH, TBody, TR, TD, TableSkeleton } from '../../components/ui/Table/Table';
+import { OrderStatusBadge, PriorityBadge } from '../../components/ui/SemanticBadges/SemanticBadges';
+import { TestTubes, CheckCircle2, Clock, FlaskConical } from 'lucide-react';
 import { diagnosticsService } from '../../services/diagnostics-service';
-import type { DiagnosticOrderResponse } from 'shared';
+import type { DiagnosticOrderResponse, DiagnosticOrderStatus, OrderPriority } from 'shared';
 import styles from './diagnostics.module.css';
 import { useAuth } from '../../hooks/useAuth';
-import {
-  canCollectSamples,
-  canEnterResults,
-  ORDER_STATUS_LABELS,
-  PRIORITY_META,
-} from '../../utils/diagnostics';
-import { StaffRole } from '../../types/auth';
+import { canCollectSamples, canEnterResults } from '../../utils/diagnostics';
 
+/**
+ * M13 — Lab work queue. STAT orders are unmistakable (icon + text + left
+ * rail + row tint); collection is confirmed explicitly; conflicts surface
+ * as recoverable warnings.
+ */
 export default function DiagnosticsQueuePage() {
   const router = useRouter();
   const { user } = useAuth();
-  const role = user?.role as StaffRole | undefined;
+  const role = user?.role;
 
   const [orders, setOrders] = useState<DiagnosticOrderResponse[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState('');
   const [priority, setPriority] = useState('');
   const [date, setDate] = useState('');
   const [actingId, setActingId] = useState<string | null>(null);
-  const [conflictId, setConflictId] = useState<string | null>(null);
+  const [collectTarget, setCollectTarget] = useState<DiagnosticOrderResponse | null>(null);
+  const [showConflict, setShowConflict] = useState(false);
 
   const canCollect = canCollectSamples(role);
+  const canEnter = canEnterResults(role);
 
   const fetchQueue = useCallback(async () => {
     setLoading(true);
@@ -45,188 +50,226 @@ export default function DiagnosticsQueuePage() {
       const res = await diagnosticsService.getLabQueue({
         page: 1,
         pageSize: 100,
-        status: (status || undefined) as never,
-        priority: (priority || undefined) as never,
+        status: (status || undefined) as DiagnosticOrderStatus | undefined,
+        priority: (priority || undefined) as OrderPriority | undefined,
         date: date || undefined,
       });
       setOrders(res.data);
-    } catch (err) {
-      setError(err as Error);
+    } catch {
+      setError('The lab service did not respond. Check your connection and try again.');
     } finally {
       setLoading(false);
     }
   }, [status, priority, date]);
 
   useEffect(() => {
-    fetchQueue();
+    void fetchQueue();
   }, [fetchQueue]);
 
-  const handleCollect = async (orderId: string) => {
-    if (!window.confirm('Confirm sample collection. Collection can only be performed once.'))
-      return;
-    setActingId(orderId);
-    setConflictId(null);
+  const handleCollect = async () => {
+    if (!collectTarget) return;
+    setActingId(collectTarget.id);
     try {
-      await diagnosticsService.collectSample(orderId);
+      await diagnosticsService.collectSample(collectTarget.id);
+      setCollectTarget(null);
       await fetchQueue();
     } catch (err) {
       const apiErr = err as Error & { statusCode?: number };
-      if (apiErr.statusCode === 409) {
-        setConflictId(orderId); // another technician already collected it
+      setCollectTarget(null);
+      if (apiErr.statusCode === 409 || apiErr.message?.includes('INVALID_TRANSITION')) {
+        setShowConflict(true);
         await fetchQueue();
       } else {
-        setError(apiErr);
+        setError('Sample collection failed. Try again.');
       }
     } finally {
       setActingId(null);
     }
   };
 
+  const statCount = orders.filter((o) => o.priority === 'stat').length;
+
   return (
-    <AppShell breadcrumbs={['Operations', 'Lab Queue']} requiredPermission="diagnostic_order:read">
+    <AppShell
+      breadcrumbs={['Operations', 'Diagnostics']}
+      requiredPermission="diagnostic_order:read"
+    >
       <div className={styles.container}>
-        <div className={styles.header}>
-          <h1 className={styles.title}>
-            <FlaskConical size={22} aria-hidden="true" /> Lab Queue
-          </h1>
-        </div>
+        <PageHeader
+          title="Lab queue"
+          description="Collection, processing, and result entry for diagnostic orders."
+          meta={
+            <>
+              <span className={styles.queueNote} aria-live="polite">
+                {loading ? '' : `${orders.length} order${orders.length === 1 ? '' : 's'}`}
+              </span>
+              {statCount > 0 && <PriorityBadge priority="stat" size="sm" />}
+              {statCount > 0 && (
+                <span className={styles.queueStatNote}>
+                  {statCount} STAT in queue — process first
+                </span>
+              )}
+            </>
+          }
+        />
 
         <div className={styles.filters}>
-          <label className={styles.filterField}>
-            <span>Status</span>
-            <select value={status} onChange={(e) => setStatus(e.target.value)}>
-              <option value="">All</option>
-              {Object.entries(ORDER_STATUS_LABELS).map(([v, l]) => (
-                <option key={v} value={v}>
-                  {l}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className={styles.filterField}>
-            <span>Priority</span>
-            <select value={priority} onChange={(e) => setPriority(e.target.value)}>
-              <option value="">All</option>
-              <option value="routine">Routine</option>
-              <option value="urgent">Urgent</option>
-              <option value="stat">STAT</option>
-            </select>
-          </label>
-          <label className={styles.filterField}>
-            <span>Ordered on</span>
-            <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-          </label>
+          <Select
+            id="dx-status"
+            label="Status"
+            placeholder="All statuses"
+            value={status}
+            onChange={(e) => setStatus(e.target.value)}
+            options={[
+              { value: 'ordered', label: 'Ordered' },
+              { value: 'sample_collected', label: 'Sample collected' },
+              { value: 'in_progress', label: 'In progress' },
+              { value: 'completed', label: 'Completed' },
+              { value: 'cancelled', label: 'Cancelled' },
+            ]}
+          />
+          <Select
+            id="dx-priority"
+            label="Priority"
+            placeholder="All priorities"
+            value={priority}
+            onChange={(e) => setPriority(e.target.value)}
+            options={[
+              { value: 'routine', label: 'Routine' },
+              { value: 'urgent', label: 'Urgent' },
+              { value: 'stat', label: 'STAT' },
+            ]}
+          />
+          <Input
+            id="dx-date"
+            label="Ordered on"
+            type="date"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+          />
         </div>
 
         {error && !loading && (
           <ErrorState
             title="Could not load the lab queue"
-            message={error.message}
-            onRetry={fetchQueue}
+            message={error}
+            onRetry={() => void fetchQueue()}
           />
         )}
 
-        {conflictId && (
+        {showConflict && (
           <AlertBanner
             severity="warning"
             title="Sample already collected"
             dismissible
-            onDismiss={() => setConflictId(null)}
+            onDismiss={() => setShowConflict(false)}
           >
             Another technician collected this sample first. The queue shows the current state.
           </AlertBanner>
         )}
 
-        <div className={styles.tableContainer}>
-          {loading ? (
-            <div style={{ padding: 24 }}>
-              <Skeleton variant="rectangular" height={220} />
-            </div>
-          ) : orders.length === 0 ? (
-            <EmptyState
-              icon={<TestTubes size={32} />}
-              title="No diagnostic orders"
-              description="Orders placed by physicians appear here for collection and result entry."
-            />
-          ) : (
-            <table className={styles.table}>
-              <thead>
-                <tr>
-                  <th scope="col">Test</th>
-                  <th scope="col">Priority</th>
-                  <th scope="col">Status</th>
-                  <th scope="col">Ordered</th>
-                  <th scope="col">Collected</th>
-                  <th scope="col">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {orders.map((o) => {
-                  const pm = PRIORITY_META[o.priority];
-                  return (
-                    <tr
-                      key={o.id}
-                      className={`${styles.row} ${o.priority === 'stat' ? styles.rowStat : ''}`}
-                      onClick={() => router.push(`/diagnostics/${o.id}`)}
-                    >
-                      <td>
-                        <span className={styles.testName}>{o.testName}</span>
-                        <span className={styles.code}>{o.testCode}</span>
-                      </td>
-                      <td>
-                        <span className={`${styles.priorityChip} ${styles[`priority_${pm.tone}`]}`}>
-                          <span aria-hidden="true">{pm.icon}</span> {pm.label}
-                        </span>
-                      </td>
-                      <td>
-                        <Badge variant={o.status === 'ordered' ? 'stable' : 'neutral'}>
-                          {ORDER_STATUS_LABELS[o.status] ?? o.status}
-                        </Badge>
-                      </td>
-                      <td>{new Date(o.createdAt).toLocaleString()}</td>
-                      <td>
-                        {o.collectedAt ? (
-                          <span className={styles.collected}>
-                            <CheckCircle2 size={13} aria-hidden="true" />{' '}
-                            {new Date(o.collectedAt).toLocaleTimeString()}
-                          </span>
-                        ) : (
-                          <span className={styles.pending}>
-                            <Clock size={13} aria-hidden="true" /> Awaiting collection
-                          </span>
-                        )}
-                      </td>
-                      <td onClick={(e) => e.stopPropagation()}>
-                        {canCollect && o.status === 'ordered' ? (
+        {loading ? (
+          <TableSkeleton rows={6} />
+        ) : orders.length === 0 ? (
+          <EmptyState
+            icon={<TestTubes size={32} />}
+            title="No diagnostic orders"
+            description={
+              status || priority || date
+                ? 'No orders match the current filters.'
+                : 'Orders placed by physicians appear here for collection and result entry.'
+            }
+          />
+        ) : (
+          <Table ariaLabel="Diagnostic orders queue">
+            <THead>
+              <tr>
+                <TH>Test</TH>
+                <TH width="120px">Priority</TH>
+                <TH width="170px">Status</TH>
+                <TH width="160px">Collected</TH>
+                <TH align="right">Actions</TH>
+              </tr>
+            </THead>
+            <TBody>
+              {orders.map((o) => (
+                <TR
+                  key={o.id}
+                  interactive
+                  onClick={() => router.push(`/diagnostics/${o.id}`)}
+                  className={o.priority === 'stat' ? styles.rowStat : ''}
+                  aria-label={`Open order ${o.testName}`}
+                >
+                  <TD>
+                    <div className={styles.testCell}>
+                      <span className={styles.testName}>{o.testName}</span>
+                      <span className={styles.code}>{o.testCode}</span>
+                    </div>
+                  </TD>
+                  <TD>
+                    <PriorityBadge priority={o.priority} size="sm" />
+                  </TD>
+                  <TD>
+                    <OrderStatusBadge status={o.status} size="sm" />
+                  </TD>
+                  <TD>
+                    {o.collectedAt ? (
+                      <span className={styles.collected}>
+                        <CheckCircle2 size={13} aria-hidden="true" />
+                        {new Date(o.collectedAt).toLocaleTimeString([], {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </span>
+                    ) : (
+                      <span className={styles.pending}>
+                        <Clock size={13} aria-hidden="true" /> Awaiting
+                      </span>
+                    )}
+                  </TD>
+                  <TD align="right">
+                    <div className={styles.rowActions}>
+                      {canCollect && o.status === 'ordered' && (
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          disabled={actingId === o.id}
+                          onClick={() => setCollectTarget(o)}
+                        >
+                          Collect sample
+                        </Button>
+                      )}
+                      {(o.status === 'sample_collected' || o.status === 'in_progress') &&
+                        canEnter && (
                           <Button
-                            variant="primary"
-                            size="md"
-                            disabled={actingId === o.id}
-                            onClick={() => handleCollect(o.id)}
+                            variant="secondary"
+                            size="sm"
+                            iconLeft={<FlaskConical size={13} />}
+                            onClick={() => router.push(`/diagnostics/${o.id}/result/new`)}
                           >
-                            {actingId === o.id ? 'Collecting…' : 'Collect Sample'}
+                            Enter result
                           </Button>
-                        ) : o.status === 'sample_collected' || o.status === 'in_progress' ? (
-                          canEnterResults(role) ? (
-                            <Button
-                              variant="secondary"
-                              size="md"
-                              iconLeft={<AlertTriangle size={14} />}
-                              onClick={() => router.push(`/diagnostics/${o.id}/result/new`)}
-                            >
-                              Enter Result
-                            </Button>
-                          ) : null
-                        ) : null}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          )}
-        </div>
+                        )}
+                    </div>
+                  </TD>
+                </TR>
+              ))}
+            </TBody>
+          </Table>
+        )}
       </div>
+
+      <ConfirmDialog
+        isOpen={collectTarget !== null}
+        title="Confirm sample collection"
+        confirmLabel="Confirm collection"
+        isLoading={actingId !== null}
+        onConfirm={() => void handleCollect()}
+        onCancel={() => setCollectTarget(null)}
+      >
+        Collection is recorded once with your identity and timestamp for order{' '}
+        <strong>{collectTarget?.testCode}</strong> and can never be repeated.
+      </ConfirmDialog>
     </AppShell>
   );
 }

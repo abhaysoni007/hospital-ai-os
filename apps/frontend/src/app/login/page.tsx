@@ -62,7 +62,7 @@ export default function LoginPage() {
         <div className={styles.brandContent}>
           <div className={styles.brandBadge}>
             <ShieldCheck size={16} />
-            <span>HIPAA-Compliant Clinical Operating System</span>
+            <span>Audited clinical operating system</span>
           </div>
 
           <div className={styles.brandLogoRow}>
@@ -81,22 +81,23 @@ export default function LoginPage() {
 
           <div className={styles.brandFeatures}>
             <div className={styles.featureCard}>
-              <span className={styles.featureTitle}>Role-Based Access Control</span>
+              <span className={styles.featureTitle}>Role-based access control</span>
               <span className={styles.featureDesc}>
-                Static policy enforcement across 7 clinical and administrative roles.
+                Server-enforced policy across seven clinical and administrative roles.
               </span>
             </div>
             <div className={styles.featureCard}>
-              <span className={styles.featureTitle}>Mission Control Telemetry</span>
+              <span className={styles.featureTitle}>Governed clinical AI</span>
               <span className={styles.featureDesc}>
-                Real-time vitals, STAT lab alerts, and centralized encounter tracking.
+                SOURCE-GROUNDED note drafting with verifiable citations — clinician-owned, never
+                auto-signed.
               </span>
             </div>
           </div>
         </div>
 
         <div className={styles.brandFooter}>
-          <span>Phase 4 Authenticated Shell • Version 1.0</span>
+          <span>Hospital AI OS · Every clinical action is audited</span>
         </div>
       </div>
 
@@ -150,26 +151,16 @@ export default function LoginPage() {
               disabled={isLoading}
             />
 
-            <div className={styles.formOptions}>
-              <label className={styles.rememberCheckbox}>
-                <input type="checkbox" className={styles.checkboxInput} />
-                <span>Remember this workstation</span>
-              </label>
-              <a href="#help" className={styles.forgotLink} tabIndex={0}>
-                Need Help?
-              </a>
-            </div>
-
             <Button type="submit" variant="primary" size="lg" fullWidth isLoading={isLoading}>
-              Sign In to Station
+              Sign in
             </Button>
           </form>
 
           <div className={styles.securityNotice}>
             <Lock size={14} className={styles.securityNoticeIcon} />
             <p>
-              Access to patient health information (PHI) is continuously audited and monitored under
-              HIPAA and HITECH regulations.
+              Access to patient health information is continuously audited and monitored. Sessions
+              use short-lived tokens and are never stored on the workstation.
             </p>
           </div>
         </div>

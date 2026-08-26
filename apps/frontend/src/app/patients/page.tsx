@@ -3,142 +3,174 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AppShell } from '../../components/layout/AppShell/AppShell';
-import { Search, Plus, UserPlus } from 'lucide-react';
+import { Search, UserPlus, Users } from 'lucide-react';
 import { Button } from '../../components/ui/Button/Button';
 import { Input } from '../../components/ui/Input/Input';
 import { Badge } from '../../components/ui/Badge/Badge';
-import { Skeleton } from '../../components/ui/Skeleton/Skeleton';
+import { Table, THead, TH, TBody, TR, TD, TableSkeleton } from '../../components/ui/Table/Table';
+import { PatientIdentity } from '../../components/ui/Identity/Identity';
+import { PageHeader } from '../../components/ui/PageHeader/PageHeader';
 import { EmptyState } from '../../components/ui/EmptyState/EmptyState';
+import { ErrorState } from '../../components/ui/ErrorState/ErrorState';
 import { patientService } from '../../services/patient-service';
 import { PatientResponse } from 'shared';
 import styles from './patients.module.css';
 import { useAuth } from '../../hooks/useAuth';
 import { hasPermission } from '../../utils/rbac';
-import { StaffRole } from '../../types/auth';
 
+/**
+ * M13 — Patient directory. Truthful loading/error/empty states; rows are
+ * fully keyboard-accessible; identity follows the canonical hierarchy.
+ */
 export default function PatientsPage() {
   const router = useRouter();
   const { user } = useAuth();
   const [patients, setPatients] = useState<PatientResponse[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [retryTick, setRetryTick] = useState(0);
 
-  const canCreate = hasPermission(user?.role as StaffRole, 'patient:create');
+  const canCreate = hasPermission(user?.role, 'patient:create');
 
   useEffect(() => {
-    const fetchPatients = async () => {
+    let cancelled = false;
+    const timer = setTimeout(async () => {
       setLoading(true);
+      setError(false);
       try {
         const response = await patientService.getPatients({
           page: 1,
           pageSize: 50,
-          query: searchQuery || undefined,
+          query: searchQuery.trim() || undefined,
         });
-        setPatients(response.data);
-      } catch (error) {
-        console.error('Failed to fetch patients', error);
+        if (!cancelled) setPatients(response.data);
+      } catch {
+        if (!cancelled) {
+          setPatients([]);
+          setError(true);
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
-    };
-
-    // Debounce search
-    const timer = setTimeout(() => {
-      fetchPatients();
     }, 300);
 
-    return () => clearTimeout(timer);
-  }, [searchQuery]);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [searchQuery, retryTick]);
 
-  const handleCreate = () => {
-    router.push('/patients/new');
-  };
-
-  const handleRowClick = (id: string) => {
-    router.push(`/patients/${id}`);
-  };
+  const retry = () => setRetryTick((t) => t + 1);
 
   return (
     <AppShell breadcrumbs={['Operations', 'Patients']} requiredPermission="patient:read">
       <div className={styles.container}>
-        <div className={styles.header}>
-          <h1 className={styles.title}>Patient Directory</h1>
-          {canCreate && (
-            <Button
-              variant="primary"
-              size="md"
-              iconLeft={<Plus size={16} />}
-              onClick={handleCreate}
-            >
-              Register Patient
-            </Button>
-          )}
-        </div>
+        <PageHeader
+          title="Patient directory"
+          description="Search the registered patient population by name, medical record number, or phone."
+          actions={
+            canCreate ? (
+              <Button
+                variant="primary"
+                size="md"
+                iconLeft={<UserPlus size={16} />}
+                onClick={() => router.push('/patients/new')}
+              >
+                Register patient
+              </Button>
+            ) : undefined
+          }
+        />
 
         <div className={styles.searchBar}>
-          <div style={{ flex: 1 }}>
-            <Input
-              id="search"
-              placeholder="Search by name, MRN, or phone..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              iconLeft={<Search size={16} />}
-            />
-          </div>
+          <Input
+            id="patient-search"
+            placeholder="Search by name, MRN, or phone…"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            iconLeft={<Search size={16} aria-hidden="true" />}
+            type="search"
+          />
         </div>
 
-        <div className={styles.tableContainer}>
-          {loading ? (
-            <div style={{ padding: '24px' }}>
-              <Skeleton variant="rectangular" height={200} />
-            </div>
-          ) : patients.length === 0 ? (
-            <EmptyState
-              icon={<UserPlus size={32} />}
-              title="No patients found"
-              description={
-                searchQuery
-                  ? 'Try adjusting your search query.'
-                  : 'Register a new patient to get started.'
-              }
-              action={
-                canCreate ? <Button onClick={handleCreate}>Register Patient</Button> : undefined
-              }
-            />
-          ) : (
-            <table className={styles.table}>
-              <thead>
+        {loading ? (
+          <TableSkeleton rows={6} />
+        ) : error ? (
+          <ErrorState
+            title="Could not load the patient directory"
+            message="The directory service did not respond. Check your connection and try again."
+            onRetry={retry}
+          />
+        ) : patients.length === 0 ? (
+          <EmptyState
+            icon={<Users size={32} />}
+            title={searchQuery ? 'No patients match your search' : 'No patients registered yet'}
+            description={
+              searchQuery
+                ? 'Try a different name, MRN, or phone number.'
+                : canCreate
+                  ? 'Register the first patient to begin using the hospital workspace.'
+                  : 'Once patients are registered they will appear here.'
+            }
+            action={
+              canCreate && !searchQuery ? (
+                <Button
+                  variant="primary"
+                  onClick={() => router.push('/patients/new')}
+                  iconLeft={<UserPlus size={16} />}
+                >
+                  Register patient
+                </Button>
+              ) : undefined
+            }
+          />
+        ) : (
+          <div role="group" aria-label="Patient list">
+            <p className={styles.resultNote} aria-live="polite">
+              {searchQuery
+                ? `${patients.length} match${patients.length === 1 ? '' : 'es'}`
+                : `${patients.length} patient${patients.length === 1 ? '' : 's'}`}
+            </p>
+            <Table ariaLabel="Registered patients">
+              <THead>
                 <tr>
-                  <th>Patient</th>
-                  <th>Date of Birth</th>
-                  <th>Gender</th>
-                  <th>Phone</th>
-                  <th>Status</th>
+                  <TH>Patient</TH>
+                  <TH>Date of birth</TH>
+                  <TH>Gender</TH>
+                  <TH>Phone</TH>
+                  <TH>Status</TH>
                 </tr>
-              </thead>
-              <tbody>
+              </THead>
+              <TBody>
                 {patients.map((patient) => (
-                  <tr key={patient.id} onClick={() => handleRowClick(patient.id)}>
-                    <td>
-                      <div className={styles.patientName}>
-                        {patient.firstName} {patient.lastName}
-                      </div>
-                      <div className={styles.mrn}>{patient.mrn}</div>
-                    </td>
-                    <td>{new Date(patient.dateOfBirth).toLocaleDateString()}</td>
-                    <td style={{ textTransform: 'capitalize' }}>{patient.gender}</td>
-                    <td>{patient.phonePrimary}</td>
-                    <td>
-                      <Badge variant={patient.status === 'active' ? 'stable' : 'neutral'}>
-                        {patient.status}
+                  <TR
+                    key={patient.id}
+                    interactive
+                    onClick={() => router.push(`/patients/${patient.id}`)}
+                    aria-label={`Open ${patient.firstName} ${patient.lastName}, MRN ${patient.mrn}`}
+                  >
+                    <TD>
+                      <PatientIdentity
+                        firstName={patient.firstName}
+                        lastName={patient.lastName}
+                        mrn={patient.mrn}
+                      />
+                    </TD>
+                    <TD>{new Date(patient.dateOfBirth).toLocaleDateString()}</TD>
+                    <TD className={styles.capitalize}>{patient.gender}</TD>
+                    <TD>{patient.phonePrimary}</TD>
+                    <TD>
+                      <Badge variant={patient.status === 'active' ? 'stable' : 'neutral'} size="sm">
+                        {patient.status === 'active' ? 'Active' : patient.status}
                       </Badge>
-                    </td>
-                  </tr>
+                    </TD>
+                  </TR>
                 ))}
-              </tbody>
-            </table>
-          )}
-        </div>
+              </TBody>
+            </Table>
+          </div>
+        )}
       </div>
     </AppShell>
   );

@@ -1,15 +1,20 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { AppShell } from '../../../../../components/layout/AppShell/AppShell';
 import { Button } from '../../../../../components/ui/Button/Button';
 import { Card } from '../../../../../components/ui/Card/Card';
 import { Skeleton } from '../../../../../components/ui/Skeleton/Skeleton';
 import { ErrorState } from '../../../../../components/ui/ErrorState/ErrorState';
 import { AlertBanner } from '../../../../../components/ui/Alert/AlertBanner';
-import { Lock, RefreshCw, FileSignature } from 'lucide-react';
+import { ConfirmDialog } from '../../../../../components/ui/ConfirmDialog/ConfirmDialog';
+import { PageHeader } from '../../../../../components/ui/PageHeader/PageHeader';
+import { StaffIdentity } from '../../../../../components/ui/Identity/Identity';
+import { RecordStatusBadge } from '../../../../../components/ui/SemanticBadges/SemanticBadges';
+import { Lock, RefreshCw, Sparkles } from 'lucide-react';
 import { clinicalService } from '../../../../../services/clinical-service';
+import { getCachedStaffIdentity, getStaffIdentities } from '../../../../../services/staff-service';
 import {
   soapContentSchema,
   progressNoteContentSchema,
@@ -21,18 +26,30 @@ import {
 import styles from './clinical-record.module.css';
 import { useAuth } from '../../../../../hooks/useAuth';
 import { hasPermission } from '../../../../../utils/rbac';
-import { StaffRole } from '../../../../../types/auth';
+
+/** Clinician-readable vital labels (ADR-015 field names). */
+const VITAL_LABELS: Record<string, string> = {
+  temperature_c: 'Temperature (°C)',
+  pulse_bpm: 'Pulse (bpm)',
+  resp_rate: 'Respiratory rate',
+  bp_systolic: 'Systolic BP (mmHg)',
+  bp_diastolic: 'Diastolic BP (mmHg)',
+  spo2_pct: 'SpO₂ (%)',
+  weight_kg: 'Weight (kg)',
+  height_cm: 'Height (cm)',
+};
+
+const SOAP_HEADINGS = ['subjective', 'objective', 'assessment', 'plan'] as const;
 
 export default function ClinicalRecordPage() {
   const params = useParams<{ id: string; recordId: string }>();
-  const router = useRouter();
   const { user } = useAuth();
   const encounterId = params?.id;
   const recordId = params?.recordId;
 
   const [record, setRecord] = useState<ClinicalRecordResponse | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -40,6 +57,7 @@ export default function ClinicalRecordPage() {
   const [conflict, setConflict] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [confirmSign, setConfirmSign] = useState(false);
+  const [authorName, setAuthorName] = useState<string | null>(null);
 
   // Editable form state
   const [soapSections, setSoapSections] = useState<Record<string, string>>({});
@@ -47,7 +65,7 @@ export default function ClinicalRecordPage() {
   const [vitalsNote, setVitalsNote] = useState('');
   const [vitalsValues, setVitalsValues] = useState<Partial<Record<keyof Vitals, string>>>({});
 
-  const role = user?.role as StaffRole | undefined;
+  const role = user?.role;
   const canWrite = hasPermission(role, 'clinical_record:write');
   const canSign = role === 'physician' && hasPermission(role, 'clinical_record:sign');
   const isAuthor = !!record && user?.id === record.createdBy;
@@ -77,15 +95,17 @@ export default function ClinicalRecordPage() {
   }, []);
 
   const fetchRecord = useCallback(async () => {
-    if (!encounterId || !recordId) return;
+    if (!encounterId || !recordId) return null;
     setLoading(true);
     setError(null);
     try {
       const res = await clinicalService.getClinicalRecord(encounterId, recordId);
       setRecord(res.data);
       return res.data;
-    } catch (err) {
-      setError(err as Error);
+    } catch {
+      setError(
+        'This record is no longer available. It may not exist or your role may not permit access.',
+      );
       return null;
     } finally {
       setLoading(false);
@@ -93,12 +113,19 @@ export default function ClinicalRecordPage() {
   }, [encounterId, recordId]);
 
   useEffect(() => {
-    fetchRecord().then((r) => {
-      // Drafts open in edit mode ONLY for the author with write permission
+    void fetchRecord().then((r) => {
+      // Drafts open in edit mode ONLY for the author with write permission.
       if (r && r.status === 'draft' && user?.id === r.createdBy && canWrite) setEditing(true);
       if (r) loadIntoForm(r);
+      // Resolve the author's human identity through the M12.2 projection.
+      if (r?.createdBy) {
+        void getStaffIdentities([r.createdBy]).then(() => {
+          const identity = getCachedStaffIdentity(r.createdBy);
+          if (identity) setAuthorName(identity.displayName);
+        });
+      }
     });
-  }, [fetchRecord, loadIntoForm]);
+  }, [fetchRecord, loadIntoForm, user?.id, canWrite]);
 
   // Unsaved-changes protection
   useEffect(() => {
@@ -115,7 +142,7 @@ export default function ClinicalRecordPage() {
       return {
         expectedVersion: record.version,
         content: {
-          sections: ['subjective', 'objective', 'assessment', 'plan'].map((h) => ({
+          sections: SOAP_HEADINGS.map((h) => ({
             heading: h,
             content: soapSections[h] ?? '',
           })),
@@ -158,7 +185,7 @@ export default function ClinicalRecordPage() {
     if (!record || !encounterId || !recordId) return;
     const payload = buildPayload();
     if (!payload || !validateClientSide(payload)) {
-      setActionError('Please complete all required fields with valid values before saving.');
+      setActionError('Please complete all required sections with valid values before saving.');
       return;
     }
     setSaving(true);
@@ -198,6 +225,7 @@ export default function ClinicalRecordPage() {
       const apiErr = err as Error & { code?: string };
       if (apiErr.code === 'VERSION_CONFLICT') {
         setConflict(true);
+        setConfirmSign(false);
       } else {
         setActionError(apiErr.message || 'Failed to sign the record.');
       }
@@ -213,7 +241,10 @@ export default function ClinicalRecordPage() {
 
   if (loading) {
     return (
-      <AppShell breadcrumbs={['Clinical', 'Records']} requiredPermission="clinical_record:read">
+      <AppShell
+        breadcrumbs={['Operations', 'Encounters']}
+        requiredPermission="clinical_record:read"
+      >
         <div className={styles.container}>
           <Skeleton variant="rectangular" height={280} />
         </div>
@@ -223,13 +254,12 @@ export default function ClinicalRecordPage() {
 
   if (error || !record) {
     return (
-      <AppShell breadcrumbs={['Clinical', 'Records']} requiredPermission="clinical_record:read">
+      <AppShell
+        breadcrumbs={['Operations', 'Encounters']}
+        requiredPermission="clinical_record:read"
+      >
         <div className={styles.container}>
-          <ErrorState
-            title="Could not load clinical record"
-            message={error?.message ?? 'The requested record does not exist.'}
-            onRetry={fetchRecord}
-          />
+          <ErrorState title="Could not load clinical record" message={error ?? undefined} />
         </div>
       </AppShell>
     );
@@ -239,32 +269,50 @@ export default function ClinicalRecordPage() {
 
   return (
     <AppShell
-      breadcrumbs={['Clinical', 'Encounters', 'Record']}
+      breadcrumbs={['Operations', 'Encounters', 'Documentation']}
       requiredPermission="clinical_record:read"
     >
       <div className={styles.container}>
-        <div className={styles.header}>
-          <h1 className={styles.title} style={{ textTransform: 'capitalize' }}>
-            {record.recordType.replace(/_/g, ' ')}
-          </h1>
-          <span
-            className={`${styles.stateChip} ${signed ? styles.stateSigned : styles.stateDraft}`}
-          >
-            {signed ? <Lock size={14} /> : <FileSignature size={14} />}
-            {signed ? 'Signed — locked and permanent' : 'Draft — editable by author'}
-          </span>
-        </div>
+        <PageHeader
+          title={record.recordType.replace(/_/g, ' ')}
+          actions={
+            !editing &&
+            canSign &&
+            isAuthor &&
+            record.status === 'draft' && (
+              <Button variant="primary" onClick={() => setConfirmSign(true)}>
+                Sign record
+              </Button>
+            )
+          }
+          meta={
+            <>
+              <span
+                className={`${styles.stateChip} ${signed ? styles.stateSigned : styles.stateDraft}`}
+              >
+                {signed ? <Lock size={13} aria-hidden="true" /> : null}
+                {signed ? 'Signed · locked and permanent' : 'Draft · editable by author'}
+              </span>
+              <RecordStatusBadge status={record.status} size="sm" />
+              {record.aiDraftId && (
+                <span className={styles.aiChip}>
+                  <Sparkles size={11} aria-hidden="true" /> AI-assisted draft
+                </span>
+              )}
+            </>
+          }
+        />
 
         {conflict && (
           <AlertBanner
             severity="warning"
-            title="This record was modified by someone else"
+            title="This record changed while you were working"
             action={
               <Button
                 variant="secondary"
-                size="md"
+                size="sm"
                 iconLeft={<RefreshCw size={14} />}
-                onClick={refreshLatest}
+                onClick={() => void refreshLatest()}
               >
                 Load latest version
               </Button>
@@ -285,9 +333,18 @@ export default function ClinicalRecordPage() {
           </AlertBanner>
         )}
 
-        <Card>
+        {/* Document */}
+        <Card elevation="xs">
           <div className={styles.meta}>
             <span>Version {record.version}</span>
+            <span>
+              Author{' '}
+              {authorName ? (
+                <StaffIdentity compact displayName={authorName} />
+              ) : (
+                record.createdBy.slice(0, 8) + '…'
+              )}
+            </span>
             <span>Created {new Date(record.createdAt).toLocaleString()}</span>
             <span>Updated {new Date(record.updatedAt).toLocaleString()}</span>
             {signed && record.signedAt && (
@@ -296,14 +353,10 @@ export default function ClinicalRecordPage() {
           </div>
 
           {record.recordType === 'soap' &&
-            (['subjective', 'objective', 'assessment', 'plan'] as const).map((h) =>
+            SOAP_HEADINGS.map((h) =>
               editing ? (
                 <div key={h} className={styles.fieldGroup}>
-                  <label
-                    htmlFor={`soap-${h}`}
-                    className={styles.label}
-                    style={{ textTransform: 'capitalize' }}
-                  >
+                  <label htmlFor={`soap-${h}`} className={`${styles.label} ${styles.capitalize}`}>
                     {h}
                   </label>
                   <textarea
@@ -320,9 +373,7 @@ export default function ClinicalRecordPage() {
                 </div>
               ) : (
                 <div key={h} className={styles.fieldGroup}>
-                  <span className={styles.label} style={{ textTransform: 'capitalize' }}>
-                    {h}
-                  </span>
+                  <span className={`${styles.label} ${styles.capitalize}`}>{h}</span>
                   <p className={styles.readText}>{(soapSections[h] ?? '').trim() || '—'}</p>
                 </div>
               ),
@@ -355,33 +406,39 @@ export default function ClinicalRecordPage() {
 
           {record.recordType === 'vital_signs' && (
             <>
-              <div className={styles.vitalsGrid}>
+              <dl className={styles.vitalsGrid}>
                 {Object.entries(record.vitals ?? {}).map(([k, v]) => (
                   <React.Fragment key={k}>
                     {editing ? (
-                      <input
-                        aria-label={k}
-                        className={styles.input}
-                        type="number"
-                        value={vitalsValues[k as keyof Vitals] ?? ''}
-                        onChange={(e) => {
-                          setVitalsValues((p) => ({ ...p, [k as keyof Vitals]: e.target.value }));
-                          setDirty(true);
-                        }}
-                      />
+                      <div className={styles.vitalCellEdit}>
+                        <label htmlFor={`vital-${k}`} className={styles.label}>
+                          {VITAL_LABELS[k] ?? k}
+                        </label>
+                        <input
+                          id={`vital-${k}`}
+                          className={styles.input}
+                          type="number"
+                          step="any"
+                          value={vitalsValues[k as keyof Vitals] ?? ''}
+                          onChange={(e) => {
+                            setVitalsValues((p) => ({ ...p, [k as keyof Vitals]: e.target.value }));
+                            setDirty(true);
+                          }}
+                        />
+                      </div>
                     ) : (
                       <div className={styles.vitalCell}>
-                        <span className={styles.vitalValue}>{String(v)}</span>
-                        <span className={styles.vitalLabel}>{k.replace(/_/g, ' ')}</span>
+                        <dt className={styles.vitalLabel}>{VITAL_LABELS[k] ?? k}</dt>
+                        <dd className={`${styles.vitalValue} ${styles.numeric}`}>{String(v)}</dd>
                       </div>
                     )}
                   </React.Fragment>
                 ))}
-              </div>
+              </dl>
               {editing ? (
-                <div className={styles.fieldGroup} style={{ marginTop: 12 }}>
+                <div className={`${styles.fieldGroup} ${styles.mt}`}>
                   <label htmlFor="vnote" className={styles.label}>
-                    Remark
+                    Remark (optional)
                   </label>
                   <input
                     id="vnote"
@@ -406,43 +463,45 @@ export default function ClinicalRecordPage() {
         </Card>
 
         {signed && (
-          <div className={`${styles.signedNotice}`}>
-            <Lock size={16} />
-            Signed record — this document is permanent and cannot be edited.
+          <div className={styles.signedNotice}>
+            <Lock size={15} aria-hidden="true" />
+            <span>
+              <strong>Signed &amp; locked.</strong> This document is part of the permanent clinical
+              record and cannot be edited or deleted.
+            </span>
           </div>
         )}
 
         <div className={styles.actionsBar}>
           {editing && editable && !signed && (
             <>
-              <Button variant="outline" onClick={() => router.back()} disabled={saving}>
-                Cancel
+              <Button variant="outline" onClick={() => window.history.back()} disabled={saving}>
+                Back
               </Button>
-              <Button variant="primary" onClick={handleSave} disabled={saving || !dirty}>
-                {saving ? 'Saving…' : dirty ? 'Save Changes' : 'No changes'}
-              </Button>
-            </>
-          )}
-          {!editing && canSign && isAuthor && record.status === 'draft' && !confirmSign && (
-            <Button variant="primary" onClick={() => setConfirmSign(true)}>
-              Sign Record
-            </Button>
-          )}
-          {!editing && confirmSign && record.status === 'draft' && (
-            <>
-              <span className={styles.confirmText}>
-                This note becomes permanent and cannot be edited. Confirm signing?
-              </span>
-              <Button variant="outline" onClick={() => setConfirmSign(false)} disabled={signing}>
-                Cancel
-              </Button>
-              <Button variant="primary" onClick={handleSign} disabled={signing}>
-                {signing ? 'Signing…' : 'Confirm & Sign'}
+              <Button
+                variant="primary"
+                onClick={() => void handleSave()}
+                disabled={!dirty}
+                isLoading={saving}
+              >
+                {dirty ? 'Save changes' : 'No changes'}
               </Button>
             </>
           )}
         </div>
       </div>
+
+      <ConfirmDialog
+        isOpen={confirmSign}
+        title="Sign this record?"
+        confirmLabel="Confirm & sign"
+        isLoading={signing}
+        onConfirm={() => void handleSign()}
+        onCancel={() => setConfirmSign(false)}
+      >
+        Signing locks the document permanently under your name (version {record.version}). It cannot
+        be edited or deleted afterwards.
+      </ConfirmDialog>
     </AppShell>
   );
 }

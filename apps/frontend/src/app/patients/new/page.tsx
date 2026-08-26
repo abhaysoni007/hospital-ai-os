@@ -5,28 +5,38 @@ import { useRouter } from 'next/navigation';
 import { AppShell } from '../../../components/layout/AppShell/AppShell';
 import { Button } from '../../../components/ui/Button/Button';
 import { Input } from '../../../components/ui/Input/Input';
-import { Card } from '../../../components/ui/Card/Card';
+import { Card, CardContent } from '../../../components/ui/Card/Card';
+import { PageHeader } from '../../../components/ui/PageHeader/PageHeader';
+import { AlertBanner } from '../../../components/ui/Alert/AlertBanner';
 import { patientService } from '../../../services/patient-service';
+import { registerPatientSchema } from 'shared';
 import styles from './new-patient.module.css';
 
+const EMPTY_FORM = {
+  firstName: '',
+  lastName: '',
+  dateOfBirth: '',
+  gender: 'undisclosed',
+  phonePrimary: '',
+  phoneEmergency: '',
+  emergencyContactName: '',
+  addressLine1: '',
+  addressCity: '',
+  addressState: '',
+  addressPostalCode: '',
+};
+
+/**
+ * M13 — Patient registration. Client-side validation mirrors the frozen
+ * shared contract (registerPatientSchema); server errors are surfaced
+ * verbatim through the standard alert channel — never raw dumps.
+ */
 export default function NewPatientPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
-    dateOfBirth: '',
-    gender: 'male',
-    phonePrimary: '',
-    phoneEmergency: '',
-    emergencyContactName: '',
-    addressLine1: '',
-    addressCity: '',
-    addressState: '',
-    addressPostalCode: '',
-  });
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [formData, setFormData] = useState(EMPTY_FORM);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData((prev) => ({
@@ -35,21 +45,46 @@ export default function NewPatientPage() {
     }));
   };
 
+  const validateClientSide = (): boolean => {
+    const result = registerPatientSchema.safeParse(formData);
+    if (result.success) {
+      setFieldErrors({});
+      return true;
+    }
+    const errors: Record<string, string> = {};
+    for (const issue of result.error.issues) {
+      const key = issue.path.join('.');
+      if (!errors[key]) errors[key] = issue.message;
+    }
+    setFieldErrors(errors);
+    return false;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
     setError(null);
+    if (!validateClientSide()) return;
 
+    setLoading(true);
     try {
       const response = await patientService.registerPatient({
         ...formData,
         gender: formData.gender as 'male' | 'female' | 'other' | 'undisclosed',
+        phoneEmergency: formData.phoneEmergency || undefined,
+        emergencyContactName: formData.emergencyContactName || undefined,
+        addressLine1: formData.addressLine1 || undefined,
+        addressCity: formData.addressCity || undefined,
+        addressState: formData.addressState || undefined,
+        addressPostalCode: formData.addressPostalCode || undefined,
       });
       router.push(`/patients/${response.data.id}`);
     } catch (err) {
-      console.error(err);
-      const error = err as Error;
-      setError(error.message || 'An error occurred during registration.');
+      const apiError = err as Error & { statusCode?: number };
+      setError(
+        apiError.statusCode === 403
+          ? 'Your role does not permit registering patients.'
+          : apiError.message || 'Registration failed. Please review the form and try again.',
+      );
       setLoading(false);
     }
   };
@@ -60,131 +95,155 @@ export default function NewPatientPage() {
       requiredPermission="patient:create"
     >
       <div className={styles.container}>
-        <h1 className={styles.title}>Register New Patient</h1>
+        <PageHeader
+          title="Register patient"
+          description="Create a medical record with a system-assigned MRN. Identity documents can be verified after registration."
+        />
 
-        <Card>
-          <form onSubmit={handleSubmit}>
-            <div className={styles.formGrid}>
-              <h2 className={styles.sectionTitle}>Basic Information</h2>
+        {error && (
+          <AlertBanner
+            severity="critical"
+            title="Could not register patient"
+            dismissible
+            onDismiss={() => setError(null)}
+          >
+            {error}
+          </AlertBanner>
+        )}
 
-              <Input
-                label="First Name"
-                name="firstName"
-                value={formData.firstName}
-                onChange={handleChange}
-                required
-              />
-              <Input
-                label="Last Name"
-                name="lastName"
-                value={formData.lastName}
-                onChange={handleChange}
-                required
-              />
-              <Input
-                label="Date of Birth"
-                type="date"
-                name="dateOfBirth"
-                value={formData.dateOfBirth}
-                onChange={handleChange}
-                required
-              />
-
-              <div>
-                <label
-                  className="text-sm font-medium mb-1 block"
-                  style={{
-                    fontSize: 'var(--font-size-sm)',
-                    fontWeight: 500,
-                    color: 'var(--color-slate-700)',
-                    marginBottom: '4px',
-                  }}
-                >
-                  Gender
-                </label>
-                <select
-                  className={styles.select}
-                  name="gender"
-                  value={formData.gender}
+        <Card elevation="xs">
+          <form onSubmit={handleSubmit} noValidate>
+            <fieldset className={styles.section}>
+              <legend className={styles.sectionTitle}>Identity</legend>
+              <div className={styles.formGrid}>
+                <Input
+                  id="firstName"
+                  label="First name"
+                  name="firstName"
+                  value={formData.firstName}
                   onChange={handleChange}
                   required
-                >
-                  <option value="male">Male</option>
-                  <option value="female">Female</option>
-                  <option value="other">Other</option>
-                  <option value="undisclosed">Undisclosed</option>
-                </select>
-              </div>
-
-              <h2 className={styles.sectionTitle} style={{ marginTop: '16px' }}>
-                Contact Details
-              </h2>
-
-              <Input
-                label="Primary Phone"
-                name="phonePrimary"
-                value={formData.phonePrimary}
-                onChange={handleChange}
-                required
-              />
-              <div className={styles.fullWidth}>
+                  error={fieldErrors.firstName}
+                />
                 <Input
-                  label="Address Line 1"
+                  id="lastName"
+                  label="Last name"
+                  name="lastName"
+                  value={formData.lastName}
+                  onChange={handleChange}
+                  required
+                  error={fieldErrors.lastName}
+                />
+                <Input
+                  id="dateOfBirth"
+                  label="Date of birth"
+                  type="date"
+                  name="dateOfBirth"
+                  value={formData.dateOfBirth}
+                  onChange={handleChange}
+                  required
+                  error={fieldErrors.dateOfBirth}
+                />
+                <div>
+                  <label htmlFor="gender" className={styles.label}>
+                    Gender
+                  </label>
+                  <select
+                    id="gender"
+                    name="gender"
+                    className={styles.select}
+                    value={formData.gender}
+                    onChange={handleChange}
+                    required
+                    aria-invalid={fieldErrors.gender ? true : undefined}
+                  >
+                    <option value="female">Female</option>
+                    <option value="male">Male</option>
+                    <option value="other">Other</option>
+                    <option value="undisclosed">Undisclosed</option>
+                  </select>
+                  {fieldErrors.gender && (
+                    <span className={styles.fieldError} role="alert">
+                      {fieldErrors.gender}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </fieldset>
+
+            <fieldset className={styles.section}>
+              <legend className={styles.sectionTitle}>Contact</legend>
+              <div className={styles.formGrid}>
+                <Input
+                  id="phonePrimary"
+                  label="Primary phone"
+                  name="phonePrimary"
+                  type="tel"
+                  value={formData.phonePrimary}
+                  onChange={handleChange}
+                  required
+                  helperText="5–20 digits; used for appointment reminders."
+                  error={fieldErrors.phonePrimary}
+                />
+                <Input
+                  id="addressLine1"
+                  label="Address line"
                   name="addressLine1"
                   value={formData.addressLine1}
                   onChange={handleChange}
+                  error={fieldErrors.addressLine1}
+                />
+                <Input
+                  id="addressCity"
+                  label="City"
+                  name="addressCity"
+                  value={formData.addressCity}
+                  onChange={handleChange}
+                  error={fieldErrors.addressCity}
+                />
+                <Input
+                  id="addressState"
+                  label="State"
+                  name="addressState"
+                  value={formData.addressState}
+                  onChange={handleChange}
+                  error={fieldErrors.addressState}
+                />
+                <Input
+                  id="addressPostalCode"
+                  label="Postal code"
+                  name="addressPostalCode"
+                  value={formData.addressPostalCode}
+                  onChange={handleChange}
+                  error={fieldErrors.addressPostalCode}
                 />
               </div>
-              <Input
-                label="City"
-                name="addressCity"
-                value={formData.addressCity}
-                onChange={handleChange}
-              />
-              <Input
-                label="State"
-                name="addressState"
-                value={formData.addressState}
-                onChange={handleChange}
-              />
-              <Input
-                label="Postal Code"
-                name="addressPostalCode"
-                value={formData.addressPostalCode}
-                onChange={handleChange}
-              />
+            </fieldset>
 
-              <h2 className={styles.sectionTitle} style={{ marginTop: '16px' }}>
-                Emergency Contact
-              </h2>
-
-              <Input
-                label="Contact Name"
-                name="emergencyContactName"
-                value={formData.emergencyContactName}
-                onChange={handleChange}
-              />
-              <Input
-                label="Emergency Phone"
-                name="phoneEmergency"
-                value={formData.phoneEmergency}
-                onChange={handleChange}
-              />
-            </div>
-
-            {error && (
-              <div
-                style={{
-                  color: 'var(--color-critical-600)',
-                  fontSize: 'var(--font-size-sm)',
-                  marginBottom: '16px',
-                }}
-              >
-                {error}
+            <fieldset className={styles.section}>
+              <legend className={styles.sectionTitle}>Emergency contact</legend>
+              <div className={styles.formGrid}>
+                <Input
+                  id="emergencyContactName"
+                  label="Contact name"
+                  name="emergencyContactName"
+                  value={formData.emergencyContactName}
+                  onChange={handleChange}
+                  error={fieldErrors.emergencyContactName}
+                />
+                <Input
+                  id="phoneEmergency"
+                  label="Emergency phone"
+                  name="phoneEmergency"
+                  type="tel"
+                  value={formData.phoneEmergency}
+                  onChange={handleChange}
+                  error={fieldErrors.phoneEmergency}
+                />
               </div>
-            )}
+            </fieldset>
 
-            <div className={styles.actions}>
+            <CardContent className={styles.actions}>
               <Button
                 type="button"
                 variant="outline"
@@ -193,10 +252,10 @@ export default function NewPatientPage() {
               >
                 Cancel
               </Button>
-              <Button type="submit" variant="primary" disabled={loading}>
-                {loading ? 'Registering...' : 'Register Patient'}
+              <Button type="submit" variant="primary" isLoading={loading}>
+                Register patient
               </Button>
-            </div>
+            </CardContent>
           </form>
         </Card>
       </div>

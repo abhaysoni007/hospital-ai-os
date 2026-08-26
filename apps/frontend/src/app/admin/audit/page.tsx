@@ -3,24 +3,20 @@
 import React from 'react';
 import { AppShell } from '../../../components/layout/AppShell/AppShell';
 import { EmptyState } from '../../../components/ui/EmptyState/EmptyState';
-import { ShieldAlert, Download } from 'lucide-react';
-import { Button } from '../../../components/ui/Button/Button';
+import { ShieldAlert } from 'lucide-react';
 
+/**
+ * M13 — Honest placeholder. The hash-chained audit ledger exists (M7), but a
+ * reader-facing audit viewer endpoint is not implemented (M20 scope). This
+ * screen never pretends otherwise.
+ */
 export default function AuditPage() {
   return (
-    <AppShell
-      breadcrumbs={['Administration', 'Audit Log Viewer']}
-      requiredPermission="audit_event:read"
-    >
+    <AppShell breadcrumbs={['Administration', 'Audit']} requiredPermission="audit_event:read">
       <EmptyState
         icon={<ShieldAlert size={32} />}
-        title="HIPAA Audit Trail & Security Logs"
-        description="Immutable audit events recording access to patient records, authentication sessions, and system modifications."
-        action={
-          <Button variant="secondary" size="md" iconLeft={<Download size={16} />}>
-            Export Audit Bundle
-          </Button>
-        }
+        title="Audit log viewer — coming in a future release"
+        description="Every clinical and security action is already recorded in the tamper-evident audit ledger. A searchable viewer will be enabled with the administration milestone."
       />
     </AppShell>
   );
