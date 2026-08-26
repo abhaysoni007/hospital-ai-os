@@ -1,0 +1,112 @@
+.card,
+.cardAsLink {
+  display: block;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4) var(--space-5);
+  box-shadow: var(--shadow-xs);
+  transition:
+    border-color var(--duration-fast) var(--ease-standard),
+    box-shadow var(--duration-fast) var(--ease-standard);
+}
+
+.cardAsLink:hover {
+  border-color: var(--color-primary-300);
+  box-shadow: var(--shadow-sm);
+}
+
+.cardAsLink:focus-visible {
+  outline: 2px solid var(--focus-ring-color);
+  outline-offset: 2px;
+}
+
+.top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.label {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.iconWrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-md);
+  flex-shrink: 0;
+}
+
+.neutral {
+  background-color: var(--bg-subtle);
+  color: var(--text-secondary);
+}
+
+.primary {
+  background-color: var(--color-primary-50);
+  color: var(--color-primary-600);
+}
+
+.info {
+  background-color: var(--color-info-bg);
+  color: var(--color-info-main);
+}
+
+.warning {
+  background-color: var(--color-warning-bg);
+  color: var(--color-warning-main);
+}
+
+.critical {
+  background-color: var(--color-danger-bg);
+  color: var(--color-danger-main);
+}
+
+.success {
+  background-color: var(--color-success-bg);
+  color: var(--color-success-main);
+}
+
+.value {
+  margin-top: var(--space-2);
+  font-size: 1.75rem;
+  line-height: 2.125rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+.footer {
+  margin-top: var(--space-1);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.hint {
+  font-size: var(--font-size-caption);
+  color: var(--text-tertiary);
+}
+
+.retry {
+  margin-top: var(--space-2);
+  font-size: var(--font-size-body);
+  font-weight: 600;
+  color: var(--color-primary-700);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  border-radius: var(--radius-xs);
+}
+
+.retry:focus-visible {
+  outline: 2px solid var(--focus-ring-color);
+  outline-offset: 2px;
+}

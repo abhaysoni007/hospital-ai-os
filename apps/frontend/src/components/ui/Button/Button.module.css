@@ -5,7 +5,10 @@
   gap: var(--space-2);
   font-weight: 500;
   border-radius: var(--radius-md);
-  transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
   white-space: nowrap;
   user-select: none;
   text-decoration: none;
@@ -132,7 +135,8 @@
   }
 }
 
-.iconLeft, .iconRight {
+.iconLeft,
+.iconRight {
   display: inline-flex;
   align-items: center;
 }

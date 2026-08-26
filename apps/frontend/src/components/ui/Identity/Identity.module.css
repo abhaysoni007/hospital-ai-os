@@ -1,0 +1,59 @@
+.patient,
+.patientCompact {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.patientName {
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.patientMeta {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-size-caption);
+  color: var(--text-tertiary);
+}
+
+.mrn {
+  font-family: var(--font-family-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+.dot::before {
+  content: '·';
+}
+
+/* Compact variant keeps one line for dense rows. */
+.patientCompact {
+  flex-direction: row;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+
+.staff,
+.staffCompact {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.staffName {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.staffRole {
+  font-size: var(--font-size-caption);
+  text-transform: capitalize;
+  color: var(--text-tertiary);
+}

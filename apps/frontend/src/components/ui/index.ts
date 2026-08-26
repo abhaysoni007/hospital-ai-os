@@ -1,6 +1,7 @@
 export * from './Button/Button';
 export * from './Input/Input';
 export * from './Input/PasswordInput';
+export * from './Input/Select';
 export * from './Badge/Badge';
 export * from './Card/Card';
 export * from './Alert/AlertBanner';
@@ -11,3 +12,9 @@ export * from './AccessRestricted/AccessRestricted';
 export * from './Avatar/Avatar';
 export * from './Dropdown/Dropdown';
 export * from './SidebarItem/SidebarItem';
+export * from './PageHeader/PageHeader';
+export * from './ConfirmDialog/ConfirmDialog';
+export * from './Table/Table';
+export * from './MetricCard/MetricCard';
+export * from './Identity/Identity';
+export * from './SemanticBadges/SemanticBadges';

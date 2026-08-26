@@ -7,32 +7,32 @@
   /* =========================================================================
      1. Primary Palette (Deep Indigo Healthcare)
      ========================================================================= */
-  --color-primary-50: #EFF6FF;
-  --color-primary-100: #DBEAFE;
-  --color-primary-200: #BFDBFE;
-  --color-primary-300: #93C5FD;
-  --color-primary-400: #60A5FA;
-  --color-primary-500: #2563EB;
-  --color-primary-600: #1D4ED8;
-  --color-primary-700: #1E40AF;
-  --color-primary-800: #1E3A8A;
+  --color-primary-50: #eff6ff;
+  --color-primary-100: #dbeafe;
+  --color-primary-200: #bfdbfe;
+  --color-primary-300: #93c5fd;
+  --color-primary-400: #60a5fa;
+  --color-primary-500: #2563eb;
+  --color-primary-600: #1d4ed8;
+  --color-primary-700: #1e40af;
+  --color-primary-800: #1e3a8a;
   --color-primary-900: #172554;
-  --color-primary-950: #0F172A;
+  --color-primary-950: #0f172a;
 
   /* =========================================================================
      2. Neutral Surfaces & Text (Slate-based for clinical calmness)
      ========================================================================= */
-  --color-neutral-0: #FFFFFF;
-  --color-neutral-50: #F8FAFC;
-  --color-neutral-100: #F1F5F9;
-  --color-neutral-200: #E2E8F0;
-  --color-neutral-300: #CBD5E1;
-  --color-neutral-400: #94A3B8;
-  --color-neutral-500: #64748B;
+  --color-neutral-0: #ffffff;
+  --color-neutral-50: #f8fafc;
+  --color-neutral-100: #f1f5f9;
+  --color-neutral-200: #e2e8f0;
+  --color-neutral-300: #cbd5e1;
+  --color-neutral-400: #94a3b8;
+  --color-neutral-500: #64748b;
   --color-neutral-600: #475569;
   --color-neutral-700: #334155;
-  --color-neutral-800: #1E293B;
-  --color-neutral-900: #0F172A;
+  --color-neutral-800: #1e293b;
+  --color-neutral-900: #0f172a;
   --color-neutral-950: #020617;
 
   /* Semantic UI Bindings */
@@ -48,53 +48,53 @@
   /* =========================================================================
      3. Semantic Statuses
      ========================================================================= */
-  --color-success-bg: #F0FDF4;
-  --color-success-border: #BBF7D0;
-  --color-success-main: #16A34A;
+  --color-success-bg: #f0fdf4;
+  --color-success-border: #bbf7d0;
+  --color-success-main: #16a34a;
   --color-success-text: #166534;
 
-  --color-warning-bg: #FFFBEB;
-  --color-warning-border: #FDE68A;
-  --color-warning-main: #D97706;
-  --color-warning-text: #92400E;
+  --color-warning-bg: #fffbeb;
+  --color-warning-border: #fde68a;
+  --color-warning-main: #d97706;
+  --color-warning-text: #92400e;
 
-  --color-danger-bg: #FEF2F2;
-  --color-danger-border: #FECACA;
-  --color-danger-main: #DC2626;
-  --color-danger-text: #991B1B;
+  --color-danger-bg: #fef2f2;
+  --color-danger-border: #fecaca;
+  --color-danger-main: #dc2626;
+  --color-danger-text: #991b1b;
 
-  --color-info-bg: #F0F9FF;
-  --color-info-border: #BAE6FD;
-  --color-info-main: #0284C7;
+  --color-info-bg: #f0f9ff;
+  --color-info-border: #bae6fd;
+  --color-info-main: #0284c7;
   --color-info-text: #075985;
 
   /* =========================================================================
      4. Healthcare Clinical Statuses
      ========================================================================= */
-  --status-critical-bg: #FEF2F2;
-  --status-critical-border: #EF4444;
-  --status-critical-text: #991B1B;
-  --status-critical-badge: #DC2626;
+  --status-critical-bg: #fef2f2;
+  --status-critical-border: #ef4444;
+  --status-critical-text: #991b1b;
+  --status-critical-badge: #dc2626;
 
-  --status-urgent-bg: #FFF7ED;
-  --status-urgent-border: #F97316;
-  --status-urgent-text: #9A3412;
-  --status-urgent-badge: #EA580C;
+  --status-urgent-bg: #fff7ed;
+  --status-urgent-border: #f97316;
+  --status-urgent-text: #9a3412;
+  --status-urgent-badge: #ea580c;
 
-  --status-stable-bg: #F0FDF4;
-  --status-stable-border: #86EFAC;
+  --status-stable-bg: #f0fdf4;
+  --status-stable-border: #86efac;
   --status-stable-text: #166534;
-  --status-stable-badge: #16A34A;
+  --status-stable-badge: #16a34a;
 
-  --status-pending-bg: #F8FAFC;
-  --status-pending-border: #CBD5E1;
+  --status-pending-bg: #f8fafc;
+  --status-pending-border: #cbd5e1;
   --status-pending-text: #475569;
-  --status-pending-badge: #64748B;
+  --status-pending-badge: #64748b;
 
-  --status-ai-bg: #F5F3FF;
-  --status-ai-border: #DDD6FE;
-  --status-ai-text: #5B21B6;
-  --status-ai-badge: #7C3AED;
+  --status-ai-bg: #f5f3ff;
+  --status-ai-border: #ddd6fe;
+  --status-ai-text: #5b21b6;
+  --status-ai-badge: #7c3aed;
 
   /* =========================================================================
      5. Typography System
@@ -162,11 +162,41 @@
   --shadow-sm: 0px 1px 3px 0px rgba(15, 23, 42, 0.08), 0px 1px 2px -1px rgba(15, 23, 42, 0.08);
   --shadow-md: 0px 4px 6px -1px rgba(15, 23, 42, 0.08), 0px 2px 4px -2px rgba(15, 23, 42, 0.06);
   --shadow-lg: 0px 10px 15px -3px rgba(15, 23, 42, 0.08), 0px 4px 6px -4px rgba(15, 23, 42, 0.04);
-  --shadow-modal: 0px 20px 25px -5px rgba(15, 23, 42, 0.12), 0px 8px 10px -6px rgba(15, 23, 42, 0.08);
+  --shadow-modal:
+    0px 20px 25px -5px rgba(15, 23, 42, 0.12), 0px 8px 10px -6px rgba(15, 23, 42, 0.08);
 
   /* =========================================================================
-     9. Layout Dimensions
-     ========================================================================= */
+      9. Motion (restrained, clinical — respect prefers-reduced-motion)
+      ========================================================================= */
+  --duration-fast: 120ms;
+  --duration-base: 180ms;
+  --duration-slow: 240ms;
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-entrance: cubic-bezier(0, 0, 0.2, 1);
+
+  /* =========================================================================
+      9b. Elevation Layers (modals > drawers > sticky chrome)
+      ========================================================================= */
+  --z-sticky: 100;
+  --z-drawer: 400;
+  --z-backdrop: 900;
+  --z-modal: 1000;
+  --z-toast: 1100;
+
+  /* =========================================================================
+      9c. Focus Ring (color-independent focus affordance)
+      ========================================================================= */
+  --focus-ring-color: var(--color-primary-600);
+  --focus-ring-offset: 2px;
+
+  /* =========================================================================
+      9d. Semantic Overlays
+      ========================================================================= */
+  --backdrop-scrim: rgba(15, 23, 42, 0.55);
+
+  /* =========================================================================
+      10. Layout Dimensions
+      ========================================================================= */
   --sidebar-width-expanded: 248px;
   --sidebar-width-collapsed: 72px;
   --header-height: 64px;
@@ -174,34 +204,34 @@
 }
 
 /* =========================================================================
-   10. Dark Mode Foundations
-   ========================================================================= */
+    11. Dark Mode Foundations
+    ========================================================================= */
 [data-theme='dark'] {
-  --bg-app: #090D16;
-  --bg-surface: #0F172A;
-  --bg-subtle: #1E293B;
+  --bg-app: #090d16;
+  --bg-surface: #0f172a;
+  --bg-subtle: #1e293b;
   --border-subtle: #334155;
   --border-strong: #475569;
-  --text-primary: #F8FAFC;
-  --text-secondary: #94A3B8;
-  --text-tertiary: #64748B;
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --text-tertiary: #64748b;
 
-  --color-primary-500: #3B82F6;
-  --color-primary-600: #2563EB;
+  --color-primary-500: #3b82f6;
+  --color-primary-600: #2563eb;
 
   --status-critical-bg: rgba(220, 38, 38, 0.15);
-  --status-critical-border: #EF4444;
-  --status-critical-text: #FCA5A5;
+  --status-critical-border: #ef4444;
+  --status-critical-text: #fca5a5;
 
   --status-urgent-bg: rgba(234, 88, 12, 0.15);
-  --status-urgent-border: #F97316;
-  --status-urgent-text: #FDBA74;
+  --status-urgent-border: #f97316;
+  --status-urgent-text: #fdba74;
 
   --status-stable-bg: rgba(22, 163, 74, 0.15);
-  --status-stable-border: #4ADE80;
-  --status-stable-text: #86EFAC;
+  --status-stable-border: #4ade80;
+  --status-stable-text: #86efac;
 
   --status-ai-bg: rgba(124, 58, 237, 0.15);
-  --status-ai-border: #A78BFA;
-  --status-ai-text: #DDD6FE;
+  --status-ai-border: #a78bfa;
+  --status-ai-text: #ddd6fe;
 }

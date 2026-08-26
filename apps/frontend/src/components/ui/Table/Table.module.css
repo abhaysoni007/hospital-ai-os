@@ -1,0 +1,141 @@
+.container {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  background-color: var(--bg-surface);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-body);
+}
+
+.caption {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+.head {
+  border-bottom: 1px solid var(--border-subtle);
+  background-color: var(--bg-subtle);
+}
+
+.th {
+  padding: var(--space-3) var(--space-4);
+  text-align: left;
+  font-size: var(--font-size-caption);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-tertiary);
+  white-space: nowrap;
+}
+
+.th.left {
+  text-align: left;
+}
+
+.th.right {
+  text-align: right;
+}
+
+.th.center {
+  text-align: center;
+}
+
+.td {
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  vertical-align: middle;
+}
+
+.td.left {
+  text-align: left;
+}
+
+.td.right {
+  text-align: right;
+}
+
+.td.center {
+  text-align: center;
+}
+
+.tbodyLast td,
+.tbody tr:last-child .td {
+  border-bottom: none;
+}
+
+.td:last-child,
+.th:last-child {
+  border-right: none;
+}
+
+.numeric {
+  font-variant-numeric: tabular-nums;
+  font-family: var(--font-family-mono);
+  letter-spacing: -0.01em;
+}
+
+.interactiveRow {
+  cursor: pointer;
+  transition: background-color var(--duration-fast) var(--ease-standard);
+}
+
+.interactiveRow:hover {
+  background-color: var(--bg-subtle);
+}
+
+.interactiveRow:focus-visible {
+  outline: 2px solid var(--focus-ring-color);
+  outline-offset: -2px;
+}
+
+.rowLink {
+  color: var(--color-primary-700);
+  font-weight: 600;
+  border-radius: var(--radius-xs);
+}
+
+.rowLink:hover {
+  text-decoration: underline;
+}
+
+.skeletonWrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-5) var(--space-4);
+}
+
+.skeletonRow {
+  height: 36px;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(
+    90deg,
+    var(--bg-subtle) 25%,
+    var(--color-neutral-200) 50%,
+    var(--bg-subtle) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.4s ease infinite;
+}
+
+@keyframes shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}

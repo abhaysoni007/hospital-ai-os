@@ -64,6 +64,16 @@
   background-color: var(--status-pending-badge);
 }
 
+.info {
+  background-color: var(--color-info-bg);
+  border-color: var(--color-info-border);
+  color: var(--color-info-text);
+}
+
+.info .dot {
+  background-color: var(--color-info-main);
+}
+
 .ai-assist {
   background-color: var(--status-ai-bg);
   border-color: var(--status-ai-border);

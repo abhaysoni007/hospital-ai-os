@@ -9,11 +9,24 @@ export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> 
   helperText?: string;
   iconLeft?: React.ReactNode;
   iconRight?: React.ReactNode;
+  /** Renders label for screen readers only (compact toolbars). */
+  hideLabel?: boolean;
 }
 
 export const Input = React.forwardRef<HTMLInputElement, InputProps>(
   (
-    { label, error, helperText, iconLeft, iconRight, id, className = '', disabled, ...props },
+    {
+      label,
+      error,
+      helperText,
+      iconLeft,
+      iconRight,
+      id,
+      hideLabel = false,
+      className = '',
+      disabled,
+      ...props
+    },
     ref,
   ) => {
     const generatedId = useId();
@@ -24,7 +37,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
     return (
       <div className={`${styles.container} ${className}`}>
         {label && (
-          <label htmlFor={inputId} className={styles.label}>
+          <label htmlFor={inputId} className={hideLabel ? styles.srOnlyLabel : styles.label}>
             {label}
             {props.required && <span className={styles.requiredMark}> *</span>}
           </label>

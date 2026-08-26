@@ -2,7 +2,7 @@ import React from 'react';
 import styles from './Badge.module.css';
 
 export type BadgeVariant =
-  'critical' | 'urgent' | 'stable' | 'pending' | 'ai-assist' | 'neutral' | 'primary';
+  'critical' | 'urgent' | 'stable' | 'pending' | 'info' | 'ai-assist' | 'neutral' | 'primary';
 
 export type BadgeSize = 'sm' | 'md';
 
