@@ -27,7 +27,11 @@ dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 
 // ─── Safety guards ────────────────────────────────────────────────────────────
 
-const ALLOWED_DB_NAMES = ['hospital_ai_os_demo', 'hospital_ai_os_e2e', 'hospital_ai_os_test'] as const;
+const ALLOWED_DB_NAMES = [
+  'hospital_ai_os_demo',
+  'hospital_ai_os_e2e',
+  'hospital_ai_os_test',
+] as const;
 
 if (process.env.NODE_ENV === 'production') {
   console.error('BLOCKED: NODE_ENV=production. Demo reset refused.');
@@ -93,7 +97,6 @@ function isForeignKeyViolation(err: unknown): boolean {
   return false;
 }
 
-
 async function reset() {
   console.log('='.repeat(60));
   console.log('M13.2 DEMO DATA RESET');
@@ -143,32 +146,35 @@ async function reset() {
   console.log(`Found ${demoDeptIds.length} demo department records`);
 
   // ── Identify demo encounter IDs (owned by demo patients + demo doctors) ──
-  const demoEncounterRows = demoPatientIds.length > 0
-    ? await db.query.encounters.findMany({
-        where: inArray(encounters.patientId, demoPatientIds),
-        columns: { id: true },
-      })
-    : [];
+  const demoEncounterRows =
+    demoPatientIds.length > 0
+      ? await db.query.encounters.findMany({
+          where: inArray(encounters.patientId, demoPatientIds),
+          columns: { id: true },
+        })
+      : [];
   const demoEncounterIds = demoEncounterRows.map((e) => e.id);
   console.log(`Found ${demoEncounterIds.length} demo encounter records`);
 
   // ── Identify demo appointment IDs ────────────────────────────────────────
-  const demoApptRows = demoPatientIds.length > 0
-    ? await db.query.appointments.findMany({
-        where: inArray(appointments.patientId, demoPatientIds),
-        columns: { id: true },
-      })
-    : [];
+  const demoApptRows =
+    demoPatientIds.length > 0
+      ? await db.query.appointments.findMany({
+          where: inArray(appointments.patientId, demoPatientIds),
+          columns: { id: true },
+        })
+      : [];
   const demoApptIds = demoApptRows.map((a) => a.id);
   console.log(`Found ${demoApptIds.length} demo appointment records`);
 
   // ── Identify demo diagnostic order IDs ───────────────────────────────────
-  const demoOrderRows = demoEncounterIds.length > 0
-    ? await db.query.diagnosticOrders.findMany({
-        where: inArray(diagnosticOrders.encounterId, demoEncounterIds),
-        columns: { id: true },
-      })
-    : [];
+  const demoOrderRows =
+    demoEncounterIds.length > 0
+      ? await db.query.diagnosticOrders.findMany({
+          where: inArray(diagnosticOrders.encounterId, demoEncounterIds),
+          columns: { id: true },
+        })
+      : [];
   const demoOrderIds = demoOrderRows.map((o) => o.id);
   console.log(`Found ${demoOrderIds.length} demo diagnostic order records`);
 
@@ -180,12 +186,13 @@ async function reset() {
     .filter((s) => s.email === 'demo.admin@hospital.test')
     .map((s) => s.id);
 
-  const demoCritRuleRows = demoAdminIds.length > 0
-    ? await db.query.criticalValueRules.findMany({
-        where: inArray(criticalValueRules.updatedBy, demoAdminIds),
-        columns: { id: true, testCode: true, parameterName: true },
-      })
-    : [];
+  const demoCritRuleRows =
+    demoAdminIds.length > 0
+      ? await db.query.criticalValueRules.findMany({
+          where: inArray(criticalValueRules.updatedBy, demoAdminIds),
+          columns: { id: true, testCode: true, parameterName: true },
+        })
+      : [];
   // Filter to only rules that match our canonical key set
   const demoCritRuleIds = demoCritRuleRows
     .filter((r) =>
@@ -198,7 +205,8 @@ async function reset() {
 
   // ── 1. Diagnostic results ─────────────────────────────────────────────────
   if (demoOrderIds.length > 0) {
-    const result = await db.delete(diagnosticResults)
+    const result = await db
+      .delete(diagnosticResults)
       .where(inArray(diagnosticResults.orderId, demoOrderIds));
     const n = (result as unknown as { rowCount?: number }).rowCount ?? 0;
     deleted += n;
@@ -207,7 +215,8 @@ async function reset() {
 
   // ── 2. Notifications (owned by demo physicians) ───────────────────────────
   if (demoStaffIds.length > 0) {
-    const result = await db.delete(notifications)
+    const result = await db
+      .delete(notifications)
       .where(inArray(notifications.recipientId, demoStaffIds));
     const n = (result as unknown as { rowCount?: number }).rowCount ?? 0;
     deleted += n;
@@ -216,7 +225,8 @@ async function reset() {
 
   // ── 3. Diagnostic orders ──────────────────────────────────────────────────
   if (demoOrderIds.length > 0) {
-    const result = await db.delete(diagnosticOrders)
+    const result = await db
+      .delete(diagnosticOrders)
       .where(inArray(diagnosticOrders.id, demoOrderIds));
     const n = (result as unknown as { rowCount?: number }).rowCount ?? 0;
     deleted += n;
@@ -225,7 +235,8 @@ async function reset() {
 
   // ── 4. Clinical records ───────────────────────────────────────────────────
   if (demoEncounterIds.length > 0) {
-    const result = await db.delete(clinicalRecords)
+    const result = await db
+      .delete(clinicalRecords)
       .where(inArray(clinicalRecords.encounterId, demoEncounterIds));
     const n = (result as unknown as { rowCount?: number }).rowCount ?? 0;
     deleted += n;
@@ -236,12 +247,12 @@ async function reset() {
   if (demoEncounterIds.length > 0) {
     // Unlink from appointments first
     if (demoApptIds.length > 0) {
-      await db.update(appointments)
+      await db
+        .update(appointments)
         .set({ encounterId: null, updatedAt: new Date() })
         .where(inArray(appointments.id, demoApptIds));
     }
-    const result = await db.delete(encounters)
-      .where(inArray(encounters.id, demoEncounterIds));
+    const result = await db.delete(encounters).where(inArray(encounters.id, demoEncounterIds));
     const n = (result as unknown as { rowCount?: number }).rowCount ?? 0;
     deleted += n;
     console.log(`  Encounters:           ${n} deleted`);
@@ -249,8 +260,7 @@ async function reset() {
 
   // ── 6. Appointments ───────────────────────────────────────────────────────
   if (demoApptIds.length > 0) {
-    const result = await db.delete(appointments)
-      .where(inArray(appointments.id, demoApptIds));
+    const result = await db.delete(appointments).where(inArray(appointments.id, demoApptIds));
     const n = (result as unknown as { rowCount?: number }).rowCount ?? 0;
     deleted += n;
     console.log(`  Appointments:         ${n} deleted`);
@@ -270,8 +280,7 @@ async function reset() {
 
   // ── 8. Patients ───────────────────────────────────────────────────────────
   if (demoPatientIds.length > 0) {
-    const result = await db.delete(patients)
-      .where(inArray(patients.id, demoPatientIds));
+    const result = await db.delete(patients).where(inArray(patients.id, demoPatientIds));
     const n = (result as unknown as { rowCount?: number }).rowCount ?? 0;
     deleted += n;
     console.log(`  Patients:             ${n} deleted`);
@@ -279,7 +288,8 @@ async function reset() {
 
   // ── 9. Critical value rules (only demo-admin-owned) ─────────────────────
   if (demoCritRuleIds.length > 0) {
-    const result = await db.delete(criticalValueRules)
+    const result = await db
+      .delete(criticalValueRules)
       .where(inArray(criticalValueRules.id, demoCritRuleIds));
     const n = (result as unknown as { rowCount?: number }).rowCount ?? 0;
     deleted += n;
@@ -293,15 +303,16 @@ async function reset() {
     // deletion will always violate this FK. This is by design (immutable audit).
     // We attempt deletion and gracefully skip on FK violation (23503).
     try {
-      const result = await db.delete(staff)
-        .where(inArray(staff.id, demoStaffIds));
+      const result = await db.delete(staff).where(inArray(staff.id, demoStaffIds));
       const n = (result as unknown as { rowCount?: number }).rowCount ?? 0;
       deleted += n;
       console.log(`  Staff:                ${n} deleted`);
     } catch (err: unknown) {
       const isFkViolation = isForeignKeyViolation(err);
       if (isFkViolation) {
-        console.log(`  Staff:                skipped (referenced by audit_events — expected by design)`);
+        console.log(
+          `  Staff:                skipped (referenced by audit_events — expected by design)`,
+        );
         console.log(`  NOTE: Demo staff accounts remain in DB (audit hash chain integrity).`);
         console.log(`        Re-running seed:demo will skip them (idempotent).`);
       } else {
@@ -313,14 +324,15 @@ async function reset() {
   // ── 11. Departments (only DEMO-* coded ones) ──────────────────────────────
   if (demoDeptIds.length > 0) {
     try {
-      const result = await db.delete(departments)
-        .where(inArray(departments.id, demoDeptIds));
+      const result = await db.delete(departments).where(inArray(departments.id, demoDeptIds));
       const n = (result as unknown as { rowCount?: number }).rowCount ?? 0;
       deleted += n;
       console.log(`  Departments:          ${n} deleted`);
     } catch (err: unknown) {
       if (isForeignKeyViolation(err)) {
-        console.log(`  Departments:          skipped (still referenced — likely by demo staff in audit_events)`);
+        console.log(
+          `  Departments:          skipped (still referenced — likely by demo staff in audit_events)`,
+        );
       } else {
         throw err;
       }
@@ -339,7 +351,9 @@ async function reset() {
   const remDepts = (remainingDepts as unknown as Array<{ n: number }>)[0]?.n ?? 0;
 
   console.log(`  Demo patients remaining: ${remPats} (expected: 0)`);
-  console.log(`  Demo departments remaining: ${remDepts} (expected: 0, or >0 if staff still referenced)`);
+  console.log(
+    `  Demo departments remaining: ${remDepts} (expected: 0, or >0 if staff still referenced)`,
+  );
 
   console.log('\n' + '='.repeat(60));
   console.log('M13.2 DEMO RESET COMPLETE');

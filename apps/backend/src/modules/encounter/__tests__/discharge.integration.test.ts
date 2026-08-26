@@ -29,7 +29,7 @@ describe('M13 Discharge Module (Phase 1A)', () => {
   beforeAll(async () => {
     const [deptA] = await db
       .insert(departments)
-      .values({ code: `D-${RUN}`, name: 'Discharge Dept', status: 'active' })
+      .values({ code: `D-${RUN}`, name: `Discharge Dept ${RUN}`, status: 'active' })
       .returning();
     deptAId = deptA.id;
 
@@ -51,10 +51,10 @@ describe('M13 Discharge Module (Phase 1A)', () => {
       return row.id;
     }
 
-    physicianAId = await ensureStaff('physician', 'phys-a@test.com');
-    physicianBId = await ensureStaff('physician', 'phys-b@test.com');
-    nurseId = await ensureStaff('nurse', 'nurse@test.com');
-    receptionistId = await ensureStaff('receptionist', 'rec@test.com');
+    physicianAId = await ensureStaff('physician', `phys-a-${RUN}@test.com`);
+    physicianBId = await ensureStaff('physician', `phys-b-${RUN}@test.com`);
+    nurseId = await ensureStaff('nurse', `nurse-${RUN}@test.com`);
+    receptionistId = await ensureStaff('receptionist', `rec-${RUN}@test.com`);
 
     const [pt] = await db
       .insert(patients)
@@ -81,9 +81,9 @@ describe('M13 Discharge Module (Phase 1A)', () => {
       await db.delete(appointments).where(inArray(appointments.encounterId, eIds));
       await db.delete(encounters).where(inArray(encounters.id, eIds));
     }
-    await db.delete(patients).where(eq(patients.id, patientId));
-    await db.delete(staff).where(inArray(staff.id, staffIds));
-    await db.delete(departments).where(eq(departments.id, deptAId));
+    if (patientId) await db.delete(patients).where(eq(patients.id, patientId));
+    if (staffIds.length > 0) await db.delete(staff).where(inArray(staff.id, staffIds));
+    if (deptAId) await db.delete(departments).where(eq(departments.id, deptAId));
   });
 
   const ctx = (role: string) => ({ role, departmentId: deptAId });
@@ -209,28 +209,52 @@ describe('M13 Discharge Module (Phase 1A)', () => {
       ),
     ).rejects.toMatchObject({ code: 'VERSION_CONFLICT' });
 
-    // Simultaneous requests mock:
-    // First succeeds
-    const discharged = await encounterService.dischargeEncounter(
+    // REAL concurrent test: fire two exact same requests simultaneously
+    const req1 = encounterService.dischargeEncounter(
       enc.id,
-      { expectedVersion: 2, summary: 'Discharged.' },
+      { expectedVersion: 2, summary: 'Concurrent summary A' },
       physicianAId,
       crypto.randomUUID(),
       ctx('physician'),
     );
-    expect(discharged.status).toBe('discharged');
-    expect(discharged.version).toBe(3); // 2 -> 3
+    const req2 = encounterService.dischargeEncounter(
+      enc.id,
+      { expectedVersion: 2, summary: 'Concurrent summary B' },
+      physicianAId,
+      crypto.randomUUID(),
+      ctx('physician'),
+    );
 
-    // Second fails (INVALID_TRANSITION because it's no longer 'active')
-    await expect(
-      encounterService.dischargeEncounter(
-        enc.id,
-        { expectedVersion: 2, summary: 'Discharged again.' },
-        physicianAId,
-        crypto.randomUUID(),
-        ctx('physician'),
-      ),
-    ).rejects.toMatchObject({ code: 'INVALID_TRANSITION' });
+    const results = await Promise.allSettled([req1, req2]);
+
+    const successes = results.filter((r) => r.status === 'fulfilled');
+    const failures = results.filter((r) => r.status === 'rejected');
+
+    // Prove exactly 1 succeeds and exactly 1 conflicts
+    expect(successes).toHaveLength(1);
+    expect(failures).toHaveLength(1);
+
+    const errorResult = (failures[0] as PromiseRejectedResult).reason;
+    expect(errorResult.code).toMatch(/VERSION_CONFLICT|INVALID_TRANSITION/);
+
+    // Prove exactly 1 discharge summary exists
+    const records = await db.query.clinicalRecords.findMany({
+      where: eq(clinicalRecords.encounterId, enc.id),
+    });
+    expect(records).toHaveLength(1);
+    expect(records[0].recordType).toBe('discharge_summary');
+
+    // Prove exactly 1 ENCOUNTER_DISCHARGED event
+    const audits = await db.query.auditEvents.findMany({
+      where: eq(auditEvents.targetId, enc.id),
+    });
+    const dischargeAudits = audits.filter((a) => a.eventType === 'ENCOUNTER_DISCHARGED');
+    expect(dischargeAudits).toHaveLength(1);
+
+    // Prove successful discharge transition
+    const finalEnc = await db.query.encounters.findFirst({ where: eq(encounters.id, enc.id) });
+    expect(finalEnc?.status).toBe('discharged');
+    expect(finalEnc?.version).toBe(3);
   });
 
   it('5. Audit and Atomic Clinical Record Creation', async () => {
@@ -279,7 +303,7 @@ describe('M13 Discharge Module (Phase 1A)', () => {
     await expect(
       clinicalService.createClinicalRecord(
         enc.id,
-        { recordType: 'soap', content: { sections: ['','','',''] as any } },
+        { recordType: 'soap', content: { sections: ['', '', '', ''] as any } },
         physicianAId,
         crypto.randomUUID(),
         ctx('physician'),

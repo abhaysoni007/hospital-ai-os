@@ -41,10 +41,6 @@ Phase 1A involved implementing the discharge functionality for the M13 encounter
   7. **Rollback:** Force-mocked an audit layer failure to guarantee transaction rollback.
 
 ## Verification & Execution Notes
-- **Local Environment DB Limitation:** During testing on the agent execution environment, the backend integration tests could not establish a connection to the `55432` Postgres database because the Docker API is unavailable. However, the exact architectural requirements, schemas, and atomic commit semantics are in place and aligned with prior module conventions (e.g., `activateEncounter`).
-
-## Frozen Gates Adhered To
-- **M8, M9, M10:** Strictly followed Drizzle transaction paradigms, optimistic concurrency guards, and record immutability rules.
-- **M12/M13:** Fully respected the `active` to `discharged` state transitions without mutating existing schemas.
-
-**Status:** Implementation complete. Awaiting final review or staging deployment to run tests against an active Postgres environment.
+- **Local Environment DB Verification:** Executed fully against the local PostgreSQL `55432` test environment. 
+- **Concurrency Proof Updated:** Added a REAL concurrent test utilizing `Promise.allSettled` to fire two exact simultaneous requests with the same expectedVersion. Proved exactly 1 succeeds and exactly 1 fails with `VERSION_CONFLICT` / `INVALID_TRANSITION`.
+- **M13 Playwright Verification:** NOT EXECUTED for the Discharge Flow. There are currently no Playwright tests written for the discharge workflow in `tests/e2e/specs/`. We did not manufacture E2E tests for Phase 1A. All backend verification passed.

@@ -28,7 +28,7 @@ test.describe('Appointment Booking Flow', () => {
     // 5. Fill out the rest of the form
     // Select Department (use label or select directly if we know a value, but we can select by index)
     await page.locator('select#departmentId').selectOption({ index: 1 });
-    
+
     // Select Physician
     await page.locator('select#doctorId').selectOption({ index: 1 });
 
@@ -38,7 +38,7 @@ test.describe('Appointment Booking Flow', () => {
 
     // 6. Go to Review step
     await page.click('button[type="submit"]');
-    
+
     // Verify Review step loaded
     await expect(page.locator('text="Review before confirming"')).toBeVisible();
 

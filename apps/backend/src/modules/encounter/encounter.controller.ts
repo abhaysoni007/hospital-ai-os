@@ -1,6 +1,11 @@
 import { Request, Response, NextFunction } from 'express';
 import { encounterService } from './encounter.service';
-import { createEncounterSchema, getEncountersQuerySchema, activateEncounterSchema, dischargeEncounterSchema } from 'shared';
+import {
+  createEncounterSchema,
+  getEncountersQuerySchema,
+  activateEncounterSchema,
+  dischargeEncounterSchema,
+} from 'shared';
 import { AuthenticationError } from 'shared/src/errors/AppError';
 
 export class EncounterController {

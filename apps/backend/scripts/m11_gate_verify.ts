@@ -18,10 +18,7 @@ import { decryptField } from '../src/utils/encryption';
 import { AuditService } from '../src/modules/audit/audit.service';
 import { AIOrchestrator, abortInFlightAiCalls } from '../src/modules/ai/orchestrator';
 import { FakeProvider } from '../src/modules/ai/adapters/fake.provider';
-import {
-  aiInteractionRepository,
-  startOfUtcDay,
-} from '../src/modules/ai/ai.persistence';
+import { aiInteractionRepository, startOfUtcDay } from '../src/modules/ai/ai.persistence';
 import { buildNoteDraftPrompt, canonicalizeUntrustedText } from '../src/modules/ai/prompts';
 import { buildInputManifest, computeInformationGaps } from '../src/modules/ai/context/projections';
 import { soapNoteDraftOutputSchema, type GapCode } from 'shared';
@@ -512,7 +509,10 @@ async function main() {
     const wireSystem = (wireText.match(/\[SYSTEM_[A-Z_]+\]/g) ?? []).length;
     check(
       'P0-2: wire carries ONE context boundary + at most ONE trusted slot pair + ZERO forged system tokens',
-      wireForgedEnd === 1 && wireSlotOpen <= 1 && wireSlotClose === wireSlotOpen && wireSystem === 0,
+      wireForgedEnd === 1 &&
+        wireSlotOpen <= 1 &&
+        wireSlotClose === wireSlotOpen &&
+        wireSystem === 0,
     );
     check(
       'P0-2: raw uncanonicalized narrative is absent from the wire; neutralized form present',

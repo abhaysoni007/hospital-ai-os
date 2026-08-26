@@ -210,7 +210,9 @@ export default function EncounterDetailPage() {
         setDischargeError(apiErr.message || 'Cannot discharge: Unresolved diagnostic orders.');
       } else if (apiErr.code === 'VERSION_CONFLICT' || apiErr.code === 'INVALID_TRANSITION') {
         await fetchEncounter();
-        setDischargeError('The encounter was modified by someone else. Please review the updated state and try again.');
+        setDischargeError(
+          'The encounter was modified by someone else. Please review the updated state and try again.',
+        );
       } else {
         setDischargeError(apiErr.message || 'Failed to discharge patient. Please try again.');
       }
@@ -269,11 +271,7 @@ export default function EncounterDetailPage() {
                 </Button>
               )}
               {canDischarge && encounter.status === 'active' && isAssignedPhysician && (
-                <Button
-                  variant="danger"
-                  size="md"
-                  onClick={() => setIsDischargeModalOpen(true)}
-                >
+                <Button variant="danger" size="md" onClick={() => setIsDischargeModalOpen(true)}>
                   Discharge patient
                 </Button>
               )}
@@ -610,12 +608,17 @@ export default function EncounterDetailPage() {
         >
           <div className={styles.dischargeModalContent}>
             <p>
-              Discharging this patient will <strong>permanently lock</strong> the encounter. 
-              No further clinical records or diagnostic orders can be added. 
-              This action cannot be undone.
+              Discharging this patient will <strong>permanently lock</strong> the encounter. No
+              further clinical records or diagnostic orders can be added. This action cannot be
+              undone.
             </p>
             {dischargeError && (
-              <AlertBanner severity="error" title="Discharge failed" dismissible onDismiss={() => setDischargeError(null)}>
+              <AlertBanner
+                severity="error"
+                title="Discharge failed"
+                dismissible
+                onDismiss={() => setDischargeError(null)}
+              >
                 {dischargeError}
               </AlertBanner>
             )}

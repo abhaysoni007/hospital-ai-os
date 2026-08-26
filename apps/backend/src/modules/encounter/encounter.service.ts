@@ -3,7 +3,12 @@ import { db } from '../../db';
 import { appointments, encounters } from '../../db/schema/appointments';
 import { patients } from '../../db/schema/patients';
 import { staff } from '../../db/schema/staff';
-import { CreateEncounterRequest, GetEncountersQuery, EncounterListItem, DischargeEncounterRequest } from 'shared';
+import {
+  CreateEncounterRequest,
+  GetEncountersQuery,
+  EncounterListItem,
+  DischargeEncounterRequest,
+} from 'shared';
 import { diagnosticOrders } from '../../db/schema/diagnostics';
 import { clinicalRecords } from '../../db/schema/clinical';
 import { AuthorizationError, ConflictError, NotFoundError } from 'shared/src/errors/AppError';
