@@ -11,3 +11,8 @@ dist/
 keys/
 *.pem
 *.key
+
+# Playwright
+playwright-report/
+test-results/
+tests/e2e/.auth/
