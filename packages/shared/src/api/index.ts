@@ -11,3 +11,4 @@ export * from './diagnostics.schemas';
 export * from './ai.schemas';
 export * from './notification.schemas';
 export * from './task.schemas';
+export * from './intelligence.schemas';

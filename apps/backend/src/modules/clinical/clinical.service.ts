@@ -595,7 +595,7 @@ export class ClinicalService {
     authContext: AuthContext,
     breakGlassSessionId?: string,
   ): Promise<void> {
-    const actionDetail: Record<string, any> = { action, encounterId };
+    const actionDetail: Record<string, unknown> = { action, encounterId };
     if (breakGlassSessionId) {
       actionDetail.break_glass_session_id = breakGlassSessionId;
     }

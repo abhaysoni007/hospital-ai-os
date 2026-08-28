@@ -173,7 +173,7 @@ export class EncounterService {
       throw new NotFoundError('Encounter not found', { code: 'ENCOUNTER_NOT_FOUND' });
     }
 
-    const authResult = await authorizeBreakGlassResourceAccess(
+    await authorizeBreakGlassResourceAccess(
       { id: actorId, role: authContext.role, departmentId: authContext.departmentId },
       encounter.patientId,
       'read',

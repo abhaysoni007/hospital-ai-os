@@ -23,8 +23,8 @@ async function run() {
     await sql`ALTER TABLE break_glass_sessions ADD COLUMN IF NOT EXISTS revoked_at timestamptz`;
     console.log('✓ revoked_at');
     console.log('All break_glass columns applied.');
-  } catch (e: any) {
-    console.error('Error:', e.message);
+  } catch (e) {
+    console.error('Error:', (e as Error).message);
     process.exit(1);
   } finally {
     await sql.end();

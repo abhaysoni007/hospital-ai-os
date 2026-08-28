@@ -24,6 +24,8 @@ import { diagnosticsService } from '../../../services/diagnostics-service';
 import { AiNoteDraftPanel } from '@/components/ai/AiNoteDraftPanel';
 import { BreakGlassModal } from '../../../components/break-glass/BreakGlassModal';
 import { BreakGlassBanner } from '../../../components/break-glass/BreakGlassBanner';
+import { ChartBrief } from '../../../components/intelligence/ChartBrief';
+import { ClinicalTimeline } from '../../../components/intelligence/ClinicalTimeline';
 import type {
   EncounterDetailResponse,
   ClinicalRecordResponse,
@@ -433,6 +435,13 @@ export default function EncounterDetailPage() {
                   />
                 </section>
               )}
+
+            {canReadClinical && encounter.status !== 'registered' && (
+              <section className="mb-6 space-y-4">
+                <ChartBrief patientId={encounter.patientId} />
+                <ClinicalTimeline patientId={encounter.patientId} />
+              </section>
+            )}
 
             {canReadClinical && encounter.status !== 'registered' && (
               <Card elevation="xs" padding="none">

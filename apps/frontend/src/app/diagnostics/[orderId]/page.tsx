@@ -23,7 +23,7 @@ import type { DiagnosticOrderResponse, DiagnosticResultResponse, TaskResponse } 
 import styles from './order-detail.module.css';
 import { useAuth } from '../../../hooks/useAuth';
 import { canEnterResults, canVerifyResults, canCollectSamples } from '../../../utils/diagnostics';
-
+import { DiagnosticTrend } from '../../../components/intelligence/DiagnosticTrend';
 export default function DiagnosticOrderDetailPage() {
   const params = useParams<{ orderId: string }>();
   const router = useRouter();
@@ -425,6 +425,8 @@ export default function DiagnosticOrderDetailPage() {
                 </tbody>
               </table>
             </Card>
+
+            <DiagnosticTrend patientId={order.patientId} testCode={order.testCode} />
 
             <Card>
               <h2 className={styles.sectionTitle}>Lifecycle</h2>

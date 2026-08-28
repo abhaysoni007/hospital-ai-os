@@ -61,7 +61,7 @@ async function ensureStaff(email: string, role: string, deptId: string): Promise
     passwordHash: 'dummy',
     firstName: 'BG',
     lastName: role,
-    role: role as any,
+    role: role as 'physician' | 'nurse' | 'pharmacist' | 'lab_technician' | 'receptionist' | 'hospital_admin' | 'security_admin',
     departmentId: deptId,
     status: 'active',
   }).returning();
@@ -113,6 +113,7 @@ beforeAll(async () => {
   securityAdminId = await ensureStaff(`bgv-secadm-${RUN}@test.hospital`, 'security_admin', deptA);
 
   inScopePatientId = await ensurePatient(`BGV-IN-${RUN}`, receptionistId);
+  void inScopePatientId;
   outOfScopePatientId = await ensurePatient(`BGV-OUT-${RUN}`, receptionistId);
 
   // Create encounter for outOfScopePatient in deptB (physician is deptA)
@@ -184,7 +185,7 @@ describe('Section 3: Activation', () => {
     expect(expiresAt).toBeGreaterThan(after);
 
     // Justification MUST NOT appear in the response
-    expect((session as any).justification).toBeUndefined();
+    expect((session as Record<string, unknown>).justification).toBeUndefined();
   });
 
   it('3b. Nurse can activate break-glass', async () => {
@@ -266,7 +267,7 @@ describe('Section 3: Activation', () => {
 
     const evts = await db.query.auditEvents.findMany({
       where: and(
-        eq(auditEvents.eventType as any, 'BREAK_GLASS_ACTIVATED'),
+        eq(auditEvents.eventType, 'BREAK_GLASS_ACTIVATED'),
         eq(auditEvents.targetId, session.id)
       )
     });
@@ -314,7 +315,7 @@ describe('Section 4: Concurrent Activation (Advisory Lock)', () => {
     expect(JSON.stringify(errReason)).toMatch(/duplicate|already exists/i);
 
     // Track the created session
-    const created = (fulfilled[0] as PromiseFulfilledResult<any>).value;
+    const created = (fulfilled[0] as PromiseFulfilledResult<{ id: string }>).value;
     sessionIds.push(created.id);
 
     // Exactly 1 active session in DB
@@ -331,7 +332,7 @@ describe('Section 4: Concurrent Activation (Advisory Lock)', () => {
     // Exactly 1 BREAK_GLASS_ACTIVATED audit event
     const auditEvts = await db.query.auditEvents.findMany({
       where: and(
-        eq(auditEvents.eventType as any, 'BREAK_GLASS_ACTIVATED'),
+        eq(auditEvents.eventType, 'BREAK_GLASS_ACTIVATED'),
         eq(auditEvents.targetId, created.id),
       )
     });
@@ -490,14 +491,14 @@ describe('Section 7: Audit', () => {
     // Find the most recent CLINICAL_RECORD_ACCESSED by this actor
     const evts = await db.query.auditEvents.findMany({
       where: and(
-        eq(auditEvents.eventType as any, 'CLINICAL_RECORD_ACCESSED'),
+        eq(auditEvents.eventType, 'CLINICAL_RECORD_ACCESSED'),
         eq(auditEvents.actorId, physicianId),
       ),
       orderBy: [desc(auditEvents.id)],
     });
 
     expect(evts.length).toBeGreaterThan(0);
-    const detail = evts[0].actionDetail as any;
+    const detail = evts[0].actionDetail as Record<string, unknown>;
 
     const bgSess = await getActiveSession(physicianId, outOfScopePatientId);
     if (bgSess) {
@@ -533,7 +534,7 @@ describe('Section 8: Justification Privacy', () => {
     sessionIds.push(session.id);
 
     // No justification key in response
-    expect((session as any).justification).toBeUndefined();
+    expect((session as Record<string, unknown>).justification).toBeUndefined();
     const responseStr = JSON.stringify(session);
     expect(responseStr).not.toMatch(/Section 8 privacy/i);
   });
@@ -541,7 +542,7 @@ describe('Section 8: Justification Privacy', () => {
   it('8b. Justification NOT in listSessions response', async () => {
     const sessions = await breakGlassService.listSessions({ role: 'security_admin', departmentId: deptA });
     for (const s of sessions) {
-      expect((s as any).justification).toBeUndefined();
+      expect((s as Record<string, unknown>).justification).toBeUndefined();
     }
   });
 
@@ -627,7 +628,7 @@ describe('Section 9: Revocation', () => {
   it('9e. BREAK_GLASS_REVOKED audit event emitted', async () => {
     const evts = await db.query.auditEvents.findMany({
       where: and(
-        eq(auditEvents.eventType as any, 'BREAK_GLASS_REVOKED'),
+        eq(auditEvents.eventType, 'BREAK_GLASS_REVOKED'),
         eq(auditEvents.targetId, revokeSessionId),
       )
     });
@@ -693,7 +694,7 @@ describe('Section 11: Security Admin', () => {
     expect(Array.isArray(sessions)).toBe(true);
     // No justification in list
     for (const s of sessions) {
-      expect((s as any).justification).toBeUndefined();
+      expect((s as Record<string, unknown>).justification).toBeUndefined();
     }
   });
 
@@ -732,7 +733,7 @@ describe('Section 11: Security Admin', () => {
 
     const evts = await db.query.auditEvents.findMany({
       where: and(
-        eq(auditEvents.eventType as any, 'BREAK_GLASS_REVIEWED'),
+        eq(auditEvents.eventType, 'BREAK_GLASS_REVIEWED'),
         eq(auditEvents.targetId, s.id),
       )
     });

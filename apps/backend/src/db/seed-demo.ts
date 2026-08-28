@@ -243,13 +243,13 @@ async function seed() {
   // ── [1] Departments ──────────────────────────────────────────────────────
   console.log('[1] Departments...');
   const DEPT_DEFS = [
-    { code: 'DEMO-CARD', name: 'Cardiology' },
-    { code: 'DEMO-IM', name: 'Internal Medicine' },
-    { code: 'DEMO-EM', name: 'Emergency' },
-    { code: 'DEMO-PED', name: 'Pediatrics' },
-    { code: 'DEMO-GS', name: 'General Surgery' },
-    { code: 'DEMO-LAB', name: 'Laboratory' },
-    { code: 'DEMO-RAD', name: 'Radiology' },
+    { code: 'DEMO-CARD', name: 'Demo Cardiology' },
+    { code: 'DEMO-IM', name: 'Demo Internal Medicine' },
+    { code: 'DEMO-EM', name: 'Demo Emergency' },
+    { code: 'DEMO-PED', name: 'Demo Pediatrics' },
+    { code: 'DEMO-GS', name: 'Demo General Surgery' },
+    { code: 'DEMO-LAB', name: 'Demo Laboratory' },
+    { code: 'DEMO-RAD', name: 'Demo Radiology' },
   ] as const;
 
   const deptIdMap = new Map<string, string>();
@@ -1601,6 +1601,102 @@ async function seed() {
         ],
       },
     },
+    // DEMO-HISTORICAL-001 through 005: Margaret Chen historical CBCs for trend display
+    {
+      key: 'DEMO-ORDER-HIST-001',
+      encKey: 'DEMO-ENC-001',
+      docId: phy1Id,
+      patMrn: 'DEMO-2026-00001',
+      testCode: 'CBC',
+      testName: 'Complete Blood Count',
+      priority: 'routine',
+      indication: 'Routine checkup.',
+      deptId: cardId,
+      collectWith: lab1Id,
+      enterResult: {
+        labId: lab1Id,
+        labDept: cardId,
+        values: [
+          { parameterName: 'Hemoglobin', value: 11.2, unit: 'g/dL' },
+        ],
+      },
+    },
+    {
+      key: 'DEMO-ORDER-HIST-002',
+      encKey: 'DEMO-ENC-001',
+      docId: phy1Id,
+      patMrn: 'DEMO-2026-00001',
+      testCode: 'CBC',
+      testName: 'Complete Blood Count',
+      priority: 'routine',
+      indication: 'Follow up.',
+      deptId: cardId,
+      collectWith: lab1Id,
+      enterResult: {
+        labId: lab1Id,
+        labDept: cardId,
+        values: [
+          { parameterName: 'Hemoglobin', value: 10.5, unit: 'g/dL' },
+        ],
+      },
+    },
+    {
+      key: 'DEMO-ORDER-HIST-003',
+      encKey: 'DEMO-ENC-001',
+      docId: phy1Id,
+      patMrn: 'DEMO-2026-00001',
+      testCode: 'CBC',
+      testName: 'Complete Blood Count',
+      priority: 'routine',
+      indication: 'Monitoring.',
+      deptId: cardId,
+      collectWith: lab1Id,
+      enterResult: {
+        labId: lab1Id,
+        labDept: cardId,
+        values: [
+          { parameterName: 'Hemoglobin', value: 9.8, unit: 'g/dL' },
+        ],
+      },
+    },
+    {
+      key: 'DEMO-ORDER-HIST-004',
+      encKey: 'DEMO-ENC-001',
+      docId: phy1Id,
+      patMrn: 'DEMO-2026-00001',
+      testCode: 'CBC',
+      testName: 'Complete Blood Count',
+      priority: 'routine',
+      indication: 'Monitoring.',
+      deptId: cardId,
+      collectWith: lab1Id,
+      enterResult: {
+        labId: lab1Id,
+        labDept: cardId,
+        values: [
+          { parameterName: 'Hemoglobin', value: 8.5, unit: 'g/dL' },
+        ],
+      },
+    },
+    {
+      key: 'DEMO-ORDER-HIST-005',
+      encKey: 'DEMO-ENC-001',
+      docId: phy1Id,
+      patMrn: 'DEMO-2026-00001',
+      testCode: 'CBC',
+      testName: 'Complete Blood Count',
+      priority: 'routine',
+      indication: 'Recent visit.',
+      deptId: cardId,
+      collectWith: lab1Id,
+      enterResult: {
+        labId: lab1Id,
+        labDept: cardId,
+        values: [
+          { parameterName: 'Hemoglobin', value: 7.2, unit: 'g/dL' },
+        ],
+      },
+    },
     // DEMO-NORMAL-001: BMP routine — all normal
     {
       key: 'DEMO-ORDER-002',
@@ -1910,7 +2006,7 @@ async function seed() {
   chk('30 patients', patMap.size === 30, `got ${patMap.size}`);
   chk('22 appointments', apptMap.size === 22, `got ${apptMap.size}`);
   chk('14 encounters', encMap.size === 14, `got ${encMap.size}`);
-  chk('10 orders', ordMap.size === 10, `got ${ordMap.size}`);
+  chk('15 orders', ordMap.size === 15, `got ${ordMap.size}`);
 
   const critEnc = await db.query.encounters.findFirst({
     where: eq(encounters.id, encMap.get('DEMO-ENC-001')!),

@@ -3,8 +3,6 @@ import { breakGlassService } from './break-glass.service';
 import { requirePermission } from '../../middleware/rbac.middleware';
 import { validate } from '../../middleware/validation.middleware';
 import { z } from 'zod';
-import { AuthorizationContext } from '../../middleware/rbac/authorization-context';
-
 export const breakGlassRouter = Router();
 
 const activateSchema = z.object({
@@ -22,19 +20,20 @@ breakGlassRouter.post(
   validate(activateSchema),
   async (req, res, next) => {
     try {
-      const u = (req as any).user;
+      const u = req.user!;
       const authCtx = {
         role: u.role,
         departmentId: u.departmentId,
       };
       const session = await breakGlassService.activateSession(
         req.body,
-        u.userId || u.id,
-        (req as any).correlationId || 'none',
+        u.staffId,
+        (req.headers['x-correlation-id'] as string) || 'none',
         authCtx
       );
       // We deliberately strip justification from the response just to be safe, though client sent it
-      const { justification, ...safeSession } = session as any;
+      const { justification: _just, ...safeSession } = session as unknown as Record<string, unknown> & { justification?: string };
+      void _just;
       res.status(201).json(safeSession);
     } catch (err) {
       next(err);
@@ -47,7 +46,7 @@ breakGlassRouter.get(
   requirePermission('break_glass:review'),
   async (req, res, next) => {
     try {
-      const u = (req as any).user;
+      const u = req.user!;
       const authCtx = {
         role: u.role,
         departmentId: u.departmentId,
@@ -65,15 +64,15 @@ breakGlassRouter.post(
   requirePermission('break_glass:review'),
   async (req, res, next) => {
     try {
-      const u = (req as any).user;
+      const u = req.user!;
       const authCtx = {
         role: u.role,
         departmentId: u.departmentId,
       };
       const session = await breakGlassService.revokeSession(
         req.params.id,
-        u.userId || u.id,
-        (req as any).correlationId || 'none',
+        u.staffId,
+        (req.headers['x-correlation-id'] as string) || 'none',
         authCtx
       );
       res.status(200).json(session);
@@ -88,15 +87,15 @@ breakGlassRouter.post(
   requirePermission('break_glass:review'),
   async (req, res, next) => {
     try {
-      const u = (req as any).user;
+      const u = req.user!;
       const authCtx = {
         role: u.role,
         departmentId: u.departmentId,
       };
       const session = await breakGlassService.reviewSession(
         req.params.id,
-        u.userId || u.id,
-        (req as any).correlationId || 'none',
+        u.staffId,
+        (req.headers['x-correlation-id'] as string) || 'none',
         authCtx
       );
       res.status(200).json(session);

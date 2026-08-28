@@ -102,7 +102,8 @@ export class BreakGlassService {
         tx
       );
 
-      const { justification: _j1, ...sessionPublic } = session;
+      const { justification, ...sessionPublic } = session;
+      void justification;
       return { ...sessionPublic, actorId: session.staffId, staffId: undefined };
     });
   }
@@ -119,7 +120,7 @@ export class BreakGlassService {
         throw new NotFoundError('Break-glass session not found.');
       }
       // Raw SQL returns snake_case column names
-      const rawSession = sessionList[0] as Record<string, any>;
+      const rawSession = sessionList[0] as { revoked_at: string | null; expires_at: string; patient_id: string; reviewed_at: string | null; };
 
       if (rawSession.revoked_at) {
         throw new ConflictError('Session is already revoked.', { code: 'ALREADY_REVOKED' });
@@ -152,7 +153,8 @@ export class BreakGlassService {
         tx
       );
 
-      const { justification: _j2, ...revokedPublic } = revoked;
+      const { justification, ...revokedPublic } = revoked;
+      void justification;
       return { ...revokedPublic, actorId: revoked.staffId, staffId: undefined };
     });
   }
@@ -167,7 +169,7 @@ export class BreakGlassService {
       if (sessionList.length === 0) {
         throw new NotFoundError('Break-glass session not found.');
       }
-      const rawSessionR = sessionList[0] as Record<string, any>;
+      const rawSessionR = sessionList[0] as { reviewed_at: string | null; patient_id: string; };
 
       if (rawSessionR.reviewed_at) {
         throw new ConflictError('Session is already reviewed.');
@@ -194,7 +196,8 @@ export class BreakGlassService {
         tx
       );
 
-      const { justification: _j3, ...reviewedPublic } = reviewed;
+      const { justification, ...reviewedPublic } = reviewed;
+      void justification;
       return { ...reviewedPublic, actorId: reviewed.staffId, staffId: undefined };
     });
   }
@@ -208,7 +211,9 @@ export class BreakGlassService {
     });
 
     return rows.map(r => {
-      const { justification: _jList, staffId: _s, ...rest } = r;
+      const { justification, staffId, ...rest } = r;
+      void justification;
+      void staffId;
       return { ...rest, actorId: r.staffId };
     });
   }
