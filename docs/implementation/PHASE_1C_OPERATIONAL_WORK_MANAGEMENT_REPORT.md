@@ -64,3 +64,16 @@ Both `apps/backend` and `apps/frontend` compiled successfully with `tsc` and `ne
 ## 6. Final Verdict
 > **PHASE 1C — VERIFIED + FROZEN**
 Phase 1C Operational Work Management is fully implemented, tested, and structurally sound. The system is ready to advance towards Phase 2 workflows.
+
+
+## 7. QA Defect Resolution: Task Context Preservation
+A manual QA inspection identified that navigating from a critical-result Task directly to the Diagnostic Result page caused the clinical context of the task (e.g. Acknowledge, Complete) to be lost. The system correctly routed the physician to the clinical context, but lacked task operational continuity.
+
+**Resolution:**
+- Updated the \
+avigateToTask\ router logic in \	asks/page.tsx\ to forward the \	askId\ via query string when navigating to a \DiagnosticOrder\ reference.
+- Enriched \diagnostics/[orderId]/page.tsx\ to fetch and mount the specific Task Context securely.
+- Handled task mutations (\Acknowledge\, \Complete\) via the established \	askService\ directly on the diagnostic page for assigned staff.
+- Strictly preserved the independence of the diagnostic result verification lifecycle (Completing the task does NOT verify the lab result).
+
+This ensures Phase 1C operational efficiency without violating Phase 1A/1B clinical workflow boundaries.

@@ -177,7 +177,7 @@ export default function TasksPage() {
 
   const navigateToTask = (task: TaskResponse) => {
     if (task.referenceType === 'DiagnosticOrder' && task.referenceId) {
-      router.push(`/diagnostics/${task.referenceId}`);
+      router.push(`/diagnostics/${task.referenceId}?taskId=${task.id}`);
     } else if (task.encounterId) {
       router.push(`/encounters/${task.encounterId}`);
     }

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { AppShell } from '../../../components/layout/AppShell/AppShell';
 import { Button } from '../../../components/ui/Button/Button';
 import { Card } from '../../../components/ui/Card/Card';
@@ -18,7 +18,8 @@ import {
 import { Lock, AlertTriangle, RefreshCw } from 'lucide-react';
 import { diagnosticsService } from '../../../services/diagnostics-service';
 import { getStaffIdentities } from '../../../services/staff-service';
-import type { DiagnosticOrderResponse, DiagnosticResultResponse } from 'shared';
+import { taskService } from '../../../services/task-service';
+import type { DiagnosticOrderResponse, DiagnosticResultResponse, TaskResponse } from 'shared';
 import styles from './order-detail.module.css';
 import { useAuth } from '../../../hooks/useAuth';
 import { canEnterResults, canVerifyResults, canCollectSamples } from '../../../utils/diagnostics';
@@ -26,6 +27,8 @@ import { canEnterResults, canVerifyResults, canCollectSamples } from '../../../u
 export default function DiagnosticOrderDetailPage() {
   const params = useParams<{ orderId: string }>();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const taskId = searchParams?.get('taskId');
   const orderId = params?.orderId;
   const { user } = useAuth();
   const role = user?.role;
@@ -43,6 +46,11 @@ export default function DiagnosticOrderDetailPage() {
   const [conflict, setConflict] = useState(false);
   const [collecting, setCollecting] = useState(false);
 
+  const [task, setTask] = useState<TaskResponse | null>(null);
+  const [taskAssigneeName, setTaskAssigneeName] = useState<string | null>(null);
+  const [taskActionLoading, setTaskActionLoading] = useState<string | null>(null);
+  const [taskActionError, setTaskActionError] = useState<string | null>(null);
+
   const fetchData = useCallback(async () => {
     if (!orderId) return;
     setLoading(true);
@@ -50,27 +58,49 @@ export default function DiagnosticOrderDetailPage() {
     try {
       const orderRes = await diagnosticsService.getOrder(orderId);
       setOrder(orderRes.data);
+      
+      let fetchedTask: TaskResponse | null = null;
+      if (taskId) {
+        try {
+          fetchedTask = await taskService.getTask(taskId);
+          setTask(fetchedTask);
+        } catch (e) {
+          console.error('Failed to fetch task context', e);
+        }
+      }
+
       try {
         const resRes = await diagnosticsService.getResult(orderId);
         setResult(resRes.data); // result may legitimately not exist yet
+        
+        const idsToFetch = [resRes.data.enteredBy, resRes.data.verifiedBy];
+        if (fetchedTask?.assignedTo) {
+          idsToFetch.push(fetchedTask.assignedTo);
+        }
+
         const ids = await getStaffIdentities(
-          [resRes.data.enteredBy, resRes.data.verifiedBy].filter(
-            (id): id is string => typeof id === 'string',
-          ),
+          idsToFetch.filter((id): id is string => typeof id === 'string'),
         );
         setEnteredByName(ids.get(resRes.data.enteredBy)?.displayName ?? null);
         setVerifiedByName(
           resRes.data.verifiedBy ? (ids.get(resRes.data.verifiedBy)?.displayName ?? null) : null,
         );
+        if (fetchedTask?.assignedTo) {
+          setTaskAssigneeName(ids.get(fetchedTask.assignedTo)?.displayName ?? null);
+        }
       } catch {
         setResult(null);
+        if (fetchedTask?.assignedTo) {
+          const ids = await getStaffIdentities([fetchedTask.assignedTo]);
+          setTaskAssigneeName(ids.get(fetchedTask.assignedTo)?.displayName ?? null);
+        }
       }
     } catch (err) {
       setError(err as Error);
     } finally {
       setLoading(false);
     }
-  }, [orderId]);
+  }, [orderId, taskId]);
 
   useEffect(() => {
     fetchData();
@@ -111,6 +141,34 @@ export default function DiagnosticOrderDetailPage() {
       setError(err as Error);
     } finally {
       setCollecting(false);
+    }
+  };
+
+  const handleAcknowledgeTask = async () => {
+    if (!task) return;
+    setTaskActionLoading('acknowledge');
+    setTaskActionError(null);
+    try {
+      const res = await taskService.acknowledgeTask(task.id);
+      setTask(res);
+    } catch (err) {
+      setTaskActionError((err as Error).message || 'Failed to acknowledge task');
+    } finally {
+      setTaskActionLoading(null);
+    }
+  };
+
+  const handleCompleteTask = async () => {
+    if (!task) return;
+    setTaskActionLoading('complete');
+    setTaskActionError(null);
+    try {
+      const res = await taskService.completeTask(task.id);
+      setTask(res);
+    } catch (err) {
+      setTaskActionError((err as Error).message || 'Failed to complete task');
+    } finally {
+      setTaskActionLoading(null);
     }
   };
 
@@ -190,6 +248,73 @@ export default function DiagnosticOrderDetailPage() {
               </p>
             </div>
           </div>
+        )}
+
+        {taskActionError && (
+          <AlertBanner
+            severity="critical"
+            title="Task Action Failed"
+            dismissible
+            onDismiss={() => setTaskActionError(null)}
+          >
+            {taskActionError}
+          </AlertBanner>
+        )}
+
+        {task && (
+          <Card>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <div>
+                <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  {task.priority === 'critical' && <AlertTriangle size={16} color="var(--color-critical-600)" />}
+                  Related Task: {task.title}
+                </h3>
+                <div className={styles.metaGrid} style={{ marginTop: '0.5rem' }}>
+                  <div>
+                    <span className={styles.metaLabel}>Type</span>
+                    <span style={{ textTransform: 'capitalize' }}>{task.taskType.replace('_', ' ')}</span>
+                  </div>
+                  <div>
+                    <span className={styles.metaLabel}>Priority</span>
+                    <span style={{ textTransform: 'capitalize' }}>{task.priority}</span>
+                  </div>
+                  <div>
+                    <span className={styles.metaLabel}>Status</span>
+                    <span style={{ textTransform: 'capitalize' }}>{task.status.replace('_', ' ')}</span>
+                  </div>
+                  <div>
+                    <span className={styles.metaLabel}>Assignee</span>
+                    {taskAssigneeName ?? task.assignedTo?.slice(0,8) ?? 'Unassigned'}
+                  </div>
+                </div>
+              </div>
+              
+              {task.assignedTo === user?.staffId && (
+                <div style={{ display: 'flex', gap: '0.5rem', flexDirection: 'column' }}>
+                  {task.status === 'created' && (
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={() => void handleAcknowledgeTask()}
+                      disabled={taskActionLoading !== null}
+                    >
+                      {taskActionLoading === 'acknowledge' ? 'Acknowledging...' : 'Acknowledge'}
+                    </Button>
+                  )}
+                  {task.status === 'in_progress' && (
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={() => void handleCompleteTask()}
+                      disabled={taskActionLoading !== null}
+                    >
+                      {taskActionLoading === 'complete' ? 'Completing...' : 'Complete Task'}
+                    </Button>
+                  )}
+                </div>
+              )}
+            </div>
+          </Card>
         )}
 
         {conflict && (
