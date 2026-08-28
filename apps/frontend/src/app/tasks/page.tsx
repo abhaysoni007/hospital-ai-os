@@ -144,7 +144,7 @@ export default function TasksPage() {
       const { apiClient } = await import('../../services/api-client');
       await apiClient(`/tasks/${reassignTask.id}/reassign`, {
         method: 'POST',
-        body: JSON.stringify({ newAssigneeId: newAssignee }),
+        body: { newAssigneeId: newAssignee },
       });
       setReassignTask(null);
       await fetchTasks();
