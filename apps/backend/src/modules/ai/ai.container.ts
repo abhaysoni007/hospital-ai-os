@@ -8,12 +8,13 @@ import { computeAiSubsystemState, resolveReadinessInputs, AiSubsystemState } fro
 
 /**
  * Composition root for the M11 AI infrastructure (ADR-017 §11).
- * The Gemini SDK is constructed ONLY here and ONLY inside adapters/.
+ * The Gemini SDK is constructed ONLY here and ONLY inside adapters/-.
  * When AI is disabled or unconfigured the adapter is inert: readiness reports
  * `disabled` and every orchestrator invocation short-circuits with 503.
  */
 
 import { OpenAICompatibleAdapter } from './adapters/openai-compatible.adapter';
+import { OllamaAdapter } from './adapters/ollama.adapter';
 
 function buildAdapter(): AIProviderAdapter {
   if (config.AI_PROVIDER === 'fake') return new FakeProvider();
@@ -22,6 +23,14 @@ function buildAdapter(): AIProviderAdapter {
       config.AI_API_KEY ?? 'unconfigured',
       config.AI_BASE_URL ?? 'https://api.openai.com/v1',
       config.AI_MODEL,
+    );
+  }
+  if (config.AI_PROVIDER === 'ollama') {
+    // AI_BASE_URL defaults to http://localhost:11434 inside the adapter.
+    // AI_MODEL_NAME overrides the model (default: medgemma:latest).
+    return new OllamaAdapter(
+      config.AI_BASE_URL,
+      config.AI_MODEL_NAME ?? config.AI_MODEL,
     );
   }
   return new GeminiAdapter(config.AI_API_KEY ?? 'unconfigured', config.AI_MODEL);
