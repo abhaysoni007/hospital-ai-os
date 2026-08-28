@@ -182,12 +182,18 @@ Demo scenario visible after `pnpm seed:demo`:
 |-------|-------|--------|
 | Frontend (7 files) | 56 | ✅ PASSED |
 | Shared (6 files) | 51 | ✅ PASSED |
-| Backend unit tests (no DB) | 444 | ✅ PASSED |
-| Backend integration (require DB) | Skipped (DB offline) | — |
+| Backend unit tests (no DB) | - | 🚫 BLOCKED |
+| Backend integration (require DB) | - | 🚫 BLOCKED |
 
-**Integration test file**: `apps/backend/src/modules/task/__tests__/task.integration.test.ts`
+**Execution Notes**: 
+- `pnpm run lint`: Fixed unused variables (AIProviderError, _authContext, text). Passed.
+- `pnpm run typecheck`: Passed.
+- `pnpm run build`: Passed.
+- `pnpm --filter frontend test`: Passed 56 tests.
+- `pnpm --filter shared test`: Passed 51 tests.
+- **Backend Tests**: Execution failed with `ECONNREFUSED 127.0.0.1:55432`. The test environment's PostgreSQL instance is offline.
 
-Covers: task creation, scoped list, cross-user isolation, acknowledgement, audit, re-acknowledgement 409, completion, re-completion 409.
+A dedicated concurrency test file (`task.concurrency.test.ts`) was authored to execute `Promise.allSettled` requests for Duplicate Protection, Acknowledgement, and Completion. However, it cannot be run to verify the claims due to the database constraint.
 
 ---
 
@@ -206,27 +212,26 @@ Covers: task creation, scoped list, cross-user isolation, acknowledgement, audit
 | M11/M12 AI orchestration | ✅ UNMODIFIED |
 | M13 design system | ✅ USED, NOT CHANGED |
 | Phase 1A discharge | ✅ UNMODIFIED |
+| Backend Tests (M6-M13) | 🚫 BLOCKED (ECONNREFUSED) |
 
 ---
 
 ## 13. Git History
 
 ```
+fffe5e0  fix(qa): fix lint errors and add concurrency proof test for tasks
+7ba8acc  feat(tasks): add reassign/escalate ops, fix alert() usage, add Phase 1B verification report
 9b1130b  feat(tasks): implement Phase 1B Work Management, My Work hub, and critical diagnostics tasks
 11d55de  feat(ai): add OpenAI-compatible provider adapter and multi-provider configuration
 a765f36  fix(qa): fix AI note draft envelope unwrapping and lab queue diagnostics demo data
 ```
-
-> Push pending: `gh auth login -h github.com` required to refresh the `abhaysoni007` token, then `gh auth setup-git && git push origin main`.
 
 ---
 
 ## 14. Known Limitations
 
 1. Reassign/escalate not yet exposed in frontend UI (backend complete, deferred to Phase 1C).
-2. Concurrent acknowledgement integration test requires live PostgreSQL.
-3. CORS health test returns 503 when DB offline — pre-existing constraint.
-4. Demo seed integrity audit checks critical notification but not the task row explicitly.
+2. Demo seed integrity audit checks critical notification but not the task row explicitly.
 
 ---
 
@@ -239,18 +244,10 @@ Not implemented (per spec): cron, SLA engine, autonomous AI task generation, sup
 ## FINAL VERDICT
 
 ```
-PHASE 1B — VERIFIED
+PHASE 1B — BLOCKED
 ```
 
-- Backend TypeScript: 0 compile errors
-- Frontend: builds successfully (18 pages)
-- Frontend unit tests: 56/56 passed
-- Shared tests: 51/51 passed
-- RBAC navigation contract: 8/8 passed
-- State machine: strictly enforced with row-level locking
-- Atomic transaction: result + task + notification + 4 audit events
-- Duplicate protection: unique partial index
-- No PHI in audit metadata
-- No alert()/window.confirm in UI
-- M5 matrix: unchanged
-- All frozen milestones: unmodified
+**Blockers:**
+- Cannot execute backend integration tests due to `ECONNREFUSED ::1:55432` (PostgreSQL instance offline).
+- The strict requirement to "Run REAL concurrent requests against the same task. Acknowledge: Promise.allSettled... Prove: 1 success 1 deterministic conflict" was authored in `task.concurrency.test.ts` but could not be executed to generate the required proof.
+- Cannot claim PASS if not executed.
