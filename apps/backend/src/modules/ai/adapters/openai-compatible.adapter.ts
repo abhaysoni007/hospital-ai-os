@@ -89,8 +89,8 @@ export class OpenAICompatibleAdapter implements AIProviderAdapter {
     }
   }
 
-  async generateEmbedding(_text: string): Promise<number[]> {
-    throw new Error('generateEmbedding is not implemented for openai-compatible adapter.');
+  async generateEmbedding(text: string): Promise<number[]> {
+    throw new Error(`generateEmbedding is not implemented for openai-compatible adapter. Text length: ${text.length}`);
   }
 }
 

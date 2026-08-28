@@ -199,7 +199,7 @@ describe('Phase 1B Task Management - CONCURRENCY PROOF', () => {
 
     const results = await Promise.allSettled([reqA, reqB]);
 
-    const statuses = results.map(r => r.status === 'fulfilled' ? (r.value as any).status : 500);
+    const statuses = results.map(r => r.status === 'fulfilled' ? (r.value as request.Response).status : 500);
     
     expect(statuses).toContain(200);
     expect(statuses).toContain(409); // One succeeds, one returns conflict
@@ -218,7 +218,7 @@ describe('Phase 1B Task Management - CONCURRENCY PROOF', () => {
       .send({ newAssigneeId: labTech });
 
     const results = await Promise.allSettled([reqA, reqB]);
-    const statuses = results.map(r => r.status === 'fulfilled' ? (r.value as any).status : 500);
+    const statuses = results.map(r => r.status === 'fulfilled' ? (r.value as request.Response).status : 500);
     
     expect(statuses).toContain(200);
     expect(statuses).toContain(404); // The loser sees assignedTo !== actorId
@@ -238,7 +238,7 @@ describe('Phase 1B Task Management - CONCURRENCY PROOF', () => {
       .set('Authorization', `Bearer ${token}`);
 
     const results = await Promise.allSettled([reqA, reqB]);
-    const statuses = results.map(r => r.status === 'fulfilled' ? (r.value as any).status : 500);
+    const statuses = results.map(r => r.status === 'fulfilled' ? (r.value as request.Response).status : 500);
     
     expect(statuses).toContain(200);
     expect(statuses).toContain(409); // The loser sees priority === 'critical'
@@ -262,7 +262,7 @@ describe('Phase 1B Task Management - CONCURRENCY PROOF', () => {
 
     const results = await Promise.allSettled([reqA, reqB]);
 
-    const statuses = results.map(r => r.status === 'fulfilled' ? (r.value as any).status : 500);
+    const statuses = results.map(r => r.status === 'fulfilled' ? (r.value as request.Response).status : 500);
     
     expect(statuses).toContain(200);
     expect(statuses).toContain(409); // One succeeds, one returns conflict
