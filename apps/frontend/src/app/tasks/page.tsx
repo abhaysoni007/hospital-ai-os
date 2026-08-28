@@ -28,6 +28,7 @@ export default function TasksPage() {
   const [tasks, setTasks] = useState<TaskResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [status, setStatus] = useState('');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
@@ -54,12 +55,13 @@ export default function TasksPage() {
 
   const handleAcknowledge = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
+    setActionError(null);
     setActionLoading(id);
     try {
       await taskService.acknowledgeTask(id);
       await fetchTasks();
     } catch {
-      alert('Failed to acknowledge task.');
+      setActionError('Failed to acknowledge task. It may have already been updated.');
     } finally {
       setActionLoading(null);
     }
@@ -67,12 +69,13 @@ export default function TasksPage() {
 
   const handleComplete = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
+    setActionError(null);
     setActionLoading(id);
     try {
       await taskService.completeTask(id);
       await fetchTasks();
     } catch {
-      alert('Failed to complete task.');
+      setActionError('Failed to complete task. It may have already been updated.');
     } finally {
       setActionLoading(null);
     }
@@ -108,6 +111,20 @@ export default function TasksPage() {
             />
           }
         />
+
+        {actionError && (
+          <div className={styles.actionError} role="alert">
+            {actionError}
+            <button
+              type="button"
+              className={styles.actionErrorDismiss}
+              onClick={() => setActionError(null)}
+              aria-label="Dismiss error"
+            >
+              ×
+            </button>
+          </div>
+        )}
 
         {loading ? (
           <TableSkeleton rows={6} />

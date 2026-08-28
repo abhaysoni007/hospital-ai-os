@@ -1,8 +1,9 @@
 import { and, desc, eq, inArray, sql } from 'drizzle-orm';
 import { db } from '../../db';
 import { tasks } from '../../db/schema/tasks';
+import { staff } from '../../db/schema/staff';
 import { GetTasksQuery, TaskListResponse, TaskResponse } from 'shared';
-import { ConflictError, NotFoundError } from 'shared/src/errors/AppError';
+import { ConflictError, NotFoundError, ValidationError } from 'shared/src/errors/AppError';
 import { auditService } from '../audit/audit.service';
 
 type AuthContext = { role: string; departmentId: string };
@@ -179,6 +180,133 @@ export class TaskService {
       );
 
       return toTaskResponse(task);
+    });
+  }
+
+  /**
+   * Reassigns a task to a new owner.
+   * Only the current assignee with task:update can reassign.
+   * Only non-terminal tasks can be reassigned.
+   * State moves to 'assigned' to indicate pending acknowledgment from new owner.
+   */
+  async reassignTask(
+    id: string,
+    newAssigneeId: string,
+    actorId: string,
+    correlationId: string,
+    authContext: AuthContext,
+  ): Promise<TaskResponse> {
+    return await db.transaction(async (tx) => {
+      const rows = await tx.select().from(tasks).where(eq(tasks.id, id)).for('update');
+
+      if (rows.length === 0 || rows[0].assignedTo !== actorId) {
+        throw new NotFoundError('Task not found', { code: 'TASK_NOT_FOUND' });
+      }
+
+      const task = rows[0];
+      if (task.status === 'completed' || task.status === 'cancelled') {
+        throw new ConflictError('Completed or cancelled tasks cannot be reassigned.', {
+          code: 'INVALID_TRANSITION',
+        });
+      }
+
+      // Verify new assignee exists and is active
+      const newAssignee = await tx.query.staff.findFirst({
+        where: eq(staff.id, newAssigneeId),
+        columns: { id: true, status: true },
+      });
+      if (!newAssignee || newAssignee.status !== 'active') {
+        throw new ValidationError('Target assignee not found or not active.', {
+          code: 'ASSIGNEE_NOT_FOUND',
+        });
+      }
+
+      const updated = await tx
+        .update(tasks)
+        .set({ assignedTo: newAssigneeId, status: 'assigned', updatedAt: new Date() })
+        .where(and(eq(tasks.id, id), inArray(tasks.status, ['created', 'assigned', 'in_progress'])))
+        .returning();
+
+      if (updated.length === 0) {
+        throw new ConflictError('Task cannot be reassigned from its current state.', {
+          code: 'INVALID_TRANSITION',
+        });
+      }
+
+      await auditService.logEvent(
+        {
+          eventType: 'TASK_REASSIGNED',
+          actorId,
+          actorRole: authContext.role,
+          actorDepartment: authContext.departmentId,
+          targetType: 'TASK',
+          targetId: id,
+          patientId: task.patientId ?? undefined,
+          actionDetail: {
+            taskType: task.taskType,
+            fromAssignee: actorId,
+            toAssignee: newAssigneeId,
+          },
+        },
+        correlationId,
+        tx,
+      );
+
+      return toTaskResponse(updated[0]);
+    });
+  }
+
+  /**
+   * Escalates a task: marks priority = critical and audits the action.
+   * Escalation is a supervisory action — NOT a lifecycle state change.
+   * Only non-terminal tasks can be escalated.
+   */
+  async escalateTask(
+    id: string,
+    actorId: string,
+    correlationId: string,
+    authContext: AuthContext,
+  ): Promise<TaskResponse> {
+    return await db.transaction(async (tx) => {
+      const rows = await tx.select().from(tasks).where(eq(tasks.id, id)).for('update');
+
+      if (rows.length === 0 || rows[0].assignedTo !== actorId) {
+        throw new NotFoundError('Task not found', { code: 'TASK_NOT_FOUND' });
+      }
+
+      const task = rows[0];
+      if (task.status === 'completed' || task.status === 'cancelled') {
+        throw new ConflictError('Completed or cancelled tasks cannot be escalated.', {
+          code: 'INVALID_TRANSITION',
+        });
+      }
+
+      const updated = await tx
+        .update(tasks)
+        .set({ priority: 'critical', updatedAt: new Date() })
+        .where(eq(tasks.id, id))
+        .returning();
+
+      await auditService.logEvent(
+        {
+          eventType: 'TASK_ESCALATED',
+          actorId,
+          actorRole: authContext.role,
+          actorDepartment: authContext.departmentId,
+          targetType: 'TASK',
+          targetId: id,
+          patientId: task.patientId ?? undefined,
+          actionDetail: {
+            taskType: task.taskType,
+            previousPriority: task.priority,
+            newPriority: 'critical',
+          },
+        },
+        correlationId,
+        tx,
+      );
+
+      return toTaskResponse(updated[0]);
     });
   }
 }
