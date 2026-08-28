@@ -1,12 +1,13 @@
 import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
 import crypto from 'crypto';
-import { eq, inArray } from 'drizzle-orm';
+import { eq, inArray, sql } from 'drizzle-orm';
 import { db } from '../../../db';
 import {
   diagnosticOrders,
   diagnosticResults,
   criticalValueRules,
 } from '../../../db/schema/diagnostics';
+import { tasks } from '../../../db/schema/tasks';
 import { notifications } from '../../../db/schema/tasks';
 import { encounters } from '../../../db/schema/appointments';
 import { patients } from '../../../db/schema/patients';
@@ -136,6 +137,9 @@ describe('M10 Diagnostics Module', () => {
           orders.map((o) => o.id),
         ),
       );
+    }
+    if (staffIds.length) {
+      await db.delete(tasks).where(inArray(tasks.assignedTo, staffIds));
     }
     await db.delete(encounters).where(inArray(encounters.createdBy, staffIds));
     await db.delete(patients).where(eq(patients.createdBy, receptionistId));
@@ -390,6 +394,7 @@ describe('M10 Diagnostics Module', () => {
       'CRITICAL_VALUE_DETECTED',
       'CRITICAL_VALUE_NOTIFIED',
       'LAB_RESULT_ENTERED',
+      'TASK_CREATED',
     ]);
 
     const target = await db.query.notifications.findFirst({

@@ -113,6 +113,8 @@ describe('Phase 1B Task Management - CONCURRENCY PROOF', () => {
       .returning();
     orderId = order.id;
 
+    await db.delete(criticalValueRules).where(eq(criticalValueRules.testCode, 'TEST_CONC')).catch(() => undefined);
+
     await db
       .insert(criticalValueRules)
       .values({
