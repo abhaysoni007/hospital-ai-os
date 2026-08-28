@@ -76,6 +76,8 @@ export class BreakGlassService {
           encounterId: payload.encounterId || null,
           reason: payload.reason,
           justification: payload.justification,
+          grantedScope: { patientId: payload.patientId, encounterId: payload.encounterId || null, operation: 'read' },
+          isActive: true,
           activatedAt: now,
           expiresAt: expiresAt
         })
@@ -100,7 +102,8 @@ export class BreakGlassService {
         tx
       );
 
-      return { ...session, actorId: session.staffId, staffId: undefined };
+      const { justification: _j1, ...sessionPublic } = session;
+      return { ...sessionPublic, actorId: session.staffId, staffId: undefined };
     });
   }
 
@@ -115,14 +118,15 @@ export class BreakGlassService {
       if (sessionList.length === 0) {
         throw new NotFoundError('Break-glass session not found.');
       }
-      const session = sessionList[0] as typeof breakGlassSessions.$inferSelect;
+      // Raw SQL returns snake_case column names
+      const rawSession = sessionList[0] as Record<string, any>;
 
-      if (session.revokedAt) {
+      if (rawSession.revoked_at) {
         throw new ConflictError('Session is already revoked.', { code: 'ALREADY_REVOKED' });
       }
       
       const now = new Date();
-      if (new Date(session.expiresAt) <= now) {
+      if (new Date(rawSession.expires_at) <= now) {
         throw new ConflictError('Cannot revoke an expired session.', { code: 'ALREADY_EXPIRED' });
       }
 
@@ -132,6 +136,8 @@ export class BreakGlassService {
         .where(eq(breakGlassSessions.id, sessionId))
         .returning();
 
+      const patientIdForAudit = rawSession.patient_id as string;
+
       await auditService.logEvent(
         {
           eventType: 'BREAK_GLASS_REVOKED',
@@ -140,13 +146,14 @@ export class BreakGlassService {
           actorDepartment: authContext.departmentId,
           targetType: 'BREAK_GLASS_SESSION',
           targetId: sessionId,
-          patientId: session.patientId
+          patientId: patientIdForAudit
         },
         correlationId,
         tx
       );
 
-      return { ...revoked, actorId: revoked.staffId, staffId: undefined };
+      const { justification: _j2, ...revokedPublic } = revoked;
+      return { ...revokedPublic, actorId: revoked.staffId, staffId: undefined };
     });
   }
 
@@ -160,9 +167,9 @@ export class BreakGlassService {
       if (sessionList.length === 0) {
         throw new NotFoundError('Break-glass session not found.');
       }
-      const session = sessionList[0] as typeof breakGlassSessions.$inferSelect;
+      const rawSessionR = sessionList[0] as Record<string, any>;
 
-      if (session.reviewedAt) {
+      if (rawSessionR.reviewed_at) {
         throw new ConflictError('Session is already reviewed.');
       }
 
@@ -181,13 +188,14 @@ export class BreakGlassService {
           actorDepartment: authContext.departmentId,
           targetType: 'BREAK_GLASS_SESSION',
           targetId: sessionId,
-          patientId: session.patientId
+          patientId: rawSessionR.patient_id as string
         },
         correlationId,
         tx
       );
 
-      return { ...reviewed, actorId: reviewed.staffId, staffId: undefined };
+      const { justification: _j3, ...reviewedPublic } = reviewed;
+      return { ...reviewedPublic, actorId: reviewed.staffId, staffId: undefined };
     });
   }
 
@@ -199,11 +207,10 @@ export class BreakGlassService {
       orderBy: [desc(breakGlassSessions.activatedAt)]
     });
 
-    return rows.map(r => ({
-      ...r,
-      actorId: r.staffId,
-      staffId: undefined, // remove raw DB column name
-    }));
+    return rows.map(r => {
+      const { justification: _jList, staffId: _s, ...rest } = r;
+      return { ...rest, actorId: r.staffId };
+    });
   }
 }
 
