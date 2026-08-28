@@ -9,24 +9,23 @@ export interface ChartBriefResponse {
 
 export const intelligenceService = {
   getTimeline: async (patientId: string, limit: number = 50): Promise<ClinicalTimelineResponse> => {
-    const response = await apiClient.get<ClinicalTimelineResponse>(
-      `/api/v1/intelligence/timeline/${patientId}?limit=${limit}`
+    return apiClient<ClinicalTimelineResponse>(
+      `/intelligence/timeline/${patientId}?limit=${limit}`,
+      { method: 'GET' }
     );
-    return response.data;
   },
 
   generateChartBrief: async (patientId: string, question?: string): Promise<ChartBriefResponse> => {
-    const response = await apiClient.post<ChartBriefResponse>(
-      `/api/v1/intelligence/chart-brief/${patientId}`,
-      { question }
+    return apiClient<ChartBriefResponse>(
+      `/intelligence/chart-brief/${patientId}`,
+      { method: 'POST', body: { question } }
     );
-    return response.data;
   },
 
   getDiagnosticTrend: async (patientId: string, testCode: string): Promise<DiagnosticTrendResponse> => {
-    const response = await apiClient.get<DiagnosticTrendResponse>(
-      `/api/v1/intelligence/diagnostic-trend/${patientId}/${testCode}`
+    return apiClient<DiagnosticTrendResponse>(
+      `/intelligence/diagnostic-trend/${patientId}/${testCode}`,
+      { method: 'GET' }
     );
-    return response.data;
   },
 };

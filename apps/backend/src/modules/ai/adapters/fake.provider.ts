@@ -207,6 +207,17 @@ function minimalValidOutput(userPrompt: string, _schema: z.ZodType): unknown {
   };
 
   const isProgressNote = userPrompt.includes('NOTE TYPE: progress note');
+  const isChartBrief = userPrompt.includes('CLINICIAN QUESTION') || userPrompt.includes('Chart Brief') || _schema.description?.includes('brief') || userPrompt.includes('chart');
+
+  if (isChartBrief) {
+    return {
+      summary: 'Patient evaluated for active clinical complaint. Review of symptoms documented.',
+      citations: citations.length > 0 ? citations : [defaultCitation],
+      disclaimers: ['AI-generated draft for clinician review.'],
+      informationGaps: gapCodes,
+    };
+  }
+
   if (isProgressNote) {
     return {
       narrative:
