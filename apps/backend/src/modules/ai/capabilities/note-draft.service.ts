@@ -184,7 +184,7 @@ export class AiNoteDraftService {
       groundingStatus: 'grounded',
       promptTemplateId: 'note_draft@1',
       provider: config.AI_PROVIDER,
-      model: config.AI_MODEL_NAME,
+      model: config.AI_MODEL,
       latencyMs: result.latencyMs,
       computedGaps: result.gaps,
       /* eslint-disable-next-line @typescript-eslint/no-explicit-any */

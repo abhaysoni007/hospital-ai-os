@@ -10,6 +10,7 @@ import { auditEvents } from '../../../db/schema/audit';
 import { patients } from '../../../db/schema/patients';
 import { staff } from '../../../db/schema/staff';
 import { AuditService } from '../../audit/audit.service';
+import { config } from '../../../config';
 import { AIOrchestrator } from '../orchestrator';
 import { FakeProvider } from '../adapters/fake.provider';
 import { aiInteractionRepository, startOfUtcDay } from '../ai.persistence';
@@ -94,7 +95,7 @@ describe('M11 Orchestrator — governed invocation pipeline', () => {
     expect(row).toBeDefined();
     expect(row!.promptTemplateId).toBe('note_draft@1');
     expect(row!.modelProvider).toBe('fake');
-    expect(row!.modelName).toBe('gemini-2.0-flash'); // config default persisted
+    expect(row!.modelName).toBe(config.AI_MODEL); // config default persisted
     expect(row!.groundingStatus).toBe('grounded');
     expect(row!.userAction).toBe('pending');
 

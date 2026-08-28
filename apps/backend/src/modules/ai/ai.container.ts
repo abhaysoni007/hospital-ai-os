@@ -13,9 +13,18 @@ import { computeAiSubsystemState, resolveReadinessInputs, AiSubsystemState } fro
  * `disabled` and every orchestrator invocation short-circuits with 503.
  */
 
+import { OpenAICompatibleAdapter } from './adapters/openai-compatible.adapter';
+
 function buildAdapter(): AIProviderAdapter {
   if (config.AI_PROVIDER === 'fake') return new FakeProvider();
-  return new GeminiAdapter(config.AI_API_KEY ?? 'unconfigured', config.AI_MODEL_NAME);
+  if (config.AI_PROVIDER === 'openai-compatible') {
+    return new OpenAICompatibleAdapter(
+      config.AI_API_KEY ?? 'unconfigured',
+      config.AI_BASE_URL ?? 'https://api.openai.com/v1',
+      config.AI_MODEL,
+    );
+  }
+  return new GeminiAdapter(config.AI_API_KEY ?? 'unconfigured', config.AI_MODEL);
 }
 
 // Constructed eagerly but harmlessly: GeminiAdapter's constructor only builds

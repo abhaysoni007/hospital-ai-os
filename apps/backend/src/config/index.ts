@@ -36,9 +36,10 @@ const configSchema = z.object({
   // AI_ENABLED=false or absent AI_API_KEY ⇒ subsystem `disabled`; core
   // clinical workflows never depend on it.
   AI_ENABLED: z.preprocess((v) => v === true || v === 'true', z.boolean()).default(false),
-  AI_PROVIDER: z.enum(['google-gemini', 'fake']).default('google-gemini'),
+  AI_PROVIDER: z.enum(['google-gemini', 'fake', 'openai-compatible']).default('google-gemini'),
   AI_API_KEY: z.string().optional(),
-  AI_MODEL_NAME: z.string().min(1).default('gemini-2.0-flash'),
+  AI_BASE_URL: z.string().url().optional(),
+  AI_MODEL: z.string().min(1).default('gemini-2.0-flash'),
   AI_TIMEOUT_MS: z.coerce.number().int().positive().max(120000).default(30000),
   AI_MAX_TOKENS: z.coerce.number().int().positive().default(4096),
   AI_DAILY_TOKEN_BUDGET: z.coerce.number().int().positive().default(200000),

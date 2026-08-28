@@ -14,17 +14,29 @@ export interface ReadinessInputs {
   encryptionKeyValid: boolean;
 }
 
-/** Single source of truth for readiness inputs (orchestrator + health). */
 export function resolveReadinessInputs(cfg: {
   AI_ENABLED: boolean;
   AI_PROVIDER: string;
   AI_API_KEY?: string;
+  AI_BASE_URL?: string;
   NODE_ENV: string;
 }): ReadinessInputs {
+  const isFake = cfg.AI_PROVIDER === 'fake';
+  const isOpenAiCompatible = cfg.AI_PROVIDER === 'openai-compatible';
+
+  let apiKeyPresent = false;
+  if (isFake) {
+    apiKeyPresent = true;
+  } else if (isOpenAiCompatible) {
+    apiKeyPresent = Boolean(cfg.AI_API_KEY) && Boolean(cfg.AI_BASE_URL);
+  } else {
+    // gemini
+    apiKeyPresent = Boolean(cfg.AI_API_KEY);
+  }
+
   return {
     aiEnabled: cfg.AI_ENABLED,
-    // The deterministic fake provider requires no credentials by design.
-    apiKeyPresent: cfg.AI_PROVIDER === 'fake' || Boolean(cfg.AI_API_KEY),
+    apiKeyPresent,
     encryptionKeyValid: isEncryptionKeyValid(cfg.NODE_ENV, process.env.ENCRYPTION_KEY),
   };
 }
