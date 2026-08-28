@@ -21,7 +21,7 @@
 
 import * as dotenv from 'dotenv';
 import path from 'path';
-import { inArray, sql } from 'drizzle-orm';
+import { inArray, sql, or } from 'drizzle-orm';
 
 dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 
@@ -71,7 +71,7 @@ import { patients } from './schema/patients';
 import { appointments, encounters } from './schema/appointments';
 import { clinicalRecords } from './schema/clinical';
 import { diagnosticOrders, diagnosticResults, criticalValueRules } from './schema/diagnostics';
-import { notifications } from './schema/tasks';
+import { notifications, tasks } from './schema/tasks';
 import {
   ALLOWED_DB_NAMES as SEED_ALLOWED_DB_NAMES,
   DEMO_DEPT_CODES,
@@ -243,6 +243,21 @@ async function reset() {
     console.log(`  Clinical records:     ${n} deleted`);
   }
 
+  // ── 4.5 Tasks (owned by demo staff or linked to demo encounters) ─────────
+  if (demoStaffIds.length > 0 || demoEncounterIds.length > 0 || demoPatientIds.length > 0) {
+    const conditions = [];
+    if (demoStaffIds.length > 0) conditions.push(inArray(tasks.assignedTo, demoStaffIds));
+    if (demoEncounterIds.length > 0) conditions.push(inArray(tasks.encounterId, demoEncounterIds));
+    if (demoPatientIds.length > 0) conditions.push(inArray(tasks.patientId, demoPatientIds));
+    
+    if (conditions.length > 0) {
+      const result = await db.delete(tasks).where(or(...conditions));
+      const n = (result as unknown as { rowCount?: number }).rowCount ?? 0;
+      deleted += n;
+      console.log(`  Tasks:                ${n} deleted`);
+    }
+  }
+  
   // ── 5. Encounters ─────────────────────────────────────────────────────────
   if (demoEncounterIds.length > 0) {
     // Unlink from appointments first

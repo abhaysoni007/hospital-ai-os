@@ -2002,9 +2002,11 @@ async function seed() {
   console.log('='.repeat(60));
 }
 
-seed()
-  .then(() => process.exit(0))
-  .catch((err) => {
-    console.error('\nSeed FAILED:', err);
-    process.exit(1);
-  });
+if (require.main === module) {
+  seed()
+    .then(() => process.exit(0))
+    .catch((err) => {
+      console.error('\nSeed FAILED:', err);
+      process.exit(1);
+    });
+}
