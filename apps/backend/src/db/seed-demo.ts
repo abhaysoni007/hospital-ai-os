@@ -1836,7 +1836,7 @@ async function seed() {
       description: 'Follow up on patient dietary requirements after transfer.',
       patientId: patMap.get('DEMO-PAT-002'),
       encounterId: encMap.get('DEMO-ENC-002'),
-      assignedTo: nurs1Id,
+      assignedTo: nur1Id,
       assignedBy: phy1Id,
       priority: 'medium',
       status: 'assigned',
@@ -1859,7 +1859,7 @@ async function seed() {
       patientId: patMap.get('DEMO-PAT-001'),
       encounterId: encMap.get('DEMO-ENC-001'),
       assignedTo: phy1Id,
-      assignedBy: nurs1Id,
+      assignedBy: nur1Id,
       priority: 'critical',
       status: 'in_progress',
       dueAt: new Date(Date.now() + 3600000), // 1 hour from now

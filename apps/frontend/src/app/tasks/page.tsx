@@ -25,11 +25,7 @@ import { taskService } from '../../services/task-service';
 import type { TaskResponse, TaskStatusEnum } from 'shared';
 import styles from './tasks.module.css';
 
-const DEMO_STAFF = [
-  { value: '00000000-0000-0000-0000-000000000101', label: 'Dr. Sarah Chen (Physician)' },
-  { value: '00000000-0000-0000-0000-000000000102', label: 'James Wilson (Nurse)' },
-  { value: '00000000-0000-0000-0000-000000000103', label: 'Maria Garcia (Lab Tech)' },
-];
+// DEMO_STAFF removed; we now fetch live department staff
 
 export default function TasksPage() {
   const router = useRouter();
@@ -45,7 +41,9 @@ export default function TasksPage() {
 
   // Reassign Modal State
   const [reassignTask, setReassignTask] = useState<TaskResponse | null>(null);
-  const [newAssignee, setNewAssignee] = useState<string>(DEMO_STAFF[0].value);
+  const [newAssignee, setNewAssignee] = useState<string>('');
+  const [departmentStaff, setDepartmentStaff] = useState<{ value: string; label: string }[]>([]);
+  const [staffMap, setStaffMap] = useState<Record<string, string>>({});
 
   // Escalate Modal State
   const [escalateTask, setEscalateTask] = useState<TaskResponse | null>(null);
@@ -59,10 +57,31 @@ export default function TasksPage() {
         page: 1,
         pageSize: 100,
         status: (status || undefined) as TaskStatusEnum | undefined,
-        // @ts-expect-error adding scope to getTasksQuerySchema temporarily
         scope,
       });
       setTasks(response.data);
+
+      // Fetch identities for all assignees
+      const assignees = response.data
+        .map((t) => t.assignedTo)
+        .filter((id): id is string => !!id);
+      
+      const uniqueAssignees = [...new Set(assignees)];
+      if (uniqueAssignees.length > 0) {
+        const { apiClient } = await import('../../services/api-client');
+        try {
+          const idResponse = await apiClient(`/staff/identity?ids=${uniqueAssignees.slice(0, 50).join(',')}`);
+          setStaffMap(prev => {
+            const next = { ...prev };
+            idResponse.data.forEach((staff: any) => {
+              next[staff.id] = staff.displayName;
+            });
+            return next;
+          });
+        } catch (e) {
+          console.error('Failed to fetch staff identities', e);
+        }
+      }
     } catch {
       setError('The task service did not respond. Check your connection and try again.');
     } finally {
@@ -73,6 +92,21 @@ export default function TasksPage() {
   useEffect(() => {
     void fetchTasks();
   }, [fetchTasks]);
+
+  useEffect(() => {
+    if (user && ['physician', 'nurse', 'lab_technician', 'pharmacist', 'receptionist'].includes(user.role)) {
+      import('../../services/api-client').then(({ apiClient }) => {
+        apiClient('/staff/department').then(res => {
+          const opts = res.data.map((s: any) => ({
+            value: s.id,
+            label: `${s.displayName} (${s.role.replace('_', ' ')})`
+          }));
+          setDepartmentStaff(opts);
+          if (opts.length > 0) setNewAssignee(opts[0].value);
+        }).catch(() => {});
+      });
+    }
+  }, [user]);
 
   const handleAcknowledge = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
@@ -240,7 +274,9 @@ export default function TasksPage() {
               <tr>
                 <TH>Title</TH>
                 <TH width="120px">Priority</TH>
+                <TH width="160px">Assignee</TH>
                 <TH width="140px">Created</TH>
+                <TH width="140px">Due At</TH>
                 <TH width="140px">Status</TH>
                 <TH aria-label="Actions" />
               </tr>
@@ -274,12 +310,23 @@ export default function TasksPage() {
                     )}
                   </TD>
                   <TD>
+                    {task.assignedTo ? staffMap[task.assignedTo] || 'Loading...' : 'Unassigned'}
+                  </TD>
+                  <TD>
                     {new Date(task.createdAt).toLocaleString([], {
                       month: 'short',
                       day: 'numeric',
                       hour: '2-digit',
                       minute: '2-digit',
                     })}
+                  </TD>
+                  <TD>
+                    {task.dueAt ? new Date(task.dueAt).toLocaleString([], {
+                      month: 'short',
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    }) : '-'}
                   </TD>
                   <TD className={styles.capitalize}>{task.status.replace('_', ' ')}</TD>
                   <TD align="right">
@@ -352,7 +399,7 @@ export default function TasksPage() {
                 label="New Assignee"
                 value={newAssignee}
                 onChange={(e) => setNewAssignee(e.target.value)}
-                options={DEMO_STAFF}
+                options={departmentStaff}
               />
             </div>
           </div>

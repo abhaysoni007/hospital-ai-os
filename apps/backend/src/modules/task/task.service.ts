@@ -51,7 +51,8 @@ export class TaskService {
       }
       // no assignedTo filter
     } else if (scope === 'department') {
-      if (!['department_admin', 'physician', 'nurse'].includes(_authContext.role)) {
+      const allowedRoles = ['physician', 'nurse', 'pharmacist', 'lab_technician', 'receptionist'];
+      if (!allowedRoles.includes(_authContext.role)) {
         throw new ValidationError('Role does not support department scope', { code: 'UNAUTHORIZED' });
       }
       

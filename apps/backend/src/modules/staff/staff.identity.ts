@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { inArray } from 'drizzle-orm';
+import { inArray, and, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { authMiddleware } from '../../middleware/auth.middleware';
 import { db } from '../../db';
@@ -64,6 +64,41 @@ staffIdentityRoutes.get('/identity', async (req, res, next) => {
       });
     }
     const data = await resolveStaffIdentities(ids);
+    res.status(200).json({ data });
+  } catch (error) {
+    next(error);
+  }
+});
+
+staffIdentityRoutes.get('/department', async (req, res, next) => {
+  try {
+    const user = req.user;
+    if (!user || !user.departmentId) {
+      throw new ValidationError('Department ID is missing from token.', { code: 'UNAUTHORIZED' });
+    }
+
+    const rows = await db
+      .select({
+        id: staff.id,
+        firstName: staff.firstName,
+        lastName: staff.lastName,
+        role: staff.role,
+      })
+      .from(staff)
+      .where(
+        and(
+          eq(staff.departmentId, user.departmentId),
+          eq(staff.status, 'active')
+        )
+      )
+      .limit(200);
+
+    const data: StaffIdentityItem[] = rows.map((r) => ({
+      id: r.id,
+      displayName: `${r.firstName} ${r.lastName}`.trim(),
+      role: r.role,
+    }));
+
     res.status(200).json({ data });
   } catch (error) {
     next(error);
