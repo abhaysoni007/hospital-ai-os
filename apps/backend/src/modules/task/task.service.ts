@@ -36,6 +36,7 @@ export class TaskService {
     actorId: string,
     _authContext: AuthContext,
   ): Promise<TaskListResponse> {
+    void _authContext;
     const page = query.page || 1;
     const limit = query.pageSize || 20;
     const offset = (page - 1) * limit;

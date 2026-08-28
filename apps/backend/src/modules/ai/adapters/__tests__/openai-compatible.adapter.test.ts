@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { z } from 'zod';
 import { OpenAICompatibleAdapter } from '../openai-compatible.adapter';
-import { AIProviderError } from '../provider.interface';
 
 describe('OpenAICompatibleAdapter', () => {
   const apiKey = 'test-api-key';
