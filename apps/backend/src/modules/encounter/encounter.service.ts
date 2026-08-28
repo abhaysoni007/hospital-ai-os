@@ -15,6 +15,7 @@ import { AuthorizationError, ConflictError, NotFoundError } from 'shared/src/err
 import { auditService } from '../audit/audit.service';
 import type { Permission, StaffRole } from '../../middleware/rbac/permissions';
 import { ROLE_PERMISSIONS } from '../../middleware/rbac/permissions';
+import { authorizeBreakGlassResourceAccess } from '../../middleware/rbac/resource-auth';
 
 type AuthContext = { role: string; departmentId: string };
 
@@ -166,18 +167,27 @@ export class EncounterService {
    * - chiefComplaint present only for callers with clinical_record:read
    * - clinical/diagnostic data is NEVER embedded
    */
-  async getEncounterDetail(id: string, authContext: AuthContext) {
+  async getEncounterDetail(id: string, actorId: string, authContext: AuthContext) {
     const encounter = await db.query.encounters.findFirst({ where: eq(encounters.id, id) });
     if (!encounter) {
       throw new NotFoundError('Encounter not found', { code: 'ENCOUNTER_NOT_FOUND' });
     }
 
-    if (
-      authContext.role !== 'hospital_admin' &&
-      encounter.departmentId !== authContext.departmentId
-    ) {
-      throw new AuthorizationError('Encounter is outside your department.');
-    }
+    const authResult = await authorizeBreakGlassResourceAccess(
+      { id: actorId, role: authContext.role, departmentId: authContext.departmentId },
+      encounter.patientId,
+      'read',
+      () => {
+        if (
+          authContext.role !== 'hospital_admin' &&
+          encounter.departmentId !== authContext.departmentId
+        ) {
+          throw new AuthorizationError('Encounter is outside your department.');
+        }
+        return true;
+      },
+      id
+    );
 
     const patient = await db.query.patients.findFirst({
       where: eq(patients.id, encounter.patientId),

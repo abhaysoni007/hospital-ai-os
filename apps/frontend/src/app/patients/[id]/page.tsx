@@ -23,6 +23,8 @@ import {
   AppointmentStatusBadge,
   EncounterStatusBadge,
 } from '../../../components/ui/SemanticBadges/SemanticBadges';
+import { BreakGlassModal } from '../../../components/break-glass/BreakGlassModal';
+import { BreakGlassBanner } from '../../../components/break-glass/BreakGlassBanner';
 import { patientService } from '../../../services/patient-service';
 import { appointmentService } from '../../../services/appointment-service';
 import { encounterService } from '../../../services/encounter-service';
@@ -52,6 +54,7 @@ export default function PatientProfilePage() {
 
   const [patient, setPatient] = useState<PatientResponse | null>(null);
   const [patientState, setPatientState] = useState<Block<null>['state']>('loading');
+  const [showBreakGlassModal, setShowBreakGlassModal] = useState(false);
 
   const [appointments, setAppointments] = useState<Block<AppointmentListItem[]>>({
     state: canReadAppointments ? 'loading' : 'ready',
@@ -86,13 +89,23 @@ export default function PatientProfilePage() {
       appointmentService
         .getAppointments({ page: 1, patientId: id, pageSize: 10 })
         .then((res) => setAppointments({ state: 'ready', data: res.data }))
-        .catch(() => setAppointments({ state: 'error', data: null }));
+        .catch((err) => {
+          if (err.statusCode === 403 && hasPermission(user?.role, 'break_glass:activate')) {
+            setShowBreakGlassModal(true);
+          }
+          setAppointments({ state: 'error', data: null });
+        });
     }
     if (canReadEncounters) {
       encounterService
         .getEncounters({ page: 1, patientId: id, pageSize: 10 })
         .then((res) => setEncounters({ state: 'ready', data: res.data }))
-        .catch(() => setEncounters({ state: 'error', data: null }));
+        .catch((err) => {
+          if (err.statusCode === 403 && hasPermission(user?.role, 'break_glass:activate')) {
+            setShowBreakGlassModal(true);
+          }
+          setEncounters({ state: 'error', data: null });
+        });
     }
   }, [id, canReadAppointments, canReadEncounters]);
 
@@ -139,6 +152,7 @@ export default function PatientProfilePage() {
       requiredPermission="patient:read"
     >
       <div className={styles.container}>
+        <BreakGlassBanner patientId={id} />
         <PageHeader
           title={`${patient.firstName} ${patient.lastName}`}
           description={`Medical record number ${patient.mrn}`}
@@ -343,6 +357,17 @@ export default function PatientProfilePage() {
           )}
         </div>
       </div>
+      
+      {showBreakGlassModal && (
+        <BreakGlassModal
+          patientId={id}
+          onSuccess={() => {
+            setShowBreakGlassModal(false);
+            loadRelated(); // Retry loading
+          }}
+          onCancel={() => setShowBreakGlassModal(false)}
+        />
+      )}
     </AppShell>
   );
 }

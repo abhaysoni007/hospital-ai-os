@@ -238,11 +238,11 @@ describe('M8 Encounter Module', () => {
     const enc = await createTestEncounter('Severe migraine');
 
     // Receptionist holds encounter:read but NOT clinical_record:read → key omitted entirely
-    const forReceptionist = await encounterService.getEncounterDetail(enc.id, ctxA('receptionist'));
+    const forReceptionist = await encounterService.getEncounterDetail(enc.id, receptionistId, ctxA('receptionist'));
     expect(forReceptionist).not.toHaveProperty('chiefComplaint');
 
     // Nurse holds clinical_record:read → chiefComplaint present
-    const forNurse = await encounterService.getEncounterDetail(enc.id, ctxA('nurse'));
+    const forNurse = await encounterService.getEncounterDetail(enc.id, nurseAId, ctxA('nurse'));
     expect(forNurse.chiefComplaint).toBe('Severe migraine');
 
     // Neither response ever embeds clinical/diagnostic collections
@@ -275,7 +275,7 @@ describe('M8 Encounter Module', () => {
     );
 
     // hospital_admin reads globally (no department restriction)
-    const adminDetail = await encounterService.getEncounterDetail(checkedIn.encounter.id, {
+    const adminDetail = await encounterService.getEncounterDetail(checkedIn.encounter.id, receptionistId, {
       role: 'hospital_admin',
       departmentId: deptBId,
     });

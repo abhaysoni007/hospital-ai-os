@@ -62,7 +62,7 @@ export class AiNoteDraftService {
     if (principal.role !== 'physician') {
       throw new AuthorizationError('AI note drafting is restricted to physicians.');
     }
-    const detail = await encounterService.getEncounterDetail(request.encounterId, authContext);
+    const detail = await encounterService.getEncounterDetail(request.encounterId, principal.staffId, authContext);
     if (detail.doctorId !== principal.staffId) {
       throw new AuthorizationError('Only the assigned physician may commission an AI note draft.');
     }

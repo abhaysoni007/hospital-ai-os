@@ -16,6 +16,7 @@ import { AI_AUDIT_EVENTS, buildAiInteractionAuditEvent } from '../ai/ai.audit';
 import { aiInteractions } from '../../db/schema/ai';
 import { config } from '../../config';
 import type { ClinicalStatus } from './clinical.state-machine';
+import { authorizeBreakGlassResourceAccess } from '../../middleware/rbac/resource-auth';
 
 type AuthContext = { role: string; departmentId: string };
 
@@ -283,9 +284,13 @@ export class ClinicalService {
     if (!encounter) {
       throw new NotFoundError('Encounter not found', { code: 'ENCOUNTER_NOT_FOUND' });
     }
-    if (!readScopeOk(encounter.departmentId, authContext)) {
-      throw new AuthorizationError('Not permitted to read clinical records for this encounter.');
-    }
+    const authResult = await authorizeBreakGlassResourceAccess(
+      { id: actorId, role: authContext.role, departmentId: authContext.departmentId },
+      encounter.patientId,
+      'read',
+      () => readScopeOk(encounter.departmentId, authContext),
+      encounterId
+    );
 
     const page = query.page || 1;
     const limit = query.pageSize || 50;
@@ -308,6 +313,7 @@ export class ClinicalService {
       actorId,
       correlationId,
       authContext,
+      authResult.breakGlassSessionId,
     );
 
     return {
@@ -330,9 +336,13 @@ export class ClinicalService {
     if (!encounter) {
       throw new NotFoundError('Encounter not found', { code: 'ENCOUNTER_NOT_FOUND' });
     }
-    if (!readScopeOk(encounter.departmentId, authContext)) {
-      throw new AuthorizationError('Not permitted to read clinical records for this encounter.');
-    }
+    const authResult = await authorizeBreakGlassResourceAccess(
+      { id: actorId, role: authContext.role, departmentId: authContext.departmentId },
+      encounter.patientId,
+      'read',
+      () => readScopeOk(encounter.departmentId, authContext),
+      encounterId
+    );
 
     const record = await db.query.clinicalRecords.findFirst({
       where: and(eq(clinicalRecords.id, recordId), eq(clinicalRecords.encounterId, encounterId)),
@@ -349,6 +359,7 @@ export class ClinicalService {
       actorId,
       correlationId,
       authContext,
+      authResult.breakGlassSessionId,
     );
 
     return toResponse(record);
@@ -582,7 +593,13 @@ export class ClinicalService {
     actorId: string,
     correlationId: string,
     authContext: AuthContext,
+    breakGlassSessionId?: string,
   ): Promise<void> {
+    const actionDetail: Record<string, any> = { action, encounterId };
+    if (breakGlassSessionId) {
+      actionDetail.break_glass_session_id = breakGlassSessionId;
+    }
+
     await auditService.logEvent(
       {
         eventType: 'CLINICAL_RECORD_ACCESSED',
@@ -592,7 +609,7 @@ export class ClinicalService {
         targetType: 'CLINICAL_RECORD',
         targetId: recordId,
         patientId,
-        actionDetail: { action, encounterId },
+        actionDetail,
       },
       correlationId,
     );

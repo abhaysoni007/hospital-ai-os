@@ -113,3 +113,8 @@ export const aiUserActionEnum = pgEnum('ai_user_action', [
   'rejected',
   'edited',
 ]);
+export const breakGlassReasonEnum = pgEnum('break_glass_reason', [
+  'emergency_care',
+  'patient_safety',
+  'continuity_of_care',
+]);

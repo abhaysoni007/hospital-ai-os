@@ -17,6 +17,7 @@ import { criticalValueRules } from '../../db/schema/diagnostics';
 import { notifications as notificationsTable, tasks as tasksTable } from '../../db/schema/tasks';
 import { evaluateCriticalValues, type EvaluatorRule } from './critical-value-evaluator';
 import { RESULT_ENTRY_ALLOWED } from './diagnostics.state-machine';
+import { authorizeBreakGlassResourceAccess } from '../../middleware/rbac/resource-auth';
 
 type AuthContext = { role: string; departmentId: string };
 
@@ -144,8 +145,7 @@ export class DiagnosticsService {
     if (!encounter) {
       throw new NotFoundError('Encounter not found', { code: 'ENCOUNTER_NOT_FOUND' });
     }
-    this.assertReadScope(encounter.departmentId, authContext);
-    void actorId;
+    await this.assertReadScope(encounter.departmentId, encounter.patientId, encounter.id, actorId, authContext);
     void correlationId;
 
     const rows = await db.query.diagnosticOrders.findMany({
@@ -208,9 +208,9 @@ export class DiagnosticsService {
     if (row.length === 0) {
       throw new NotFoundError('Diagnostic order not found', { code: 'ORDER_NOT_FOUND' });
     }
-    this.assertReadScope(row[0].dept, authContext);
-    void _actorId;
-    return toOrderResponse(row[0].order);
+    const order = row[0].order;
+    await this.assertReadScope(row[0].dept, order.patientId, order.encounterId, _actorId, authContext);
+    return toOrderResponse(order);
   }
 
   /**
@@ -556,8 +556,16 @@ export class DiagnosticsService {
     if (row.length === 0) {
       throw new NotFoundError('Result not found', { code: 'RESULT_NOT_FOUND' });
     }
-    this.assertReadScope(row[0].dept, authContext);
-    void actorId;
+    
+    // We need the order's encounterId and patientId to check scope
+    const order = await db.query.diagnosticOrders.findFirst({
+      where: eq(diagnosticOrders.id, orderId)
+    });
+    if (!order) {
+      throw new NotFoundError('Order not found', { code: 'ORDER_NOT_FOUND' });
+    }
+
+    await this.assertReadScope(row[0].dept, order.patientId, order.encounterId, actorId, authContext);
     return toResultResponse(row[0].result);
   }
 
@@ -656,13 +664,21 @@ export class DiagnosticsService {
     });
   }
 
-  private assertReadScope(departmentId: string, authContext: AuthContext): void {
-    // M12.1: pharmacist added — the frozen M5 matrix grants pharmacists
-    // diagnostic_result:read; the previous exclusion made that grant dead.
+  private async assertReadScope(departmentId: string, patientId: string, encounterId: string, actorId: string, authContext: AuthContext): Promise<{ breakGlassSessionId?: string }> {
     const allowed = ['physician', 'nurse', 'lab_technician', 'pharmacist'];
-    if (!allowed.includes(authContext.role) || departmentId !== authContext.departmentId) {
-      throw new AuthorizationError('Not permitted to access diagnostics for this department.');
-    }
+    
+    return await authorizeBreakGlassResourceAccess(
+      { id: actorId, role: authContext.role, departmentId: authContext.departmentId },
+      patientId,
+      'read',
+      () => {
+        if (!allowed.includes(authContext.role) || departmentId !== authContext.departmentId) {
+          throw new AuthorizationError('Not permitted to access diagnostics for this department.');
+        }
+        return true;
+      },
+      encounterId
+    );
   }
 }
 

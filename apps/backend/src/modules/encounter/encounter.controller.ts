@@ -53,7 +53,7 @@ export class EncounterController {
       const user = req.user;
       if (!user) throw new AuthenticationError('Unauthorized');
 
-      const detail = await encounterService.getEncounterDetail(id, {
+      const detail = await encounterService.getEncounterDetail(id, user.staffId, {
         role: user.role,
         departmentId: user.departmentId,
       });

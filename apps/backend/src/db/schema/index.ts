@@ -8,3 +8,4 @@ export * from './diagnostics';
 export * from './tasks';
 export * from './ai';
 export * from './audit';
+export * from './break-glass';

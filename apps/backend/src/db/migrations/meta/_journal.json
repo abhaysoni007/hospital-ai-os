@@ -50,6 +50,13 @@
       "when": 1788200000000,
       "tag": "0006_damp_shaman",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1787938431217,
+      "tag": "0007_unknown_franklin_storm",
+      "breakpoints": true
     }
   ]
 }

@@ -22,6 +22,8 @@ import { encounterService } from '../../../services/encounter-service';
 import { clinicalService } from '../../../services/clinical-service';
 import { diagnosticsService } from '../../../services/diagnostics-service';
 import { AiNoteDraftPanel } from '@/components/ai/AiNoteDraftPanel';
+import { BreakGlassModal } from '../../../components/break-glass/BreakGlassModal';
+import { BreakGlassBanner } from '../../../components/break-glass/BreakGlassBanner';
 import type {
   EncounterDetailResponse,
   ClinicalRecordResponse,
@@ -91,6 +93,20 @@ export default function EncounterDetailPage() {
   const [collectingId, setCollectingId] = useState<string | null>(null);
   const [collectTarget, setCollectTarget] = useState<DiagnosticOrderResponse | null>(null);
 
+  const [showBreakGlassModal, setShowBreakGlassModal] = useState(false);
+  const [breakGlassPatientId, setBreakGlassPatientId] = useState<string | null>(null);
+
+  const handleScopeError = useCallback((err: any) => {
+    if (err.statusCode === 403 && hasPermission(user?.role, 'break_glass:activate')) {
+      const details = Array.isArray(err.details) ? err.details : [];
+      const pidField = details.find((d: any) => d.field === 'patientId');
+      if (pidField?.message) {
+        setBreakGlassPatientId(pidField.message);
+        setShowBreakGlassModal(true);
+      }
+    }
+  }, [user?.role]);
+
   const fetchEncounter = useCallback(async () => {
     if (!encounterId) return;
     setLoading(true);
@@ -98,7 +114,8 @@ export default function EncounterDetailPage() {
     try {
       const res = await encounterService.getEncounterById(encounterId);
       setEncounter(res.data);
-    } catch {
+    } catch (err) {
+      handleScopeError(err);
       setError(
         'This record is no longer available. It may not exist or your role may not permit access.',
       );
@@ -114,7 +131,8 @@ export default function EncounterDetailPage() {
     try {
       const res = await clinicalService.getClinicalRecords(encounterId);
       setRecords(res.data);
-    } catch {
+    } catch (err) {
+      handleScopeError(err);
       setRecordsError('Could not load clinical records for this encounter.');
     } finally {
       setRecordsLoading(false);
@@ -128,7 +146,8 @@ export default function EncounterDetailPage() {
     try {
       const res = await diagnosticsService.getEncounterOrders(encounterId);
       setOrders(res.data);
-    } catch {
+    } catch (err) {
+      handleScopeError(err);
       setOrdersError('Could not load diagnostic orders for this encounter.');
     } finally {
       setOrdersLoading(false);
@@ -235,8 +254,22 @@ export default function EncounterDetailPage() {
     return (
       <AppShell breadcrumbs={['Operations', 'Encounters']} requiredPermission="encounter:read">
         <div className={styles.container}>
+          {breakGlassPatientId && <BreakGlassBanner patientId={breakGlassPatientId} />}
           <ErrorState title="Encounter unavailable" message={error ?? undefined} />
         </div>
+        {showBreakGlassModal && breakGlassPatientId && (
+          <BreakGlassModal
+            patientId={breakGlassPatientId}
+            encounterId={encounterId}
+            onSuccess={() => {
+              setShowBreakGlassModal(false);
+              void fetchEncounter();
+              if (canReadClinical) void fetchRecords();
+              if (canReadDx) void fetchOrders();
+            }}
+            onCancel={() => setShowBreakGlassModal(false)}
+          />
+        )}
       </AppShell>
     );
   }
@@ -250,6 +283,12 @@ export default function EncounterDetailPage() {
       requiredPermission="encounter:read"
     >
       <div className={styles.container}>
+        {breakGlassPatientId ? (
+          <BreakGlassBanner patientId={breakGlassPatientId} />
+        ) : encounter?.patientId ? (
+          <BreakGlassBanner patientId={encounter.patientId} />
+        ) : null}
+
         {/* Identity band */}
         <PageHeader
           title={patientName}
@@ -635,6 +674,20 @@ export default function EncounterDetailPage() {
             </div>
           </div>
         </ConfirmDialog>
+      )}
+
+      {showBreakGlassModal && breakGlassPatientId && (
+        <BreakGlassModal
+          patientId={breakGlassPatientId}
+          encounterId={encounterId}
+          onSuccess={() => {
+            setShowBreakGlassModal(false);
+            void fetchEncounter();
+            if (canReadClinical) void fetchRecords();
+            if (canReadDx) void fetchOrders();
+          }}
+          onCancel={() => setShowBreakGlassModal(false)}
+        />
       )}
     </AppShell>
   );
