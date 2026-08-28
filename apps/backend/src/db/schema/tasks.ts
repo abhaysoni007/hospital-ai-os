@@ -34,6 +34,9 @@ export const tasks = pgTable(
   },
   (table) => ({
     assignedToIdx: index('idx_tasks_assigned_to').on(table.assignedTo),
+    patientIdx: index('idx_tasks_patient').on(table.patientId),
+    encounterIdx: index('idx_tasks_encounter').on(table.encounterId),
+    dueAtIdx: index('idx_tasks_due_at').on(table.dueAt),
     statusIdx: index('idx_tasks_status').on(table.status),
     // idx_tasks_priority WHERE status NOT IN ('completed', 'cancelled')
     priorityIdx: index('idx_tasks_priority')

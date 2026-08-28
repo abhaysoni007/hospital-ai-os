@@ -96,10 +96,11 @@ export default function EncounterDetailPage() {
   const [showBreakGlassModal, setShowBreakGlassModal] = useState(false);
   const [breakGlassPatientId, setBreakGlassPatientId] = useState<string | null>(null);
 
-  const handleScopeError = useCallback((err: any) => {
-    if (err.statusCode === 403 && hasPermission(user?.role, 'break_glass:activate')) {
-      const details = Array.isArray(err.details) ? err.details : [];
-      const pidField = details.find((d: any) => d.field === 'patientId');
+  const handleScopeError = useCallback((err: unknown) => {
+    const errorObj = err as { statusCode?: number; details?: unknown };
+    if (errorObj.statusCode === 403 && hasPermission(user?.role, 'break_glass:activate')) {
+      const details = Array.isArray(errorObj.details) ? errorObj.details : [];
+      const pidField = (details as { field: string; message: string }[]).find((d) => d.field === 'patientId');
       if (pidField?.message) {
         setBreakGlassPatientId(pidField.message);
         setShowBreakGlassModal(true);

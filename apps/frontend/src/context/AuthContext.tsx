@@ -39,18 +39,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const refreshSession = useCallback(async () => {
     try {
       setIsLoading(true);
-      const basicUser = await AuthService.refreshSession();
-      try {
-        const profile = await AuthService.getProfile();
-        setUser({
-          ...basicUser,
-          firstName: profile.firstName,
-          lastName: profile.lastName,
-          status: profile.status,
-        });
-      } catch {
-        setUser(basicUser);
-      }
+      const userPayload = await AuthService.refreshSession();
+      setUser(userPayload);
       setError(null);
     } catch {
       setUser(null);
@@ -80,18 +70,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       setIsLoading(true);
       setError(null);
-      const basicUser = await AuthService.login(credentials);
-      try {
-        const profile = await AuthService.getProfile();
-        setUser({
-          ...basicUser,
-          firstName: profile.firstName,
-          lastName: profile.lastName,
-          status: profile.status,
-        });
-      } catch {
-        setUser(basicUser);
-      }
+      const userPayload = await AuthService.login(credentials);
+      setUser(userPayload);
     } catch (err: unknown) {
       setUser(null);
       if (err instanceof ApiError) {

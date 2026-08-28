@@ -13,8 +13,8 @@ import { ErrorState } from '../../../components/ui/ErrorState/ErrorState';
 import { EmptyState } from '../../../components/ui/EmptyState/EmptyState';
 import { AlertBanner } from '../../../components/ui/Alert/AlertBanner';
 import { breakGlassService, BreakGlassSessionResponse } from '../../../services/break-glass-service';
-import { Shield, EyeOff, ShieldOff } from 'lucide-react';
-import styles from './security.module.css';
+import { Shield } from 'lucide-react';
+
 
 export default function SecurityAdminPage() {
   const [sessions, setSessions] = useState<BreakGlassSessionResponse[]>([]);
@@ -60,8 +60,8 @@ export default function SecurityAdminPage() {
       setRevokingId(null);
       setRevokeReason('');
       await fetchSessions();
-    } catch (err: any) {
-      setRevokeError(err.message || 'Failed to revoke session.');
+    } catch (err: unknown) {
+      setRevokeError((err as Error).message || 'Failed to revoke session.');
     }
   };
 
@@ -74,8 +74,8 @@ export default function SecurityAdminPage() {
     try {
       const res = await breakGlassService.reviewSession(id);
       setReviewData(res.data);
-    } catch (err: any) {
-      setReviewError(err.message || 'Failed to fetch session justification.');
+    } catch (err: unknown) {
+      setReviewError((err as Error).message || 'Failed to fetch session justification.');
     } finally {
       setReviewLoading(false);
     }
@@ -126,7 +126,7 @@ export default function SecurityAdminPage() {
                 {sessions.map((s) => (
                   <TR key={s.id}>
                     <TD>
-                      <Badge variant={s.status === 'active' ? 'danger' : 'neutral'} size="sm">
+                      <Badge variant={s.status === 'active' ? 'critical' : 'neutral'} size="sm">
                         {s.status.toUpperCase()}
                       </Badge>
                     </TD>

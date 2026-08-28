@@ -171,7 +171,6 @@ describe('Section 3: Activation', () => {
     expect(session.actorId).toBe(physicianId);
     expect(session.patientId).toBe(outOfScopePatientId);
     expect(session.reason).toBe('emergency_care');
-    expect(session.status ?? 'active').toBeDefined();
 
     // Server controls expiry: ~4 hours
     const activatedAt = new Date(session.activatedAt).getTime();
@@ -436,8 +435,12 @@ describe('Section 6: M5 + Read-Only', () => {
         {
           recordType: 'soap',
           content: {
-            chiefComplaint: 'test', subjective: 'test', objective: 'test',
-            assessment: 'test', plan: 'test',
+            sections: [
+              { heading: 'subjective', content: 'test' },
+              { heading: 'objective', content: 'test' },
+              { heading: 'assessment', content: 'test' },
+              { heading: 'plan', content: 'test' }
+            ]
           },
         },
         physB,
@@ -449,10 +452,7 @@ describe('Section 6: M5 + Read-Only', () => {
 
   it('6b. Clinical read via BG session → ALLOWED (confirms read path)', async () => {
     const records = await clinicalService.listClinicalRecords(
-      outScopeEncId,
-      {},
-      physicianId,
-      corr(),
+      outScopeEncId, { page: 1, pageSize: 50 }, physicianId, corr(),
       { role: 'physician', departmentId: deptA }
     );
     expect(records).toBeDefined();
@@ -483,7 +483,7 @@ describe('Section 7: Audit', () => {
 
     const corrId = corr();
     await clinicalService.listClinicalRecords(
-      outScopeEncId, {}, physicianId, corrId,
+      outScopeEncId, { page: 1, pageSize: 50 }, physicianId, corrId,
       { role: 'physician', departmentId: deptA }
     );
 
@@ -612,7 +612,7 @@ describe('Section 9: Revocation', () => {
   it('9c. After revocation: clinical access IMMEDIATELY denied', async () => {
     await expect(
       clinicalService.listClinicalRecords(
-        outScopeEncId, {}, physicianId, corr(),
+        outScopeEncId, { page: 1, pageSize: 50 }, physicianId, corr(),
         { role: 'physician', departmentId: deptA }
       )
     ).rejects.toMatchObject({ code: 'AUTHORIZATION_ERROR' });
@@ -660,7 +660,7 @@ describe('Section 10: Expiry', () => {
     // Access must fail: the only session is expired
     await expect(
       clinicalService.listClinicalRecords(
-        outScopeEncId, {}, physicianId, corr(),
+        outScopeEncId, { page: 1, pageSize: 50 }, physicianId, corr(),
         { role: 'physician', departmentId: deptA }
       )
     ).rejects.toMatchObject({ code: 'AUTHORIZATION_ERROR' });
@@ -708,7 +708,7 @@ describe('Section 11: Security Admin', () => {
     // So even inScopeEncId (deptA) should be denied
     await expect(
       clinicalService.listClinicalRecords(
-        outScopeEncId, {}, securityAdminId, corr(),
+        outScopeEncId, { page: 1, pageSize: 50 }, securityAdminId, corr(),
         { role: 'security_admin', departmentId: deptA }
       )
     ).rejects.toMatchObject({ code: 'AUTHORIZATION_ERROR' });

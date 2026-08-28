@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, timestamp, boolean, inet, text, jsonb } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, timestamp, boolean, inet, text, index } from 'drizzle-orm/pg-core';
 import { staffRoleEnum, staffStatusEnum, departmentStatusEnum } from './enums';
 
 export const departments = pgTable('departments', {
@@ -26,7 +26,9 @@ export const staff = pgTable('staff', {
   lastLoginAt: timestamp('last_login_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
-});
+}, (table) => ({
+  departmentIdx: index('idx_staff_department').on(table.departmentId),
+}));
 
 export const refreshTokens = pgTable('refresh_tokens', {
   id: uuid('id').defaultRandom().primaryKey(),

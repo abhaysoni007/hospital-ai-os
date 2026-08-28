@@ -43,6 +43,7 @@ export const encounters = pgTable(
   (table) => ({
     patientIdx: index('idx_encounters_patient').on(table.patientId),
     doctorIdx: index('idx_encounters_doctor').on(table.doctorId),
+    departmentIdx: index('idx_encounters_department').on(table.departmentId),
     statusIdx: index('idx_encounters_status').on(table.status),
     createdIdx: index('idx_encounters_created').on(table.createdAt),
   }),
@@ -75,6 +76,7 @@ export const appointments = pgTable(
   (table) => ({
     patientIdx: index('idx_appointments_patient').on(table.patientId),
     doctorDateIdx: index('idx_appointments_doctor_date').on(table.doctorId, table.scheduledDate),
+    departmentDateIdx: index('idx_appointments_dept_date').on(table.departmentId, table.scheduledDate),
     statusIdx: index('idx_appointments_status').on(table.status),
     // UNIQUE on (doctor_id, scheduled_date, token_number) WHERE token_number IS NOT NULL
     // Drizzle supports partial unique index like this using .where()

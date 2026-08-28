@@ -44,6 +44,8 @@ export const diagnosticOrders = pgTable(
     encounterIdx: index('idx_diagnostic_orders_encounter').on(table.encounterId),
     patientIdx: index('idx_diagnostic_orders_patient').on(table.patientId),
     statusIdx: index('idx_diagnostic_orders_status').on(table.status),
+    priorityIdx: index('idx_diagnostic_orders_priority').on(table.priority),
+    createdIdx: index('idx_diagnostic_orders_created').on(table.createdAt),
   }),
 );
 

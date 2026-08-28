@@ -35,6 +35,9 @@ export const loginHandler = async (req: Request, res: Response, next: NextFuncti
           email: user.email,
           role: user.role,
           departmentId: user.departmentId,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          status: user.status,
         },
       },
     });
@@ -77,6 +80,9 @@ export const refreshHandler = async (req: Request, res: Response, next: NextFunc
           email: user.email,
           role: user.role,
           departmentId: user.departmentId,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          status: user.status,
         },
       },
     });

@@ -43,7 +43,7 @@ export function BreakGlassModal({
       sessionStorage.setItem('breakGlassActive', JSON.stringify(activeSessions));
       
       onSuccess();
-    } catch (err) {
+    } catch (err: unknown) {
       const apiErr = err as ApiError;
       setError(apiErr.message || 'Failed to activate break-glass access.');
     } finally {
@@ -76,7 +76,7 @@ export function BreakGlassModal({
             <select
               id="bg-reason"
               value={reason}
-              onChange={(e) => setReason(e.target.value as any)}
+              onChange={(e) => setReason(e.target.value as 'emergency_care' | 'patient_safety' | 'continuity_of_care')}
               className={styles.input}
               disabled={loading}
             >
