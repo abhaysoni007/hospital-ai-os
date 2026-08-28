@@ -77,3 +77,16 @@ avigateToTask\ router logic in \	asks/page.tsx\ to forward the \	askId\ via quer
 - Strictly preserved the independence of the diagnostic result verification lifecycle (Completing the task does NOT verify the lab result).
 
 This ensures Phase 1C operational efficiency without violating Phase 1A/1B clinical workflow boundaries.
+
+
+## 8. QA Defect Resolution: Related Task Actions Not Visible
+A manual QA inspection identified that although the Task Context was successfully preserved and rendered on the Diagnostic Result page, the actionable buttons (\Acknowledge\, \Complete\) were failing to render for the assigned physician.
+
+**Forensic Discovery:**
+The frontend authorization gate relied on the condition \	ask.assignedTo === user?.staffId\. However, the shared \AuthUser\ type defines the canonical authenticated staff identifier as \user.id\, not \user.staffId\. As a result, the condition evaluated to \uuid === undefined\, silently failing the UX gate.
+
+**Resolution:**
+- Replaced all invalid instances of \user?.staffId\ with the canonical \user?.id\ in both \	asks/page.tsx\ and \diagnostics/[orderId]/page.tsx\.
+- Validated that the backend continues to independently enforce RBAC and task ownership; the frontend change strictly repairs the UX gate.
+- Executed the full test suite, resulting in 100% pass rates across frontend and backend modules.
+- Addressed minor TypeScript/ESLint warnings discovered during the verification pipeline.

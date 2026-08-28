@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { CheckSquare, AlertTriangle, AlertCircle } from 'lucide-react';
+import { CheckSquare, AlertCircle } from 'lucide-react';
 import { AppShell } from '../../components/layout/AppShell/AppShell';
 import { Select } from '../../components/ui/Input/Select';
 import { PageHeader } from '../../components/ui/PageHeader/PageHeader';
@@ -73,7 +73,7 @@ export default function TasksPage() {
           const idResponse = await apiClient(`/staff/identity?ids=${uniqueAssignees.slice(0, 50).join(',')}`);
           setStaffMap(prev => {
             const next = { ...prev };
-            idResponse.data.forEach((staff: any) => {
+            idResponse.data.forEach((staff: { id: string; displayName: string }) => {
               next[staff.id] = staff.displayName;
             });
             return next;
@@ -97,7 +97,7 @@ export default function TasksPage() {
     if (user && ['physician', 'nurse', 'lab_technician', 'pharmacist', 'receptionist'].includes(user.role)) {
       import('../../services/api-client').then(({ apiClient }) => {
         apiClient('/staff/department').then(res => {
-          const opts = res.data.map((s: any) => ({
+          const opts = res.data.map((s: { id: string; displayName: string; role: string }) => ({
             value: s.id,
             label: `${s.displayName} (${s.role.replace('_', ' ')})`
           }));
@@ -331,7 +331,7 @@ export default function TasksPage() {
                   <TD className={styles.capitalize}>{task.status.replace('_', ' ')}</TD>
                   <TD align="right">
                     <div className={styles.actions} style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-                      {task.assignedTo === user?.staffId && task.status === 'created' && (
+                      {task.assignedTo === user?.id && task.status === 'created' && (
                         <Button
                           variant="primary"
                           size="sm"
@@ -341,7 +341,7 @@ export default function TasksPage() {
                           Acknowledge
                         </Button>
                       )}
-                      {task.assignedTo === user?.staffId && task.status === 'in_progress' && (
+                      {task.assignedTo === user?.id && task.status === 'in_progress' && (
                         <Button
                           variant="primary"
                           size="sm"
@@ -351,7 +351,7 @@ export default function TasksPage() {
                           Complete
                         </Button>
                       )}
-                      {task.assignedTo === user?.staffId && !['completed', 'cancelled'].includes(task.status) && (
+                      {task.assignedTo === user?.id && !['completed', 'cancelled'].includes(task.status) && (
                         <>
                           <Button
                             variant="secondary"

@@ -289,7 +289,7 @@ export default function DiagnosticOrderDetailPage() {
                 </div>
               </div>
               
-              {task.assignedTo === user?.staffId && (
+              {task.assignedTo === user?.id && (
                 <div style={{ display: 'flex', gap: '0.5rem', flexDirection: 'column' }}>
                   {task.status === 'created' && (
                     <Button
