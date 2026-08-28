@@ -1,0 +1,22 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+  padding: var(--spacing-md) 0;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.statusSelect {
+  width: 200px;
+}
+
+.capitalize {
+  text-transform: capitalize;
+}
+
+.actions {
+  display: flex;
+  gap: var(--spacing-sm);
+  justify-content: flex-end;
+}

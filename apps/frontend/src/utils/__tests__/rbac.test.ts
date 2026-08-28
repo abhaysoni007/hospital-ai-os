@@ -17,6 +17,7 @@ describe('M13 navigation contract', () => {
     '/appointments',
     '/encounters',
     '/diagnostics',
+    '/tasks',
   ];
 
   it('every nav item resolves to an implemented destination', () => {
@@ -72,7 +73,7 @@ describe('M13 navigation contract', () => {
 
   it('security_admin sees only honest, implemented destinations', () => {
     const items = getNavItemsForRole('security_admin').map((i) => i.href);
-    expect(items).toEqual(['/dashboard']);
+    expect(items).toEqual(['/dashboard', '/tasks']);
   });
 
   it('returns empty nav for unauthenticated users rather than leaking structure', () => {

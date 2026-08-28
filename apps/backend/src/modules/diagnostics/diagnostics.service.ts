@@ -14,7 +14,7 @@ import {
 import { AuthorizationError, ConflictError, NotFoundError } from 'shared/src/errors/AppError';
 import { auditService } from '../audit/audit.service';
 import { criticalValueRules } from '../../db/schema/diagnostics';
-import { notifications as notificationsTable } from '../../db/schema/tasks';
+import { notifications as notificationsTable, tasks as tasksTable } from '../../db/schema/tasks';
 import { evaluateCriticalValues, type EvaluatorRule } from './critical-value-evaluator';
 import { RESULT_ENTRY_ALLOWED } from './diagnostics.state-machine';
 
@@ -468,8 +468,46 @@ export class DiagnosticsService {
           tx,
         );
 
-        // Outbox-via-notifications (ADR-016 Decision 1): same transaction.
+        // 1. Atomically create the authoritative Critical Alert Task
+        const [task] = await tx
+          .insert(tasksTable)
+          .values({
+            taskType: 'critical_alert',
+            title: `Critical lab value: ${order.testName}`,
+            description: `${order.testName} (${order.testCode}) flagged CRITICAL and requires immediate physician review.`,
+            patientId: order.patientId,
+            encounterId: order.encounterId,
+            assignedTo: order.orderingDoctorId,
+            priority: 'critical',
+            status: 'created',
+            referenceType: 'DiagnosticOrder',
+            referenceId: orderId,
+          })
+          .returning();
+
+        await auditService.logEvent(
+          {
+            eventType: 'TASK_CREATED',
+            actorId: techId,
+            actorRole: authContext.role,
+            actorDepartment: authContext.departmentId,
+            targetType: 'TASK',
+            targetId: task.id,
+            patientId: order.patientId,
+            actionDetail: {
+              taskType: task.taskType,
+              priority: task.priority,
+              referenceType: 'DiagnosticOrder',
+              referenceId: orderId,
+            },
+          },
+          correlationId,
+          tx,
+        );
+
+        // 2. Outbox-via-notifications (ADR-016 Decision 1): same transaction.
         // Body carries test name + pointer metadata ONLY — no MRN/values.
+        // Deep links the notification to the task or result context.
         await tx.insert(notificationsTable).values({
           recipientId: order.orderingDoctorId,
           notificationType: 'critical_lab_alert',

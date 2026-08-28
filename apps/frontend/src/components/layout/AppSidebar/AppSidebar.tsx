@@ -12,6 +12,7 @@ import {
   ChevronRight,
   HeartPulse,
   X,
+  CheckSquare,
 } from 'lucide-react';
 import { useAuth } from '../../../hooks/useAuth';
 import { getNavItemsForRole, NavItemConfig } from '../../../utils/rbac';
@@ -56,6 +57,8 @@ export function AppSidebar({
         return <Stethoscope size={18} />;
       case 'Activity':
         return <Activity size={18} />;
+      case 'CheckSquare':
+        return <CheckSquare size={18} />;
       default:
         return <LayoutDashboard size={18} />;
     }

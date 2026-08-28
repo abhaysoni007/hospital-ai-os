@@ -21,7 +21,7 @@ import { getStaffIdentities } from '../../../services/staff-service';
 import type { DiagnosticOrderResponse, DiagnosticResultResponse } from 'shared';
 import styles from './order-detail.module.css';
 import { useAuth } from '../../../hooks/useAuth';
-import { canEnterResults, canVerifyResults } from '../../../utils/diagnostics';
+import { canEnterResults, canVerifyResults, canCollectSamples } from '../../../utils/diagnostics';
 
 export default function DiagnosticOrderDetailPage() {
   const params = useParams<{ orderId: string }>();
@@ -41,6 +41,7 @@ export default function DiagnosticOrderDetailPage() {
   const [confirmVerify, setConfirmVerify] = useState(false);
   const [verifyError, setVerifyError] = useState<string | null>(null);
   const [conflict, setConflict] = useState(false);
+  const [collecting, setCollecting] = useState(false);
 
   const fetchData = useCallback(async () => {
     if (!orderId) return;
@@ -97,6 +98,19 @@ export default function DiagnosticOrderDetailPage() {
       }
     } finally {
       setVerifying(false);
+    }
+  };
+
+  const handleCollectSample = async () => {
+    setCollecting(true);
+    setError(null);
+    try {
+      await diagnosticsService.collectSample(orderId!);
+      await fetchData();
+    } catch (err) {
+      setError(err as Error);
+    } finally {
+      setCollecting(false);
     }
   };
 
@@ -354,16 +368,35 @@ export default function DiagnosticOrderDetailPage() {
         ) : (
           <Card>
             <h2 className={styles.sectionTitle}>Result</h2>
-            <p className={styles.pendingNote}>
-              No result entered yet. Values become available after the laboratory enters them.
-            </p>
-            {canEnterResults(role) && (
-              <Button
-                variant="primary"
-                onClick={() => router.push(`/diagnostics/${orderId}/result/new`)}
-              >
-                Enter result
-              </Button>
+            {order.status === 'ordered' ? (
+              <>
+                <p className={styles.pendingNote}>
+                  Sample has not been collected yet. Collect the sample before entering results.
+                </p>
+                {canCollectSamples(role) && (
+                  <Button
+                    variant="primary"
+                    onClick={() => void handleCollectSample()}
+                    disabled={collecting}
+                  >
+                    {collecting ? 'Collecting...' : 'Collect sample'}
+                  </Button>
+                )}
+              </>
+            ) : (
+              <>
+                <p className={styles.pendingNote}>
+                  No result entered yet. Values become available after the laboratory enters them.
+                </p>
+                {canEnterResults(role) && (
+                  <Button
+                    variant="primary"
+                    onClick={() => router.push(`/diagnostics/${orderId}/result/new`)}
+                  >
+                    Enter result
+                  </Button>
+                )}
+              </>
             )}
           </Card>
         )}

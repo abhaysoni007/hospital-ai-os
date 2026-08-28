@@ -149,8 +149,8 @@ export function NotificationPanel({
           items.map((item) => {
             const isUnread = item.status !== 'acknowledged';
             const reviewHref =
-              item.notificationType === 'critical_lab_alert' && item.relatedOrderId
-                ? `/diagnostics/${item.relatedOrderId}`
+              item.notificationType === 'critical_lab_alert'
+                ? `/tasks`
                 : null;
             return (
               <article

@@ -151,6 +151,16 @@ export const ALL_NAV_ITEMS: readonly NavItemConfig[] = [
     section: 'clinical',
     requiredPermission: 'diagnostic_order:read',
   },
+
+  // Workspace Section
+  {
+    id: 'tasks',
+    label: 'My Work',
+    href: '/tasks',
+    iconName: 'CheckSquare',
+    section: 'workspace',
+    requiredPermission: 'task:read',
+  },
 ] as const;
 
 /**

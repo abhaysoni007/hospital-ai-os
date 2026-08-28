@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, text, timestamp, index } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, text, timestamp, index, uniqueIndex } from 'drizzle-orm/pg-core';
 import {
   taskTypeEnum,
   taskPriorityEnum,
@@ -27,6 +27,8 @@ export const tasks = pgTable(
     status: taskStatusEnum('status').default('created').notNull(),
     dueAt: timestamp('due_at', { withTimezone: true }),
     completedAt: timestamp('completed_at', { withTimezone: true }),
+    referenceType: varchar('reference_type', { length: 50 }),
+    referenceId: uuid('reference_id'),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
   },
@@ -37,6 +39,9 @@ export const tasks = pgTable(
     priorityIdx: index('idx_tasks_priority')
       .on(table.priority)
       .where(sql`status NOT IN ('completed', 'cancelled')`),
+    uniqueReferenceIdx: uniqueIndex('idx_tasks_unique_reference')
+      .on(table.referenceType, table.referenceId, table.taskType)
+      .where(sql`reference_id IS NOT NULL`),
   }),
 );
 
