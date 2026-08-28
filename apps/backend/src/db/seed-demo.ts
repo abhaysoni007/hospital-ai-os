@@ -108,6 +108,7 @@ import { departments, staff } from './schema/staff';
 import { patients } from './schema/patients';
 import { appointments, encounters } from './schema/appointments';
 import { clinicalRecords } from './schema/clinical';
+import { tasks } from './schema/tasks';
 import { diagnosticOrders, diagnosticResults, criticalValueRules } from './schema/diagnostics';
 import { notifications } from './schema/tasks';
 import { DiagnosticsService } from '../modules/diagnostics/diagnostics.service';
@@ -1815,6 +1816,79 @@ async function seed() {
         console.log(`    . result already exists`);
       }
     }
+  }
+
+  // ── [9.1] Tasks (Phase 1C) ────────────────────────────────────────────────
+  console.log('\n[9.1] Operational Tasks (Phase 1C)...');
+  
+  const DEMO_REASSIGNED_TASK = 'DEMO-WORK-REASSIGNED-001';
+  const DEMO_ESCALATED_TASK = 'DEMO-WORK-ESCALATED-001';
+  const DEMO_OVERDUE_TASK = 'DEMO-WORK-OVERDUE-001';
+
+  // 1. Reassigned task (currently assigned to Nurse 1, but previously assigned to someone else)
+  const existingReassigned = await db.query.tasks.findFirst({
+    where: eq(tasks.title, DEMO_REASSIGNED_TASK),
+  });
+  if (!existingReassigned) {
+    await db.insert(tasks).values({
+      taskType: 'general',
+      title: DEMO_REASSIGNED_TASK,
+      description: 'Follow up on patient dietary requirements after transfer.',
+      patientId: patMap.get('DEMO-PAT-002'),
+      encounterId: encMap.get('DEMO-ENC-002'),
+      assignedTo: nurs1Id,
+      assignedBy: phy1Id,
+      priority: 'medium',
+      status: 'assigned',
+      dueAt: new Date(Date.now() + 86400000), // Tomorrow
+    });
+    console.log(`  + ${DEMO_REASSIGNED_TASK}`);
+  } else {
+    console.log(`  . ${DEMO_REASSIGNED_TASK}`);
+  }
+
+  // 2. Escalated task (priority: critical)
+  const existingEscalated = await db.query.tasks.findFirst({
+    where: eq(tasks.title, DEMO_ESCALATED_TASK),
+  });
+  if (!existingEscalated) {
+    await db.insert(tasks).values({
+      taskType: 'general',
+      title: DEMO_ESCALATED_TASK,
+      description: 'Patient reports severe pain despite medication. Immediate attention required.',
+      patientId: patMap.get('DEMO-PAT-001'),
+      encounterId: encMap.get('DEMO-ENC-001'),
+      assignedTo: phy1Id,
+      assignedBy: nurs1Id,
+      priority: 'critical',
+      status: 'in_progress',
+      dueAt: new Date(Date.now() + 3600000), // 1 hour from now
+    });
+    console.log(`  + ${DEMO_ESCALATED_TASK}`);
+  } else {
+    console.log(`  . ${DEMO_ESCALATED_TASK}`);
+  }
+
+  // 3. Overdue task (dueAt in the past, status non-terminal)
+  const existingOverdue = await db.query.tasks.findFirst({
+    where: eq(tasks.title, DEMO_OVERDUE_TASK),
+  });
+  if (!existingOverdue) {
+    await db.insert(tasks).values({
+      taskType: 'lab_review',
+      title: DEMO_OVERDUE_TASK,
+      description: 'Review routine CBC results for discharge planning.',
+      patientId: patMap.get('DEMO-PAT-003'),
+      encounterId: encMap.get('DEMO-ENC-003'),
+      assignedTo: phy1Id,
+      assignedBy: phy1Id,
+      priority: 'medium',
+      status: 'in_progress',
+      dueAt: new Date(Date.now() - 86400000), // Yesterday
+    });
+    console.log(`  + ${DEMO_OVERDUE_TASK}`);
+  } else {
+    console.log(`  . ${DEMO_OVERDUE_TASK}`);
   }
 
   // ── [10] Post-seed integrity audit ────────────────────────────────────────

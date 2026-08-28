@@ -42,7 +42,8 @@ export class TaskController {
       if (!id.success) {
         throw new ValidationError('Invalid task id.', { code: 'VALIDATION_ERROR' });
       }
-      const task = await taskService.getTask(id.data, user.staffId);
+      const authContext = { role: user.role, departmentId: user.departmentId };
+      const task = await taskService.getTask(id.data, user.staffId, authContext);
       res.json(task);
     } catch (err) {
       next(err);

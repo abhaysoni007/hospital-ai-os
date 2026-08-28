@@ -45,7 +45,18 @@ describe('Phase 1B Task Management (Critical Result Loop)', () => {
   const staffIds: string[] = [];
 
   beforeAll(async () => {
-    // Cleanup
+    // Cleanup — order: leaf records first to avoid FK violations.
+    // diagnostic_results reference critical_value_rules; must delete results first.
+    await db
+      .execute(
+        sql`DELETE FROM diagnostic_results WHERE test_code = 'TEST_TASK'`,
+      )
+      .catch(() => undefined);
+    await db
+      .execute(
+        sql`DELETE FROM critical_value_rules WHERE test_code = 'TEST_TASK'`,
+      )
+      .catch(() => undefined);
     await db
       .execute(
         sql`DELETE FROM tasks WHERE assigned_to IN (SELECT id FROM staff WHERE email LIKE 'p1bt-%@t.hospital')`,
@@ -154,26 +165,31 @@ describe('Phase 1B Task Management (Critical Result Loop)', () => {
   });
 
   afterAll(async () => {
-    // Cleanup
-    if (taskId)
-      await db
-        .delete(tasks)
-        .where(eq(tasks.id, taskId))
-        .catch(() => undefined);
+    // Cleanup — order matters: children before parents to avoid FK violations.
+    // 1. Tasks that reference the result/order
     await db
-      .delete(criticalValueRules)
-      .where(eq(criticalValueRules.testCode, 'TEST_TASK'))
+      .execute(
+        sql`DELETE FROM tasks WHERE assigned_to = ANY(${staffIds}) OR reference_id = ${orderId}::uuid`,
+      )
       .catch(() => undefined);
+    // 2. diagnostic_results before critical_value_rules (FK: diagnostic_results.critical_rule_id)
     if (resultId)
       await db
         .delete(diagnosticResults)
         .where(eq(diagnosticResults.id, resultId))
         .catch(() => undefined);
+    // 3. critical_value_rules now safe
+    await db
+      .delete(criticalValueRules)
+      .where(eq(criticalValueRules.testCode, 'TEST_TASK'))
+      .catch(() => undefined);
+    // 4. diagnostic_orders
     if (orderId)
       await db
         .delete(diagnosticOrders)
         .where(eq(diagnosticOrders.id, orderId))
         .catch(() => undefined);
+    // 5. encounters, patients, staff, departments
     if (encounterId)
       await db
         .delete(encounters)
@@ -235,23 +251,67 @@ describe('Phase 1B Task Management (Critical Result Loop)', () => {
     expect(mine?.priority).toBe('critical');
   });
 
-  it('another physician CANNOT see or interact with the task', async () => {
+  it('another physician in same dept CAN see (operational) but CANNOT interact with the task', async () => {
     const listB = await request(app)
-      .get('/api/v1/tasks')
+      .get('/api/v1/tasks?scope=department')
       .set('Authorization', `Bearer ${tokenFor(physicianB, 'physician', deptId)}`);
     expect(listB.status).toBe(200);
     const ids = (listB.body.data as Array<{ id: string }>).map((n) => n.id);
-    expect(ids).not.toContain(taskId);
+    expect(ids).toContain(taskId); // Operational visibility
 
     const getB = await request(app)
       .get(`/api/v1/tasks/${taskId}`)
       .set('Authorization', `Bearer ${tokenFor(physicianB, 'physician', deptId)}`);
-    expect(getB.status).toBe(404);
+    expect(getB.status).toBe(200); // Can view details
 
     const ackB = await request(app)
       .post(`/api/v1/tasks/${taskId}/acknowledge`)
       .set('Authorization', `Bearer ${tokenFor(physicianB, 'physician', deptId)}`);
-    expect(ackB.status).toBe(404);
+    expect(ackB.status).toBe(404); // Cannot acknowledge (action blocked)
+  });
+
+  it('physicianA CAN reassign task to physicianB', async () => {
+    // Create a new task to avoid interfering with the original test's lifecycle
+    const [newTask] = await db
+      .insert(tasks)
+      .values({
+        taskType: 'general',
+        title: 'TEST-REASSIGN',
+        priority: 'medium',
+        status: 'created',
+        assignedTo: physicianA,
+      })
+      .returning();
+
+    const reassignRes = await request(app)
+      .post(`/api/v1/tasks/${newTask.id}/reassign`)
+      .set('Authorization', `Bearer ${tokenFor(physicianA, 'physician', deptId)}`)
+      .send({ newAssigneeId: physicianB });
+    
+    expect(reassignRes.status).toBe(200);
+    expect(reassignRes.body.assignedTo).toBe(physicianB);
+
+    // Verify physicianB can now see it in 'me' queue
+    const listB = await request(app)
+      .get('/api/v1/tasks?scope=me')
+      .set('Authorization', `Bearer ${tokenFor(physicianB, 'physician', deptId)}`);
+    expect(listB.status).toBe(200);
+    const ids = (listB.body.data as Array<{ id: string }>).map((n) => n.id);
+    expect(ids).toContain(newTask.id);
+
+    // physicianB CAN escalate task
+    const escalateRes = await request(app)
+      .post(`/api/v1/tasks/${newTask.id}/escalate`)
+      .set('Authorization', `Bearer ${tokenFor(physicianB, 'physician', deptId)}`);
+    
+    expect(escalateRes.status).toBe(200);
+    expect(escalateRes.body.priority).toBe('critical');
+
+    // Verify it is idempotent / throws 409
+    const escalateRes2 = await request(app)
+      .post(`/api/v1/tasks/${newTask.id}/escalate`)
+      .set('Authorization', `Bearer ${tokenFor(physicianB, 'physician', deptId)}`);
+    expect(escalateRes2.status).toBe(409); // 'Task is already escalated.'
   });
 
   it('owner acknowledgement succeeds (created → in_progress), is audited', async () => {

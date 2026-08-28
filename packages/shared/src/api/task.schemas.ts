@@ -29,6 +29,8 @@ export const taskResponseSchema = z.object({
   encounterId: z.string().uuid().nullable(),
   referenceType: z.string().nullable(),
   referenceId: z.string().uuid().nullable(),
+  assignedTo: z.string().uuid().nullable().optional(),
+  dueAt: z.string().nullable().optional(),
   createdAt: z.string(),
   updatedAt: z.string(),
 });
@@ -38,6 +40,7 @@ export const getTasksQuerySchema = offsetPaginationSchema.extend({
   status: TaskStatus.optional(),
   priority: TaskPriority.optional(),
   taskType: TaskType.optional(),
+  scope: z.enum(['me', 'department', 'hospital']).optional(),
 });
 export type GetTasksQuery = z.infer<typeof getTasksQuerySchema>;
 

@@ -205,8 +205,53 @@ describe('Phase 1B Task Management - CONCURRENCY PROOF', () => {
     expect(statuses).toContain(409); // One succeeds, one returns conflict
   });
 
-  it('handles concurrent completion - 1 success, 1 conflict', async () => {
+  it('handles concurrent reassignment - 1 success, 1 conflict (404)', async () => {
     const token = tokenFor(physicianA, 'physician', deptId);
+    const reqA = request(app)
+      .post(`/api/v1/tasks/${taskId}/reassign`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ newAssigneeId: labTech }); // reassign to labTech
+    
+    const reqB = request(app)
+      .post(`/api/v1/tasks/${taskId}/reassign`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ newAssigneeId: labTech });
+
+    const results = await Promise.allSettled([reqA, reqB]);
+    const statuses = results.map(r => r.status === 'fulfilled' ? (r.value as any).status : 500);
+    
+    expect(statuses).toContain(200);
+    expect(statuses).toContain(404); // The loser sees assignedTo !== actorId
+  });
+
+  it('handles concurrent escalation - 1 success, 1 conflict (409)', async () => {
+    // We need to set the task to normal priority first to test escalation concurrency
+    await db.update(tasks).set({ priority: 'medium' }).where(eq(tasks.id, taskId));
+
+    const token = tokenFor(labTech, 'lab_technician', deptId);
+    const reqA = request(app)
+      .post(`/api/v1/tasks/${taskId}/escalate`)
+      .set('Authorization', `Bearer ${token}`);
+    
+    const reqB = request(app)
+      .post(`/api/v1/tasks/${taskId}/escalate`)
+      .set('Authorization', `Bearer ${token}`);
+
+    const results = await Promise.allSettled([reqA, reqB]);
+    const statuses = results.map(r => r.status === 'fulfilled' ? (r.value as any).status : 500);
+    
+    expect(statuses).toContain(200);
+    expect(statuses).toContain(409); // The loser sees priority === 'critical'
+  });
+
+  it('handles concurrent completion - 1 success, 1 conflict', async () => {
+    // Task is currently assigned to labTech from the reassignment test, and status is 'assigned'
+    const token = tokenFor(labTech, 'lab_technician', deptId);
+    // Acknowledge the task to move it to 'in_progress' before attempting completion
+    await request(app)
+      .post(`/api/v1/tasks/${taskId}/acknowledge`)
+      .set('Authorization', `Bearer ${token}`);
+
     const reqA = request(app)
       .post(`/api/v1/tasks/${taskId}/complete`)
       .set('Authorization', `Bearer ${token}`);

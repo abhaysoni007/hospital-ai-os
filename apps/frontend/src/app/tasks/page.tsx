@@ -2,12 +2,14 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { CheckSquare } from 'lucide-react';
+import { CheckSquare, AlertTriangle, AlertCircle } from 'lucide-react';
 import { AppShell } from '../../components/layout/AppShell/AppShell';
 import { Select } from '../../components/ui/Input/Select';
 import { PageHeader } from '../../components/ui/PageHeader/PageHeader';
 import { EmptyState } from '../../components/ui/EmptyState/EmptyState';
 import { ErrorState } from '../../components/ui/ErrorState/ErrorState';
+import { ConfirmDialog } from '../../components/ui/ConfirmDialog/ConfirmDialog';
+import { useAuth } from '../../hooks/useAuth';
 import {
   Table,
   THead,
@@ -23,23 +25,42 @@ import { taskService } from '../../services/task-service';
 import type { TaskResponse, TaskStatusEnum } from 'shared';
 import styles from './tasks.module.css';
 
+const DEMO_STAFF = [
+  { value: '00000000-0000-0000-0000-000000000101', label: 'Dr. Sarah Chen (Physician)' },
+  { value: '00000000-0000-0000-0000-000000000102', label: 'James Wilson (Nurse)' },
+  { value: '00000000-0000-0000-0000-000000000103', label: 'Maria Garcia (Lab Tech)' },
+];
+
 export default function TasksPage() {
   const router = useRouter();
+  const { user } = useAuth();
   const [tasks, setTasks] = useState<TaskResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  
   const [status, setStatus] = useState('');
+  const [scope, setScope] = useState<'me' | 'department' | 'hospital'>('me');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+
+  // Reassign Modal State
+  const [reassignTask, setReassignTask] = useState<TaskResponse | null>(null);
+  const [newAssignee, setNewAssignee] = useState<string>(DEMO_STAFF[0].value);
+
+  // Escalate Modal State
+  const [escalateTask, setEscalateTask] = useState<TaskResponse | null>(null);
 
   const fetchTasks = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
+      // Pass the selected scope to the API.
       const response = await taskService.listTasks({
         page: 1,
         pageSize: 100,
         status: (status || undefined) as TaskStatusEnum | undefined,
+        // @ts-expect-error adding scope to getTasksQuerySchema temporarily
+        scope,
       });
       setTasks(response.data);
     } catch {
@@ -47,7 +68,7 @@ export default function TasksPage() {
     } finally {
       setLoading(false);
     }
-  }, [status]);
+  }, [status, scope]);
 
   useEffect(() => {
     void fetchTasks();
@@ -81,6 +102,45 @@ export default function TasksPage() {
     }
   };
 
+  const submitReassign = async () => {
+    if (!reassignTask) return;
+    setActionError(null);
+    setActionLoading(reassignTask.id);
+    try {
+      const { apiClient } = await import('../../services/api-client');
+      await apiClient(`/tasks/${reassignTask.id}/reassign`, {
+        method: 'POST',
+        body: JSON.stringify({ newAssigneeId: newAssignee }),
+      });
+      setReassignTask(null);
+      await fetchTasks();
+    } catch {
+      setActionError('Failed to reassign task. Please try again.');
+    } finally {
+      setActionLoading(null);
+      setReassignTask(null);
+    }
+  };
+
+  const submitEscalate = async () => {
+    if (!escalateTask) return;
+    setActionError(null);
+    setActionLoading(escalateTask.id);
+    try {
+      const { apiClient } = await import('../../services/api-client');
+      await apiClient(`/tasks/${escalateTask.id}/escalate`, {
+        method: 'POST',
+      });
+      setEscalateTask(null);
+      await fetchTasks();
+    } catch {
+      setActionError('Failed to escalate task.');
+    } finally {
+      setActionLoading(null);
+      setEscalateTask(null);
+    }
+  };
+
   const navigateToTask = (task: TaskResponse) => {
     if (task.referenceType === 'DiagnosticOrder' && task.referenceId) {
       router.push(`/diagnostics/${task.referenceId}`);
@@ -89,26 +149,56 @@ export default function TasksPage() {
     }
   };
 
+  const isOverdue = (task: TaskResponse) => {
+    if (!task.dueAt) return false;
+    return new Date(task.dueAt) < new Date() && task.status !== 'completed' && task.status !== 'cancelled';
+  };
+
+  const getPageTitle = () => {
+    if (scope === 'me') return 'My Work';
+    if (scope === 'department') return 'Department Queue';
+    if (scope === 'hospital') return 'Hospital Queue';
+    return 'My Work';
+  };
+
+  const showDepartmentTab = user && ['physician', 'nurse', 'lab_technician', 'pharmacist', 'receptionist'].includes(user.role);
+  const showHospitalTab = user?.role === 'hospital_admin';
+
   return (
-    <AppShell breadcrumbs={['Workspace', 'My Work']} requiredPermission="task:read">
+    <AppShell breadcrumbs={['Workspace', getPageTitle()]} requiredPermission="task:read">
       <div className={styles.container}>
         <PageHeader
-          title="My Work"
-          description="Tasks assigned to you that require your attention."
+          title={getPageTitle()}
+          description={
+            scope === 'me'
+              ? 'Tasks assigned to you that require your attention.'
+              : 'Operational view of clinical tasks.'
+          }
           meta={
-            <Select
-              id="status"
-              label="Filter by status"
-              placeholder="All statuses"
-              value={status}
-              onChange={(e) => setStatus(e.target.value)}
-              options={[
-                { value: 'created', label: 'Created' },
-                { value: 'in_progress', label: 'In Progress' },
-                { value: 'completed', label: 'Completed' },
-              ]}
-              className={styles.statusSelect}
-            />
+            <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-end' }}>
+              <div className={styles.tabs} style={{ display: 'flex', gap: '0.5rem', marginBottom: '4px' }}>
+                <Button variant={scope === 'me' ? 'primary' : 'secondary'} size="sm" onClick={() => setScope('me')}>My Work</Button>
+                {showDepartmentTab && (
+                  <Button variant={scope === 'department' ? 'primary' : 'secondary'} size="sm" onClick={() => setScope('department')}>Department Queue</Button>
+                )}
+                {showHospitalTab && (
+                  <Button variant={scope === 'hospital' ? 'primary' : 'secondary'} size="sm" onClick={() => setScope('hospital')}>Hospital Queue</Button>
+                )}
+              </div>
+              <Select
+                id="status"
+                label="Filter by status"
+                placeholder="All statuses"
+                value={status}
+                onChange={(e) => setStatus(e.target.value)}
+                options={[
+                  { value: 'created', label: 'Created' },
+                  { value: 'in_progress', label: 'In Progress' },
+                  { value: 'completed', label: 'Completed' },
+                ]}
+                className={styles.statusSelect}
+              />
+            </div>
           }
         />
 
@@ -137,7 +227,7 @@ export default function TasksPage() {
         ) : tasks.length === 0 ? (
           <EmptyState
             icon={<CheckSquare size={32} />}
-            title={status ? `No ${status.replace('_', ' ')} tasks` : 'No tasks assigned to you'}
+            title={status ? `No ${status.replace('_', ' ')} tasks` : 'No tasks found'}
             description={
               status
                 ? 'Nothing matches this filter right now.'
@@ -164,12 +254,25 @@ export default function TasksPage() {
                   aria-label={`Open task: ${task.title}`}
                 >
                   <TD>
-                    <strong>{task.title}</strong>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <strong>{task.title}</strong>
+                      {isOverdue(task) && (
+                        <span style={{ color: 'var(--color-danger-600)', display: 'flex', alignItems: 'center', fontSize: '0.75rem', fontWeight: 600, gap: '2px' }}>
+                          <AlertCircle size={12} /> OVERDUE
+                        </span>
+                      )}
+                    </div>
                     <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
                       {task.description}
                     </div>
                   </TD>
-                  <TD className={styles.capitalize}>{task.priority}</TD>
+                  <TD className={styles.capitalize}>
+                    {task.priority === 'critical' ? (
+                      <span style={{ color: 'var(--color-danger-600)', fontWeight: 600 }}>Critical</span>
+                    ) : (
+                      task.priority
+                    )}
+                  </TD>
                   <TD>
                     {new Date(task.createdAt).toLocaleString([], {
                       month: 'short',
@@ -180,8 +283,8 @@ export default function TasksPage() {
                   </TD>
                   <TD className={styles.capitalize}>{task.status.replace('_', ' ')}</TD>
                   <TD align="right">
-                    <div className={styles.actions}>
-                      {task.status === 'created' && (
+                    <div className={styles.actions} style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                      {task.assignedTo === user?.staffId && task.status === 'created' && (
                         <Button
                           variant="primary"
                           size="sm"
@@ -191,7 +294,7 @@ export default function TasksPage() {
                           Acknowledge
                         </Button>
                       )}
-                      {task.status === 'in_progress' && (
+                      {task.assignedTo === user?.staffId && task.status === 'in_progress' && (
                         <Button
                           variant="primary"
                           size="sm"
@@ -200,6 +303,25 @@ export default function TasksPage() {
                         >
                           Complete
                         </Button>
+                      )}
+                      {task.assignedTo === user?.staffId && !['completed', 'cancelled'].includes(task.status) && (
+                        <>
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={(e) => { e.stopPropagation(); setReassignTask(task); }}
+                          >
+                            Reassign
+                          </Button>
+                          <Button
+                            variant="danger"
+                            size="sm"
+                            onClick={(e) => { e.stopPropagation(); setEscalateTask(task); }}
+                            disabled={task.priority === 'critical'}
+                          >
+                            Escalate
+                          </Button>
+                        </>
                       )}
                       {(task.status === 'completed' || task.status === 'cancelled') && (
                         <RowLink href="#" onClick={(e) => { e.preventDefault(); navigateToTask(task); }} aria-label={`View task context`}>
@@ -213,6 +335,42 @@ export default function TasksPage() {
             </TBody>
           </Table>
         )}
+
+        <ConfirmDialog
+          isOpen={!!reassignTask}
+          title={`Reassign Task: ${reassignTask?.title}`}
+          confirmLabel="Reassign"
+          onConfirm={submitReassign}
+          onCancel={() => setReassignTask(null)}
+          isLoading={actionLoading === reassignTask?.id}
+        >
+          <div style={{ marginBottom: '1rem' }}>
+            <p>Select a staff member within your department to reassign this task to.</p>
+            <div style={{ marginTop: '1rem' }}>
+              <Select
+                id="newAssignee"
+                label="New Assignee"
+                value={newAssignee}
+                onChange={(e) => setNewAssignee(e.target.value)}
+                options={DEMO_STAFF}
+              />
+            </div>
+          </div>
+        </ConfirmDialog>
+
+        <ConfirmDialog
+          isOpen={!!escalateTask}
+          title={`Escalate Task: ${escalateTask?.title}`}
+          confirmLabel="Escalate to Critical"
+          variant="danger"
+          onConfirm={submitEscalate}
+          onCancel={() => setEscalateTask(null)}
+          isLoading={actionLoading === escalateTask?.id}
+        >
+          <p>
+            Are you sure you want to escalate this task? This will set the priority to <strong>critical</strong> and notify the supervisor or assigner.
+          </p>
+        </ConfirmDialog>
       </div>
     </AppShell>
   );
