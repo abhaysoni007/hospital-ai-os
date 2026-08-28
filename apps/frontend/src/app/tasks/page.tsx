@@ -70,7 +70,7 @@ export default function TasksPage() {
       if (uniqueAssignees.length > 0) {
         const { apiClient } = await import('../../services/api-client');
         try {
-          const idResponse = await apiClient(`/staff/identity?ids=${uniqueAssignees.slice(0, 50).join(',')}`);
+          const idResponse = await apiClient<{ data: { id: string; displayName: string }[] }>(`/staff/identity?ids=${uniqueAssignees.slice(0, 50).join(',')}`);
           setStaffMap(prev => {
             const next = { ...prev };
             idResponse.data.forEach((staff: { id: string; displayName: string }) => {
@@ -96,7 +96,7 @@ export default function TasksPage() {
   useEffect(() => {
     if (user && ['physician', 'nurse', 'lab_technician', 'pharmacist', 'receptionist'].includes(user.role)) {
       import('../../services/api-client').then(({ apiClient }) => {
-        apiClient('/staff/department').then(res => {
+        apiClient<{ data: { id: string; displayName: string; role: string }[] }>('/staff/department').then(res => {
           const opts = res.data.map((s: { id: string; displayName: string; role: string }) => ({
             value: s.id,
             label: `${s.displayName} (${s.role.replace('_', ' ')})`
