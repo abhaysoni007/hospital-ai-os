@@ -100,3 +100,21 @@ A strict validation enforcement surfaced 6 minor TypeScript/ESLint defects that 
 - Replaced ambiguous `any` type casting within the concurrency assertions of `task.concurrency.test.ts` with explicit `request.Response` signatures, guaranteeing type safety without compromising assertion semantics.
 - Triggered the comprehensive verification pipeline (`tsc --noEmit`, `eslint`, `vitest run`, `next build`).
 - 100% of pipeline stages passed cleanly with zero schema, RBAC, or behavior modifications.
+
+## 10. QA Defect Resolution: Demo DB Reset Script
+A structural defect was identified in the `seed-demo-reset.ts` script. The script was failing to execute because it did not delete rows from the `tasks` table before deleting `encounters`, triggering a foreign key constraint violation. Furthermore, the `seed-demo.ts` script was automatically executing on import, causing a race condition during the reset process.
+
+**Resolution:**
+- Added foreign key constraint deletion logic for the `tasks` table within `seed-demo-reset.ts`.
+- Guarded the execution of `seed()` inside `seed-demo.ts` with `require.main === module` to prevent unintentional execution during module imports.
+- Re-ran the database migration and seeding successfully to ensure a pristine test state.
+
+## 11. Final Real-Browser Manual QA Validation
+In addition to the automated testing suite, a final manual User Interface Verification was performed against the pristine `hospital_ai_os_demo` database:
+- **Work Management:** Logged in as `demo.physician@hospital.test` to review the "My Work" view and interact with the "Critical lab value" task.
+- **Task Progression:** Acknowledged and Completed a task in the CBC Diagnostic context and confirmed status mutations.
+- **Task Reassignment:** Reassigned a task to a different active staff member within the same department, verifying instant removal from the active owner's queue.
+- **Prioritization Escalation:** Escalated a normal priority task to Critical, activating proper badges and UI indicators.
+- **Overdue Visibility:** Verified that overdue tasks prominently surfaced in the UI without reliance on backend scheduled processes.
+
+All verification steps for Phase 1C are unequivocally **VERIFIED + FROZEN**.
