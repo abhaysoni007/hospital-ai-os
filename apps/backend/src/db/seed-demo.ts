@@ -1828,6 +1828,7 @@ async function seed() {
       where: and(
         eq(diagnosticOrders.encounterId, encId),
         eq(diagnosticOrders.testCode, o.testCode),
+        eq(diagnosticOrders.clinicalIndication, o.indication),
       ),
     });
 

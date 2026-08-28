@@ -15,17 +15,31 @@ const EventIcon = ({ type }: { type: string }) => {
   }
 };
 
+import { ErrorState } from '../ui/ErrorState/ErrorState';
+
 export const ClinicalTimeline: React.FC<{ patientId: string }> = ({ patientId }) => {
   const [timeline, setTimeline] = useState<ClinicalTimelineResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    setLoading(true);
+    setError(null);
     intelligenceService.getTimeline(patientId)
       .then(setTimeline)
+      .catch((err) => setError(err instanceof Error ? err.message : 'Failed to load timeline'))
       .finally(() => setLoading(false));
   }, [patientId]);
 
   if (loading) return <div className="p-4 text-center text-sm text-gray-500">Loading timeline...</div>;
+  if (error) {
+    return (
+      <Card className="p-4">
+        <h3 className="text-lg font-semibold mb-4">Clinical Timeline</h3>
+        <ErrorState title="Timeline unavailable" message={error} />
+      </Card>
+    );
+  }
   if (!timeline) return null;
 
   return (

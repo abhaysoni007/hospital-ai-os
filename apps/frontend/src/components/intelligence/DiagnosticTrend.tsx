@@ -3,14 +3,26 @@ import { DiagnosticTrendResponse } from 'shared';
 import { intelligenceService } from '../../services/intelligence.service';
 import { LineChart } from 'lucide-react';
 
+import { ErrorState } from '../ui/ErrorState/ErrorState';
+
 export const DiagnosticTrend: React.FC<{ patientId: string; testCode: string }> = ({ patientId, testCode }) => {
   const [trend, setTrend] = useState<DiagnosticTrendResponse | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    setError(null);
     intelligenceService.getDiagnosticTrend(patientId, testCode)
       .then(setTrend)
-      .catch(console.error);
+      .catch((err) => setError(err instanceof Error ? err.message : 'Failed to load trend'));
   }, [patientId, testCode]);
+
+  if (error) {
+    return (
+      <div className="bg-white border border-gray-200 rounded-md p-3 mt-2 shadow-sm">
+        <ErrorState title={`Cannot load trend for ${testCode}`} message={error} />
+      </div>
+    );
+  }
 
   if (!trend || trend.points.length === 0) return null;
 
