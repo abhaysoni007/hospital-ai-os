@@ -75,6 +75,7 @@ export function BreakGlassModal({
             <label htmlFor="bg-reason">Reason</label>
             <select
               id="bg-reason"
+              data-testid="bg-reason-select"
               value={reason}
               onChange={(e) => setReason(e.target.value as 'emergency_care' | 'patient_safety' | 'continuity_of_care')}
               className={styles.input}
@@ -90,6 +91,7 @@ export function BreakGlassModal({
             <label htmlFor="bg-justification">Justification (min 20 characters)</label>
             <textarea
               id="bg-justification"
+              data-testid="bg-justification-input"
               value={justification}
               onChange={(e) => setJustification(e.target.value)}
               className={styles.input}
@@ -106,10 +108,10 @@ export function BreakGlassModal({
           </div>
 
           <div className={styles.footer}>
-            <Button variant="outline" type="button" onClick={onCancel} disabled={loading}>
+            <Button variant="outline" type="button" onClick={onCancel} disabled={loading} data-testid="bg-cancel-btn">
               Cancel
             </Button>
-            <Button variant="danger" type="submit" isLoading={loading}>
+            <Button variant="danger" type="submit" isLoading={loading} data-testid="bg-submit-btn">
               Activate Emergency Access
             </Button>
           </div>

@@ -1,0 +1,11 @@
+description = "Plan a task before implementing"
+prompt = """
+Before writing any code:
+1. List the files you'll modify
+2. Describe the change in each file (1-2 sentences)
+3. Flag any risks or edge cases
+4. THEN write the code
+
+Do NOT touch unrelated components.
+"""
+
