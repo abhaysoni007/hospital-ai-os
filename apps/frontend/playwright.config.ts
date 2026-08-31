@@ -8,9 +8,13 @@ export default defineConfig({
   timeout: 60000,
   globalSetup: './e2e/global-setup.ts',
   use: {
-    baseURL: 'http://localhost:3000',
     storageState: STORAGE_STATE_PATH,
     trace: 'on-first-retry',
+  },
+  webServer: {
+    command: 'npm run dev',
+    port: 3002,
+    reuseExistingServer: true,
   },
   projects: [
     {
