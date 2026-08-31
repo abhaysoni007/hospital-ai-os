@@ -19,3 +19,7 @@ tests/e2e/.auth/
 
 # Demo seed credentials (local only — never commit)
 .demo-credentials.txt
+# Agent/Test Artifacts
+.agents/
+skills-lock.json
+apps/frontend/e2e/.auth/
