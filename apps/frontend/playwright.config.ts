@@ -8,7 +8,9 @@ export default defineConfig({
   timeout: 60000,
   globalSetup: './e2e/global-setup.ts',
   use: {
+    baseURL: 'http://localhost:3002',
     storageState: STORAGE_STATE_PATH,
+    trace: 'on',
     trace: 'on-first-retry',
   },
   webServer: {
