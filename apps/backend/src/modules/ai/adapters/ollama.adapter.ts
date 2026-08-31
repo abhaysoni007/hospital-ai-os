@@ -154,6 +154,7 @@ export class OllamaAdapter implements AIProviderAdapter {
    * Embedding via nomic-embed-text or similar.
    * Phase A: not yet wired to production — reserved for Phase B semantic search.
    */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async generateEmbedding(_text: string): Promise<number[]> {
     throw new AIProviderError(
       'PROVIDER_ERROR',

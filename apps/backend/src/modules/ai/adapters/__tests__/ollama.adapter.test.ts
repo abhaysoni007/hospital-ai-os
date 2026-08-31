@@ -8,7 +8,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { z } from 'zod';
 import { OllamaAdapter, buildOllamaChatRequest, stripCodeFences } from '../ollama.adapter';
-import { AIProviderError } from '../provider.interface';
+
 import type { GenerateStructuredParams } from '../provider.interface';
 
 // ─── Schema fixture ───────────────────────────────────────────────────────────

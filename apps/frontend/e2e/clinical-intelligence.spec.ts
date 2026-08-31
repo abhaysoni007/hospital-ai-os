@@ -95,8 +95,10 @@ test('Flow E: Break-Glass banner appears for out-of-scope patient', async ({ pag
   await expect(james).toBeVisible({ timeout: 15000 });
   await james.click();
 
-  // Break-Glass banner or modal should appear (403 from backend triggers it)
+  // BreakGlassModal renders: <h2>Emergency Access Required</h2> inside role="dialog"
   await expect(
-    page.getByText(/break.?glass|emergency access|restricted|unauthorized/i).first()
+    page.getByRole('heading', { name: /Emergency Access Required/i }).or(
+      page.getByText(/Restricted Access|Emergency Access Required/i).first()
+    )
   ).toBeVisible({ timeout: 15000 });
 });

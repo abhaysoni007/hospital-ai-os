@@ -21,7 +21,7 @@ import fs from 'fs';
 import { z } from 'zod';
 import { OllamaAdapter } from '../modules/ai/adapters/ollama.adapter';
 import type { GenerateStructuredParams } from '../modules/ai/adapters/provider.interface';
-import { ChartAnswerOutputSchema } from 'shared';
+import { chartAnswerOutputSchema } from 'shared';
 
 // ─── Config ──────────────────────────────────────────────────────────────────
 
@@ -191,16 +191,16 @@ async function main() {
   const briefResult = await runEval(
     'Chart Brief: synthetic encounter',
     async () => {
-      const params: GenerateStructuredParams<z.infer<typeof ChartAnswerOutputSchema>> = {
+      const params: GenerateStructuredParams<z.infer<typeof chartAnswerOutputSchema>> = {
         systemInstruction: 'You are a clinical chart summary AI. Output valid JSON only.',
         userPrompt: CHART_BRIEF_PROMPT,
         context: [],
-        outputSchema: ChartAnswerOutputSchema,
+        outputSchema: chartAnswerOutputSchema,
         config: { maxOutputTokens: 512, temperature: 0.3, topP: 0.9, timeoutMs: TIMEOUT_MS },
         signal: AbortSignal.timeout(TIMEOUT_MS),
       };
       const response = await adapter.generateStructuredOutput(params);
-      const validated = ChartAnswerOutputSchema.parse(response.parsedOutput);
+      const validated = chartAnswerOutputSchema.parse(response.parsedOutput);
       console.log(`    Latency: ${response.latencyMs}ms | In: ${response.inputTokens} | Out: ${response.outputTokens}`);
       return { validated, raw: response.rawResponse };
     },

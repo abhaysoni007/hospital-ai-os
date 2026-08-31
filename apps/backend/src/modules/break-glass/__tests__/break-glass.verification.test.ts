@@ -153,7 +153,6 @@ describe('Section 3: Activation', () => {
   it('3a. Physician activates → 4-hour server-controlled expiry, no justification in response', async () => {
     await revokeAllSessions(physicianId, outOfScopePatientId);
 
-    const before = Date.now();
     const session = await breakGlassService.activateSession(
       {
         patientId: outOfScopePatientId,
