@@ -49,7 +49,7 @@
   border: 1px solid var(--status-critical-border);
   background-color: var(--status-critical-bg);
   opacity: 0.6;
-  animation: pulse 1.4s ease infinite;
+  animation: pulse var(--duration-slow) var(--ease-standard) infinite;
 }
 
 @keyframes pulse {

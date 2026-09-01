@@ -6,9 +6,9 @@
   font-weight: 500;
   border-radius: var(--radius-md);
   transition:
-    background-color 0.15s ease,
-    border-color 0.15s ease,
-    box-shadow 0.15s ease;
+    background-color var(--duration-fast) var(--ease-standard),
+    border-color var(--duration-fast) var(--ease-standard),
+    box-shadow var(--duration-fast) var(--ease-standard);
   white-space: nowrap;
   user-select: none;
   text-decoration: none;
@@ -111,28 +111,11 @@
   box-shadow: none;
 }
 
-/* Loading Spinner */
+/* Loading Spinner — sizing wrapper around the shared Spinner primitive.
+   The Spinner itself owns the rotation animation and reduced-motion handling. */
 .spinner {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
   width: 16px;
   height: 16px;
-  animation: spin 0.8s linear infinite;
-}
-
-.spinner svg {
-  width: 100%;
-  height: 100%;
-}
-
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
 }
 
 .iconLeft,

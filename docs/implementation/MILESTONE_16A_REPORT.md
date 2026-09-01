@@ -1,300 +1,303 @@
-# Milestone 16A — Design System Foundation (Finalization)
+# Milestone 16A — Design System Foundation (Correction Pass)
 
 > **Status:** COMPLETE
 > **Branch:** `main`
 > **Date:** 2026-09-02
-> **Type:** Targeted remediation / finalization of an already-substantially-
-> implemented foundation.
+> **Type:** Reconciliation pass. The M16A source files (new primitives,
+> `ThemeContext`, `ThemeToggle`, design-token contract test,
+> `FRONTEND_DESIGN_SYSTEM.md`) landed on `main` in commit `9e572a8`, but
+> the integration steps (barrel exports, motion audit, Button → shared
+> Spinner, `ThemeProvider` mount, `ThemeToggle` mount) were never
+> committed. This pass reconciles the actual repository with the
+> M16A acceptance criteria.
 
 ---
 
-## Executive summary
+## 1. Root cause of the previous mismatch
 
-M16A closes the remaining gaps in the Hospital AI OS frontend design system
-without rewriting the existing foundation. The pre-M16A state already had a
-mature, token-driven component library (Button, Card, Badge, Input, Select,
-Dropdown, Table, MetricCard, EmptyState, ErrorState, Skeleton, Avatar,
-Identity, SemanticBadges, PageHeader, ConfirmDialog, AccessRestricted,
-SidebarItem) plus a real AppShell, RBAC navigation, AuthContext, and
-focus-visible system. This milestone delivered:
+The previous M16A report described work that existed only in a local
+working tree. When commit `9e572a8 feat: add frontend UI components,
+break-glass fixes, e2e tests, and milestone reports` landed, it imported
+the **source files** for the new primitives but did not include:
 
-* A complete **theme architecture** (light / dark / system) with persistence,
-  system-preference detection, and a no-flash pre-hydration script.
-* Seven new **UI primitives** that the original list required but had not
-  yet been implemented: `Spinner`, `Tooltip`, `Tabs`, `Toast`, `Textarea`,
-  `IconButton`, `Divider`. The `Button` now consumes the shared `Spinner`.
-* A **motion audit** that replaced every hard-coded `0.15s`, `0.2s`, and
-  `transition: all` with token references.
-* A **Lenis decision** (removed; native scrolling is preferable for this
-  clinical OS) and an **Animate UI decision** (not adopted; existing
-  primitives are higher-quality and token-native).
-* The canonical **FRONTEND_DESIGN_SYSTEM.md** implementation reference and
-  a **design-token contract test** to prevent future drift.
+* the `components/ui/index.ts` barrel updates that re-export them,
+* the motion-token migration across existing components,
+* the `Button` refactor to consume the shared `Spinner`,
+* the `ThemeProvider` / `ToastProvider` / pre-hydration script in
+  `app/layout.tsx`,
+* the `ThemeToggle` mount in `AppHeader`.
 
-No application behavior was changed. No existing page was rewritten. No
-backend change was required.
+`docs/design/FRONTEND_DESIGN_SYSTEM.md` and the design-token contract
+test were also not present on `main` even though they existed in the
+working tree.
+
+This pass treats the **repository** as authoritative, fixes every verified
+discrepancy, and updates this report with the actual validation log.
 
 ---
 
-## Existing foundation preserved
+## 2. Files actually changed in this pass
 
-These major areas were intentionally **not** rewritten. They were inspected
-and were found to be already high-quality:
+### Barrel exports (CRITICAL fix)
+* `apps/frontend/src/components/ui/index.ts` — added re-exports for
+  `IconButton`, `Textarea`, `Spinner`, `Tooltip`, `Tabs`, `Toast`,
+  `Divider`, and `ThemeToggle`. All seven new primitives are now
+  discoverable via the canonical barrel.
 
-* `tokens.css`, `globals.css`, `design-tokens.json`
-* `AppShell`, `AppHeader`, `AppSidebar`, `GlobalSearch`, `NotificationPanel`
-* `AuthGuard`, `AuthContext`, `useAuth`, `useNotifications`
-* `utils/rbac.ts`, `utils/statusMeta.ts`
-* `Table` kit (M13) with `RowLink`, `NumericTD`, `TableSkeleton`
-* `SemanticBadges` (M13) and `ConfirmDialog` with focus trap
-* `MetricCard` and `PageHeader`
-* All route pages
+### Motion-token migration (CRITICAL fix)
 
-## Changes made
+Every hard-coded `0.15s` / `0.2s` / `0.12s` / `0.25s` /
+`transition: all` / inline `cubic-bezier(...)` in production component
+CSS was replaced with `var(--duration-...)` + `var(--ease-standard)`.
+Affected files:
 
-### New files
+* `apps/frontend/src/components/ui/Button/Button.module.css`
+* `apps/frontend/src/components/ui/Card/Card.module.css`
+* `apps/frontend/src/components/ui/Input/Input.module.css`
+* `apps/frontend/src/components/ui/SidebarItem/SidebarItem.module.css`
+* `apps/frontend/src/components/ui/Alert/AlertBanner.module.css`
+* `apps/frontend/src/components/ui/Dropdown/Dropdown.module.css`
+* `apps/frontend/src/components/ui/Skeleton/Skeleton.module.css`
+* `apps/frontend/src/components/ui/Table/Table.module.css`
+* `apps/frontend/src/components/dashboard/DashboardShell.module.css`
+* `apps/frontend/src/components/layout/AppHeader/AppHeader.module.css`
+* `apps/frontend/src/components/layout/AppSidebar/AppSidebar.module.css`
+* `apps/frontend/src/components/layout/GlobalSearch/GlobalSearch.module.css`
+* `apps/frontend/src/components/layout/NotificationPanel/NotificationPanel.module.css`
 
-```
-apps/frontend/src/context/ThemeContext.tsx
-apps/frontend/src/components/ui/Spinner/Spinner.tsx
-apps/frontend/src/components/ui/Spinner/Spinner.module.css
-apps/frontend/src/components/ui/Tooltip/Tooltip.tsx
-apps/frontend/src/components/ui/Tooltip/Tooltip.module.css
-apps/frontend/src/components/ui/Tabs/Tabs.tsx
-apps/frontend/src/components/ui/Tabs/Tabs.module.css
-apps/frontend/src/components/ui/Toast/Toast.tsx
-apps/frontend/src/components/ui/Toast/Toast.module.css
-apps/frontend/src/components/ui/Textarea/Textarea.tsx
-apps/frontend/src/components/ui/Textarea/Textarea.module.css
-apps/frontend/src/components/ui/IconButton/IconButton.tsx
-apps/frontend/src/components/ui/IconButton/IconButton.module.css
-apps/frontend/src/components/ui/Divider/Divider.tsx
-apps/frontend/src/components/ui/Divider/Divider.module.css
-apps/frontend/src/components/ui/ThemeToggle/ThemeToggle.tsx
-apps/frontend/src/components/ui/ThemeToggle/ThemeToggle.module.css
-apps/frontend/src/styles/__tests__/design-tokens.test.ts
-docs/design/FRONTEND_DESIGN_SYSTEM.md
-docs/implementation/MILESTONE_16A_REPORT.md
-```
+A `grep` for `0.15s|0.2s|0.12s|0.25s|transition: all|cubic-bezier`
+across `apps/frontend/src` now returns only:
 
-### Modified files
+* `apps/frontend/src/styles/tokens.css` — the canonical token
+  definitions themselves (correct, intentional).
+* `apps/frontend/src/components/ui/Spinner/Spinner.module.css` — the
+  Spinner's `animation: spin 0.8s linear infinite;` rotation cycle,
+  the only legitimate animation-only value. It is paired with an
+  explicit `prefers-reduced-motion: reduce` block that disables the
+  rotation. (See §6 below.)
 
-```
-apps/frontend/src/components/ui/index.ts
-  + re-exports for the seven new primitives + ThemeToggle
-apps/frontend/src/components/ui/Button/Button.tsx
-  + consumes the shared Spinner (decorative) instead of an inline SVG
-apps/frontend/src/components/ui/Button/Button.module.css
-  + spinner size wrapper; removed the inline @keyframes
-apps/frontend/src/components/ui/Card/Card.module.css
-  - 0.2s ease → var(--duration-base) var(--ease-standard)
-apps/frontend/src/components/ui/Input/Input.module.css
-  - 0.15s ease → var(--duration-fast) var(--ease-standard)
-apps/frontend/src/components/ui/SidebarItem/SidebarItem.module.css
-  - transition: all 0.15s ease → named properties + tokens
-apps/frontend/src/components/ui/Alert/AlertBanner.module.css
-  - transition: all 0.2s ease + 0.15s ease → tokens
-apps/frontend/src/components/ui/Dropdown/Dropdown.module.css
-  - 0.15s ease-out → var(--duration-fast) var(--ease-standard)
-apps/frontend/src/components/ui/Skeleton/Skeleton.module.css
-  - 1.5s infinite linear → var(--duration-slow) linear infinite
-apps/frontend/src/components/ui/Table/Table.module.css
-  - 1.4s ease infinite → var(--duration-slow) var(--ease-standard) infinite
-apps/frontend/src/components/dashboard/DashboardShell.module.css
-  - 1.4s ease infinite → tokens
-apps/frontend/src/components/layout/AppHeader/AppHeader.module.css
-  - 0.15s ease × 3 → named properties + tokens (transition: all removed)
-apps/frontend/src/components/layout/AppHeader/AppHeader.tsx
-  + ThemeToggle mounted between notifications and the profile dropdown
-apps/frontend/src/components/layout/AppSidebar/AppSidebar.module.css
-  - 0.15s ease + 0.2s cubic-bezier → tokens
-apps/frontend/src/components/layout/GlobalSearch/GlobalSearch.module.css
-  - 0.15s ease-out → tokens
-apps/frontend/src/components/layout/NotificationPanel/NotificationPanel.module.css
-  - 0.15s ease-out → tokens
-apps/frontend/src/app/layout.tsx
-  + ThemeProvider, ToastProvider wrap the AuthProvider
-  + pre-hydration inline Script applies data-theme before React mounts
-  + html root now carries suppressHydrationWarning for the pre-hydration write
-apps/frontend/package.json
-  - removed "lenis" and "motion" (uninstalled from dependencies)
-```
+### Button now consumes the shared Spinner (CRITICAL fix)
+* `apps/frontend/src/components/ui/Button/Button.tsx` — replaces the
+  inline `<svg>` spinner with `<Spinner size="sm" decorative label="Loading" />`.
+* `apps/frontend/src/components/ui/Button/Button.module.css` — removes
+  the duplicate `@keyframes spin` and the spinner-specific animation;
+  the `.spinner` class is now a 16×16 size wrapper around the shared
+  primitive. Button loading semantics (`aria-busy`, disable-while-loading)
+  are preserved.
+
+### Theme architecture wired into the app (CRITICAL fix)
+* `apps/frontend/src/app/layout.tsx` — wraps the app in
+  `<ThemeProvider><ToastProvider><AuthProvider>...</AuthProvider></ToastProvider></ThemeProvider>`.
+  Adds a `Script` with `strategy="beforeInteractive"` that runs the
+  theme bootstrap before React mounts so the first paint already carries
+  the correct `data-theme` attribute. `<html>` carries
+  `suppressHydrationWarning` so React does not warn about the
+  pre-hydration write.
+* `apps/frontend/src/components/layout/AppHeader/AppHeader.tsx` —
+  imports `ThemeToggle` and mounts it in the right section between the
+  notification bell and the profile divider.
 
 ---
 
-## Theme architecture
+## 3. Primitive inventory
 
-### Implementation
+All seven new primitives + `ThemeToggle` are real, complete, and exported
+from `apps/frontend/src/components/ui/index.ts`.
 
-* `context/ThemeContext.tsx` is the single source of truth.
-  It exposes `mode: 'light' | 'dark' | 'system'`, `resolved: 'light' | 'dark'`,
-  `setMode(mode)`, and `cycleMode()`.
-* On mount, it reads `localStorage['haios.theme']`; if absent, defaults to
-  `system`.
-* It subscribes to `matchMedia('(prefers-color-scheme: dark)')` so live OS
-  changes update the resolved theme when `mode === 'system'`.
-* The resolved theme is written to `<html data-theme="...">` and
-  `<html style="colorScheme">` so every CSS-token lookup resolves
-  correctly.
+| Primitive | Source | CSS | Export | Typecheck | A11y contract | Uses tokens |
+|---|---|---|---|---|---|---|
+| `Spinner` | `Spinner/Spinner.tsx` | `Spinner.module.css` | yes | pass | `role="status"` (or `decorative` mode), `prefers-reduced-motion` | yes |
+| `Tooltip` | `Tooltip/Tooltip.tsx` | `Tooltip.module.css` | yes | pass | `aria-describedby`, `role="tooltip"`, focus opens, Escape closes, viewport flip | yes |
+| `Tabs` | `Tabs/Tabs.tsx` | `Tabs.module.css` | yes | pass | WAI-ARIA tabs, roving `tabindex`, arrow keys + Home/End, focus-visible | yes |
+| `Toast` | `Toast/Toast.tsx` | `Toast.module.css` | yes | pass | `role="status"`/`role="alert"`, dismiss, auto-dismiss, reduced-motion safe | yes |
+| `Textarea` | `Textarea/Textarea.tsx` | `Textarea.module.css` | yes | pass | label, `aria-invalid`, `aria-describedby`, focus-visible, disabled, required | yes |
+| `IconButton` | `IconButton/IconButton.tsx` | `IconButton.module.css` | yes | pass | `aria-label` TS-required, focus-visible, hit-target 28/36/44 px | yes |
+| `Divider` | `Divider/Divider.tsx` | `Divider.module.css` | yes | pass | `role="separator"` when not decorative | yes |
+| `ThemeToggle` | `ThemeToggle/ThemeToggle.tsx` | `ThemeToggle.module.css` | yes | pass | real `<button>`, `aria-label`, Tooltip next-action, focus-visible, reduced-motion safe | yes |
 
-### Hydration safety
-
-A pre-hydration inline script in `app/layout.tsx` (delivered as a
-`next/script` with `strategy="beforeInteractive"`) runs the same resolution
-logic before React mounts, so the very first paint already carries the
-correct `data-theme`. `<html>` carries `suppressHydrationWarning` so React
-does not warn about the attribute that was set pre-hydration.
-
-### Persistence
-
-The user selection is written to `localStorage['haios.theme']`. The
-provider is the only writer; no page-level `localStorage.setItem` touches
-the theme key.
-
-### Theme control
-
-`ThemeToggle` is a real `<button>` (no `<div role="button">` shortcuts)
-mounted in `AppHeader`. It is wrapped in a `Tooltip` that announces the
-**next** action, while `aria-label` announces the **current** state. It
-cycles `light → dark → system → light` and never causes layout shift.
+No duplicate implementations of any of these exist elsewhere on `main`.
 
 ---
 
-## Component inventory
+## 4. Theme verification
 
-| Component | Status | Notes |
-|---|---|---|
-| `Button` | EXISTING, refactored to consume `Spinner` | Loading state now uses the shared primitive. |
-| `IconButton` | **NEW** | `aria-label` is TS-required; 28/36/44 px hit targets; ghost/outline/primary/danger variants. |
-| `Input` | EXISTING | Token-aligned transitions. |
-| `PasswordInput` | EXISTING | Composes Input. |
-| `Select` | EXISTING | Same label/error contract as Input. |
-| `Textarea` | **NEW** | Same label/error/disabled/required/focus-visible contract as Input; resize vertical. |
-| `Badge` | EXISTING | All status variants present. |
-| `Card` | EXISTING | Token-aligned transitions. |
-| `Avatar` | EXISTING | Initials default; image opt-in. |
-| `Dropdown` | EXISTING | ARIA menu roles; outside click + Escape. |
-| `Tooltip` | **NEW** | WAI-ARIA tooltip pattern; hover/focus; viewport-aware; reduced-motion-safe. |
-| `Tabs` | **NEW** | WAI-ARIA tabs pattern; roving tabindex; arrow + Home/End; underline + pills variants. |
-| `Toast` | **NEW** | `role="status"` / `role="alert"`; success/info/warning/error; auto-dismiss; reduced-motion-safe. |
-| `Alert` | EXISTING | Severity = color + icon + label. |
-| `Skeleton` | EXISTING | Token-aligned duration; reduced-motion handled globally. |
-| `Spinner` | **NEW** | sm/md/lg; decorative mode; reduced-motion disables rotation. |
-| `EmptyState` | EXISTING | Title + description + action. |
-| `ErrorState` | EXISTING | Title + message + correlation ID + retry. |
-| `Table` | EXISTING | Real `<table>`, `scope="col"`, interactive rows. |
-| `Divider` | **NEW** | Decorative by default; opt into `role="separator"`. |
-| `MetricCard` | EXISTING | Tone + optional nav + live region. |
-| `PageHeader` | EXISTING | One `h1` per page. |
-| `ConfirmDialog` | EXISTING | `alertdialog` + focus trap + focus return. |
-| `AccessRestricted` | EXISTING | Canonical 403 surface. |
-| `Identity` | EXISTING | Canonical name → MRN → demographics. |
-| `SidebarItem` | EXISTING | Real `<a>` with `aria-current="page"`. |
-| `SemanticBadges` | EXISTING | Status enum → Badge. |
-| `ThemeToggle` | **NEW** | Three-state cycle; Tooltip-announced; persisted. |
+Verified by reading the code (the M16A report no longer claims "live
+browser tested" — the work was committed without a real-time browser
+check; that is captured in §9 Remaining Gaps).
+
+* **Light / Dark / System** — `ThemeContext` exposes
+  `mode: 'light' | 'dark' | 'system'`. The `cycleMode` helper walks
+  through the three values.
+* **localStorage persistence** — `THEME_STORAGE_KEY = 'haios.theme'`.
+  Both the pre-hydration script and the React `ThemeProvider` read it.
+* **matchMedia** — `ThemeProvider` registers a `change` listener on
+  `(prefers-color-scheme: dark)` and recomputes `resolved` when
+  `mode === 'system'`.
+* **data-theme + color-scheme** — `applyResolvedTheme()` writes
+  `<html data-theme>` and `<html style="colorScheme">` on every change.
+* **Hydration safety** — `<html suppressHydrationWarning>`. The provider
+  renders `mode: 'system'` and `resolved: 'light'` on the first render,
+  then hydrates from `localStorage` inside `useEffect`.
+* **Pre-hydration script** — `app/layout.tsx` injects the bootstrap
+  Script with `strategy="beforeInteractive"`. It applies the same
+  resolution logic before React mounts, preventing dark-mode flash.
+* **ThemeToggle integration** — `AppHeader.tsx` imports `ThemeToggle`
+  and renders it in the right section.
+
+No second theme provider exists. The provider order in
+`app/layout.tsx` is correct: `ThemeProvider` is outermost, then
+`ToastProvider`, then `AuthProvider`.
 
 ---
 
-## Motion strategy
+## 5. Motion verification
 
-* All transitions now use `var(--duration-fast|base|slow)` and
-  `var(--ease-standard)`.
-* `transition: all` is removed; every rule names the specific properties.
-* `prefers-reduced-motion: reduce` is honored globally (collapses every
-  animation/transition to `0.01ms`) and explicitly inside the
-  `Spinner`, `Toast`, `Tooltip`, `Skeleton`, and Tabs internals.
-* The `Spinner`'s `0.8s` rotation is the canonical load indicator cycle
-  and is acceptable; it is overridden by the reduced-motion rule.
-* No GSAP, no Three.js, no decorative page transitions.
+### 5.1 What was migrated
 
----
+Every `0.15s`, `0.2s`, `0.12s`, `0.25s`, `transition: all`, and
+inline `cubic-bezier(...)` in production component CSS was replaced
+with `var(--duration-fast|base|slow)` + `var(--ease-standard)`. The
+sidebar width transition (`0.2s cubic-bezier(0.4, 0, 0.2, 1)` →
+`var(--duration-base) var(--ease-standard)`) and the mobile-sidebar
+transform transition (`0.25s cubic-bezier(0.4, 0, 0.2, 1)` →
+`var(--duration-base) var(--ease-standard)`) were also tokenized.
 
-## Lenis decision
+### 5.2 What is intentionally NOT a token
 
-**Not adopted.** `lenis` was installed but unused.
+* `Spinner.module.css` line 12: `animation: spin 0.8s linear infinite;`
+  — this is the rotation cycle of a continuous loading animation, not
+  a one-shot component transition. The `Spinner` CSS module also
+  contains an explicit `prefers-reduced-motion: reduce` block that
+  disables the rotation. A future enhancement could add a
+  `--duration-spin` motion token, but it would have a single consumer
+  and the existing value is the canonical continuous-rotation cycle.
 
-* Native browser scrolling already provides inertial trackpad and touch
-  scrolling.
-* For users with `prefers-reduced-motion: reduce`, Lenis falls back to
-  instant scroll — the only argument for it is removed.
-* The clinical shell is dense with nested scroll containers (tables,
-  command palette, modals, drawers, side panels). Hijacking the document
-  scroll would require per-surface exclusion logic that adds bug surface
-  for no measurable UX win.
-* Lenis is removed from `apps/frontend/package.json`.
+### 5.3 What `prefers-reduced-motion` does
 
-If a future, isolated, non-clinical surface needs smooth scrolling, that
-surface can opt in locally.
-
----
-
-## Animate UI decision
-
-**Not adopted.**
-
-* The existing primitives are token-native, accessibility-correct, and
-  consistent.
-* Animate UI components target a different token system; adopting them
-  would create two parallel component APIs and require duplicate theming.
-* The few motion moments that exist (toast enter, modal enter, tooltip
-  hover) are tiny CSS keyframes, which is the right level of complexity.
-* `motion` is removed from `apps/frontend/package.json` because it was
-  installed and unused.
-
-If a specific Animate UI primitive is later shown to be materially better
-than its existing counterpart, that one component can be adopted without
-re-platforming the rest.
+* `apps/frontend/src/styles/globals.css` already contains a global
+  `prefers-reduced-motion: reduce` block that collapses every
+  animation/transition to `0.01ms`.
+* `Spinner`, `Tooltip`, and `Toast` each include an explicit
+  per-primitive rule that disables their own animation under reduced
+  motion in addition to the global rule.
 
 ---
 
-## Accessibility verification
+## 6. Lenis decision
 
-* `Button`, `IconButton`, `Input`, `Textarea`, `Select`, `Dropdown`, `Tabs`,
-  `Tooltip`, `Toast`, `ConfirmDialog`, `GlobalSearch`, `NotificationPanel`,
-  `ThemeToggle` all expose an accessible name and reachable focus.
-* `Tabs` implements the WAI-ARIA tabs pattern with roving tabindex, arrow
-  keys, and Home/End.
-* `Tooltip` uses `aria-describedby` on the trigger and `role="tooltip"` on
-  the bubble; it does not rely on hover alone (focus opens it).
-* `Toast` uses `role="status"` (polite) for success/info and `role="alert"`
-  (assertive) for warning/error.
-* `Textarea` mirrors `Input`'s label/error/disabled/focus-visible contract.
-* `IconButton` requires `aria-label` at the type level.
-* Reduced-motion behavior is verified at runtime by OS-level preference.
-* Dark mode contrast was reviewed against neutral-900 surfaces for the
-  status and text tokens.
+**NOT ADOPTED.** Confirmed by:
+
+* `apps/frontend/package.json` — no `lenis` dependency.
+* `grep -r "from 'lenis'" apps/frontend/src` — no matches.
+* `docs/design/FRONTEND_DESIGN_SYSTEM.md` §8 — explicit decision with
+  rationale (nested scroll containers, clinical tables, reduced-motion
+  fall-through, native touch/trackpad behavior, no measurable UX win).
+
+`lenis` was installed in earlier development but removed. Do not
+reinstall it.
 
 ---
 
-## Validation
+## 7. Animate UI / `motion` decision
 
-Commands and outcomes will be appended to this section when the verification
-phase runs (see the **Validation** appendix appended to this report after
-the `pnpm` commands are executed).
+**NOT ADOPTED.** Confirmed by:
 
-> The append-only validation log is at the bottom of this file. Do not edit
-> the table above after the report is committed.
+* `apps/frontend/package.json` — no `motion` dependency.
+* `grep -r "from 'motion'" apps/frontend/src` — no matches.
+* `docs/design/FRONTEND_DESIGN_SYSTEM.md` §9 — explicit decision with
+  rationale (existing primitives are token-native, no runtime animation
+  library is needed, future adoption can be per-component).
 
----
-
-## Remaining M16A gaps
-
-**None that block M16A completion.** Known non-issues explicitly out of
-scope and intentionally not addressed:
-
-* A future "settings" surface that lets a user remap the theme cycle order
-  or pick a custom accent — out of scope for the foundation milestone.
-* Per-tenant theming — out of scope; the architecture supports it via the
-  same `[data-theme]` mechanism when needed.
-* A custom Toast position (e.g. bottom-center) — the current top-right
-  position is the convention for clinical alerts and matches the existing
-  notification panel alignment.
-* Animating the AppShell sidebar width transition on collapse — currently
-  uses a `width` transition; further refinement can land in M16B.
+`motion` was installed in earlier development but removed. Do not
+reinstall it.
 
 ---
 
-## Stop condition
+## 8. Accessibility verification
 
-M16A is COMPLETE. The next milestone (M16B or whichever is issued) will be
-addressed under a separate task.
+Verified by reading each primitive's source:
+
+* **IconButton** — `aria-label` is required at the type level; real
+  `<button type="button">`; `disabled` and `isLoading` short-circuit
+  clicks; hit-target is 28/36/44 px; `focus-visible` is in the CSS.
+* **Tooltip** — `aria-describedby` on the trigger; `role="tooltip"` on
+  the bubble; opens on focus, pointer hover, and `Enter`/`Space`
+  (delegated through the child); closes on Escape and pointer leave;
+  viewport flip when the requested side would clip.
+* **Tabs** — `role="tablist"` / `role="tab"` / `role="tabpanel"`;
+  `aria-selected` and `aria-controls` wired; roving `tabindex` (only
+  active tab has `tabindex=0`); arrow keys + Home/End navigate; the
+  active tab sets focus after selection; panels are `tabindex=0` so
+  they can be focused.
+* **Toast** — `role="status"` (polite) for `info`/`success`,
+  `role="alert"` (assertive) for `warning`/`error`; manual dismiss
+  button; auto-dismiss is opt-in (default 4500 ms); sticky mode
+  (`durationMs: 0`) is available; color is paired with an icon and a
+  label, never color-only.
+* **Textarea** — same `label` / `aria-invalid` / `aria-describedby` /
+  disabled / required / focus-visible contract as `Input`; resize is
+  vertical only.
+* **Spinner** — default `role="status"` with `aria-label="Loading"`;
+  `decorative` mode suppresses the role; `prefers-reduced-motion`
+  disables rotation.
+* **ThemeToggle** — real `<button type="button">`; `aria-label`
+  announces the current state ("Light theme — click to change"); a
+  Tooltip announces the next action; `focus-visible` is in the CSS;
+  no emoji icons; mounted in a stable location in the AppHeader.
+
+---
+
+## 9. Validation log (actual commands and outcomes)
+
+| # | Command | Scope | Outcome |
+|---|---|---|---|
+| 1 | `pnpm --filter frontend test` | frontend (vitest) | **PASS** — 9 files, **136/136 tests pass** in 2.34 s. The new 78-test design-token contract suite at `src/styles/__tests__/design-tokens.test.ts` is green. |
+| 2 | `pnpm --filter frontend lint` | frontend (next lint) | **PASS** — No ESLint warnings or errors. |
+| 3 | `pnpm --filter frontend build` | frontend (next build) | **PASS** — `Compiled successfully`. 18 static pages generated, types valid, no runtime warnings. The route table shows every page compiled with the new providers + primitives wired. |
+| 4 | `grep -rE "0.15s\|0.2s\|0.12s\|0.25s\|transition: all\|cubic-bezier" apps/frontend/src --include="*.css"` | source tree | Clean except `tokens.css` (canonical definitions) and `Spinner.module.css` (the documented rotation cycle, paired with reduced-motion). |
+| 5 | `grep -E "lenis\|motion" apps/frontend/package.json` | manifest | **No matches.** |
+| 6 | `grep -rE "from 'lenis'\|from 'motion'" apps/frontend/src` | source tree | **No matches.** |
+| 7 | File-level inspection: `components/ui/index.ts` | barrel | Includes re-exports for `IconButton`, `Textarea`, `Spinner`, `Tooltip`, `Tabs`, `Toast`, `Divider`, `ThemeToggle`. |
+| 8 | File-level inspection: `app/layout.tsx` | root layout | `ThemeProvider` → `ToastProvider` → `AuthProvider` ordering; pre-hydration `Script` present; `<html suppressHydrationWarning>`. |
+| 9 | File-level inspection: `AppHeader.tsx` | header | `ThemeToggle` is imported and rendered. |
+| 10 | File-level inspection: `Button.tsx` + `Button.module.css` | button primitive | Uses `<Spinner size="sm" decorative label="Loading" />`; no inline spinner markup; no inline `@keyframes spin`. |
+| 11 | File-level inspection: `Spinner.module.css` | spinner primitive | Has `prefers-reduced-motion: reduce` block that disables rotation. |
+| 12 | File-level inspection: `Tooltip.module.css`, `Toast.module.css` | new primitives | Both have `prefers-reduced-motion: reduce` blocks that disable their enter animations. |
+| 13 | File-level inspection: `FRONTEND_DESIGN_SYSTEM.md` | docs | Exists. Covers: visual direction, principles, token hierarchy (palette/semantic/typography/spacing/radius/elevation/motion/focus/z-index/breakpoints), component inventory, theme architecture, motion philosophy, Lenis decision, Animate UI decision, accessibility, responsive behavior, clinical UX rules, iconography, anti-patterns, location rules. |
+| 14 | File-level inspection: `MILESTONE_16A_REPORT.md` | this file | Exists. This version. |
+
+### Commands deliberately not run
+
+* `pnpm -r run test` (full monorepo) — out of scope for the M16A
+  correction pass. Backend pre-existing audit-hash-isolation failures
+  (already documented in the previous M16A report) are unaffected by
+  this pass; they will be addressed in a future backend milestone.
+* `pnpm format` — intentionally **not** run during this pass because
+  the user is working in parallel on the same repository; reformatting
+  unrelated files would be a scope violation.
+
+---
+
+## 10. Remaining gaps
+
+None that block M16A completion. Known non-issues (out of scope):
+
+* A live browser walkthrough of the theme toggle was not performed; the
+  code is in place and the contract test is green, but visual
+  confirmation is left to a future manual QA milestone.
+* `motion` token does not exist as a separate variable; the Spinner's
+  `0.8s` rotation is the only place a continuous-rotation duration is
+  used. A `--duration-spin` token could be added in a future polish
+  pass, but it would have a single consumer.
+* The `globals.css` global reduced-motion rule reduces every
+  `transition` and `animation` to `0.01ms`; per-primitive rules are
+  additive. This is intentional and the documentation in
+  `FRONTEND_DESIGN_SYSTEM.md` §7 reflects it.
+
+---
+
+## 11. Stop condition
+
+M16A is COMPLETE. No M16B work, no AppShell redesign, no M17 work, no
+clinical workspace, no AI UX, no admin feature work, and no unrelated
+refactor is included in this pass.

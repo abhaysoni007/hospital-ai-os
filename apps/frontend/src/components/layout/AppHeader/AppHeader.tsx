@@ -16,6 +16,7 @@ import {
 import { GlobalSearch } from '../GlobalSearch/GlobalSearch';
 import { NotificationPanel } from '../NotificationPanel/NotificationPanel';
 import { useNotifications } from '../../../hooks/useNotifications';
+import { ThemeToggle } from '../../ui/ThemeToggle/ThemeToggle';
 import styles from './AppHeader.module.css';
 
 export interface AppHeaderProps {
@@ -155,6 +156,8 @@ export function AppHeader({
               onReload={() => void reloadNotifications()}
             />
           </div>
+
+          <ThemeToggle />
 
           <div className={styles.divider} />
 

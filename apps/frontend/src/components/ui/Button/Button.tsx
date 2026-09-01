@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { Spinner } from '../Spinner/Spinner';
 import styles from './Button.module.css';
 
 export type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'danger' | 'ghost';
@@ -50,21 +51,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         aria-busy={isLoading}
         {...props}
       >
-        {isLoading && (
-          <span className={styles.spinner} aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <circle
-                cx="12"
-                cy="12"
-                r="10"
-                strokeWidth="3"
-                stroke="currentColor"
-                strokeDasharray="31.4"
-                strokeDashoffset="10"
-              />
-            </svg>
-          </span>
-        )}
+        {isLoading && <Spinner size="sm" decorative label="Loading" className={styles.spinner} />}
         {!isLoading && iconLeft && <span className={styles.iconLeft}>{iconLeft}</span>}
         <span className={styles.label}>{children}</span>
         {!isLoading && iconRight && <span className={styles.iconRight}>{iconRight}</span>}

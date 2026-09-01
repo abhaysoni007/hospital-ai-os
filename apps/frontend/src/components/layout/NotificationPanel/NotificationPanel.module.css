@@ -12,7 +12,7 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  animation: fadeInDown 0.15s ease-out;
+  animation: fadeInDown var(--duration-fast) var(--ease-standard);
 }
 
 .header {
@@ -71,7 +71,7 @@
   padding: var(--space-3) var(--space-4);
   border-bottom: 1px solid var(--border-subtle);
   cursor: pointer;
-  transition: background-color 0.12s ease;
+  transition: background-color var(--duration-fast) var(--ease-standard);
   position: relative;
 }
 

@@ -7,7 +7,7 @@
     var(--bg-subtle) 100%
   );
   background-size: 200% 100%;
-  animation: shimmer 1.5s infinite linear;
+  animation: shimmer var(--duration-slow) linear infinite;
   display: block;
 }
 
