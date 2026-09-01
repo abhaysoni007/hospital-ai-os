@@ -7,7 +7,7 @@ type AuthContext = { id: string; role: string; departmentId: string };
 
 /**
  * Validates resource access with a fallback to Break-Glass emergency access.
- * 
+ *
  * Flow:
  * 1. Attempt normal resource authorization scope.
  * 2. If scope denied, check for active Break-Glass session.
@@ -35,7 +35,9 @@ export async function authorizeBreakGlassResourceAccess(
 
   // 2. Normal scope denied. Is this operation eligible for Break-Glass?
   if (operation !== 'read') {
-    throw new AuthorizationError('Scope denied. Break-glass emergency access is strictly limited to read-only operations.');
+    throw new AuthorizationError(
+      'Scope denied. Break-glass emergency access is strictly limited to read-only operations.',
+    );
   }
 
   // 3. Check for active break-glass session
@@ -44,8 +46,8 @@ export async function authorizeBreakGlassResourceAccess(
       eq(breakGlassSessions.staffId, actor.id),
       eq(breakGlassSessions.patientId, patientId),
       isNull(breakGlassSessions.revokedAt),
-      sql`expires_at > now()`
-    )
+      sql`expires_at > now()`,
+    ),
   });
 
   if (activeSession) {
@@ -55,5 +57,8 @@ export async function authorizeBreakGlassResourceAccess(
     return { authorized: true, breakGlassSessionId: activeSession.id };
   }
 
-  throw new AuthorizationError('Access denied. Resource is outside your authorized scope and no active emergency access session exists.', [{ field: 'patientId', message: patientId }]);
+  throw new AuthorizationError(
+    'Access denied. Resource is outside your authorized scope and no active emergency access session exists.',
+    [{ field: 'patientId', message: patientId }],
+  );
 }
