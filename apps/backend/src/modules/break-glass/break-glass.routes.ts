@@ -14,7 +14,7 @@ const activateSchema = z.object({
     encounterId: z.string().uuid().optional(),
     reason: z.enum(['emergency_care', 'patient_safety', 'continuity_of_care']),
     justification: z.string().min(20).max(2000),
-  })
+  }),
 });
 
 breakGlassRouter.post(
@@ -28,21 +28,27 @@ breakGlassRouter.post(
         role: u.role,
         departmentId: u.departmentId,
       };
-      const correlationId = (req as any).correlationId || (req.headers['x-correlation-id'] as string) || crypto.randomUUID();
+      const correlationId =
+        (req as unknown as { correlationId?: string }).correlationId ||
+        (req.headers['x-correlation-id'] as string) ||
+        crypto.randomUUID();
       const session = await breakGlassService.activateSession(
         req.body,
         u.staffId,
         correlationId,
-        authCtx
+        authCtx,
       );
       // We deliberately strip justification from the response just to be safe, though client sent it
-      const { justification: _just, ...safeSession } = session as unknown as Record<string, unknown> & { justification?: string };
+      const { justification: _just, ...safeSession } = session as unknown as Record<
+        string,
+        unknown
+      > & { justification?: string };
       void _just;
       res.status(201).json(safeSession);
     } catch (err) {
       next(err);
     }
-  }
+  },
 );
 
 breakGlassRouter.get(
@@ -60,7 +66,7 @@ breakGlassRouter.get(
     } catch (err) {
       next(err);
     }
-  }
+  },
 );
 
 breakGlassRouter.post(
@@ -73,18 +79,21 @@ breakGlassRouter.post(
         role: u.role,
         departmentId: u.departmentId,
       };
-      const correlationId = (req as any).correlationId || (req.headers['x-correlation-id'] as string) || crypto.randomUUID();
+      const correlationId =
+        (req as unknown as { correlationId?: string }).correlationId ||
+        (req.headers['x-correlation-id'] as string) ||
+        crypto.randomUUID();
       const session = await breakGlassService.revokeSession(
         req.params.id,
         u.staffId,
         correlationId,
-        authCtx
+        authCtx,
       );
       res.status(200).json(session);
     } catch (err) {
       next(err);
     }
-  }
+  },
 );
 
 breakGlassRouter.post(
@@ -97,16 +106,19 @@ breakGlassRouter.post(
         role: u.role,
         departmentId: u.departmentId,
       };
-      const correlationId = (req as any).correlationId || (req.headers['x-correlation-id'] as string) || crypto.randomUUID();
+      const correlationId =
+        (req as unknown as { correlationId?: string }).correlationId ||
+        (req.headers['x-correlation-id'] as string) ||
+        crypto.randomUUID();
       const session = await breakGlassService.reviewSession(
         req.params.id,
         u.staffId,
         correlationId,
-        authCtx
+        authCtx,
       );
       res.status(200).json(session);
     } catch (err) {
       next(err);
     }
-  }
+  },
 );
