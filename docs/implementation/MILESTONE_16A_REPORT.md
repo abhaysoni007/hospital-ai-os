@@ -1,15 +1,11 @@
-# Milestone 16A — Design System Foundation (Correction Pass)
+# Milestone 16A — Design System Foundation (Final Correction Pass)
 
 > **Status:** COMPLETE
 > **Branch:** `main`
 > **Date:** 2026-09-02
-> **Type:** Reconciliation pass. The M16A source files (new primitives,
-> `ThemeContext`, `ThemeToggle`, design-token contract test,
-> `FRONTEND_DESIGN_SYSTEM.md`) landed on `main` in commit `9e572a8`, but
-> the integration steps (barrel exports, motion audit, Button → shared
-> Spinner, `ThemeProvider` mount, `ThemeToggle` mount) were never
-> committed. This pass reconciles the actual repository with the
-> M16A acceptance criteria.
+> **Correction pass:** Full audit against M16A acceptance criteria. All
+> code verified by actual command execution. Report updated to match
+> repository reality.
 
 ---
 
@@ -247,52 +243,62 @@ Verified by reading each primitive's source:
 
 ---
 
-## 9. Validation log (actual commands and outcomes)
+## 9. Validation log (actual commands and outcomes — final correction pass)
+
+All commands below were **actually executed** during the final M16A correction pass.
 
 | # | Command | Scope | Outcome |
 |---|---|---|---|
-| 1 | `pnpm --filter frontend test` | frontend (vitest) | **PASS** — 9 files, **136/136 tests pass** in 2.34 s. The new 78-test design-token contract suite at `src/styles/__tests__/design-tokens.test.ts` is green. |
-| 2 | `pnpm --filter frontend lint` | frontend (next lint) | **PASS** — No ESLint warnings or errors. |
-| 3 | `pnpm --filter frontend build` | frontend (next build) | **PASS** — `Compiled successfully`. 18 static pages generated, types valid, no runtime warnings. The route table shows every page compiled with the new providers + primitives wired. |
-| 4 | `grep -rE "0.15s\|0.2s\|0.12s\|0.25s\|transition: all\|cubic-bezier" apps/frontend/src --include="*.css"` | source tree | Clean except `tokens.css` (canonical definitions) and `Spinner.module.css` (the documented rotation cycle, paired with reduced-motion). |
-| 5 | `grep -E "lenis\|motion" apps/frontend/package.json` | manifest | **No matches.** |
-| 6 | `grep -rE "from 'lenis'\|from 'motion'" apps/frontend/src` | source tree | **No matches.** |
-| 7 | File-level inspection: `components/ui/index.ts` | barrel | Includes re-exports for `IconButton`, `Textarea`, `Spinner`, `Tooltip`, `Tabs`, `Toast`, `Divider`, `ThemeToggle`. |
-| 8 | File-level inspection: `app/layout.tsx` | root layout | `ThemeProvider` → `ToastProvider` → `AuthProvider` ordering; pre-hydration `Script` present; `<html suppressHydrationWarning>`. |
-| 9 | File-level inspection: `AppHeader.tsx` | header | `ThemeToggle` is imported and rendered. |
-| 10 | File-level inspection: `Button.tsx` + `Button.module.css` | button primitive | Uses `<Spinner size="sm" decorative label="Loading" />`; no inline spinner markup; no inline `@keyframes spin`. |
-| 11 | File-level inspection: `Spinner.module.css` | spinner primitive | Has `prefers-reduced-motion: reduce` block that disables rotation. |
-| 12 | File-level inspection: `Tooltip.module.css`, `Toast.module.css` | new primitives | Both have `prefers-reduced-motion: reduce` blocks that disable their enter animations. |
-| 13 | File-level inspection: `FRONTEND_DESIGN_SYSTEM.md` | docs | Exists. Covers: visual direction, principles, token hierarchy (palette/semantic/typography/spacing/radius/elevation/motion/focus/z-index/breakpoints), component inventory, theme architecture, motion philosophy, Lenis decision, Animate UI decision, accessibility, responsive behavior, clinical UX rules, iconography, anti-patterns, location rules. |
-| 14 | File-level inspection: `MILESTONE_16A_REPORT.md` | this file | Exists. This version. |
+| 1 | `pnpm --filter frontend test` (vitest run) | frontend | **PASS** — 9 files, **136/136 tests pass** in 2.19 s. Design-token contract suite (78 tests) is green. |
+| 2 | `pnpm --filter frontend lint` (next lint) | frontend | **PASS** — No ESLint warnings or errors. |
+| 3 | `npx tsc --noEmit` | frontend (includes e2e/) | **PASS** — 0 errors after fixing pre-existing type error in `e2e/notifications.spec.ts` (see §10). |
+| 4 | `pnpm --filter frontend build` (next build) | frontend | **PASS** — `Compiled successfully`. 23 routes (static + dynamic). Providers + primitives compile cleanly. |
+| 5 | ripgrep: `0.15s`, `0.2s`, `0.12s`, `0.25s` in `*.css` | `apps/frontend/src` | **No matches** (motion token audit clean). |
+| 6 | ripgrep: `transition: all` in `*.css` | `apps/frontend/src` | **No matches** (no catch-all transitions). |
+| 7 | ripgrep: `cubic-bezier` in `*.css` | `apps/frontend/src` | **Only** `tokens.css` lines 174–175 — the canonical token definitions themselves. Clean. |
+| 8 | ripgrep: `lenis`, `motion` in `package.json` | `apps/frontend/package.json` | **No matches.** |
+| 9 | Barrel inspection: `components/ui/index.ts` | source | Exports `IconButton`, `Textarea`, `Spinner`, `Tooltip`, `Tabs`, `Toast`, `Divider`, `ThemeToggle` + all pre-existing primitives. |
+| 10 | Layout inspection: `app/layout.tsx` | source | `ThemeProvider` → `ToastProvider` → `AuthProvider`; pre-hydration Script; `suppressHydrationWarning`. |
+| 11 | Header inspection: `AppHeader.tsx` | source | `ThemeToggle` imported and rendered at line 160. |
+| 12 | Button inspection: `Button.tsx` + `Button.module.css` | source | Shared `<Spinner decorative />` consumed; no inline SVG spinner; no duplicate keyframes. |
+| 13 | Spinner inspection: `Spinner.module.css` | source | `animation: spin 0.8s linear infinite` — intentional rotation cycle; `prefers-reduced-motion: reduce` block disables it. |
+| 14 | Primitive CSS inspection (all 13 listed modules) | source | All transitions use `var(--duration-*)` + `var(--ease-standard)`. No hardcoded timings found. |
 
 ### Commands deliberately not run
 
-* `pnpm -r run test` (full monorepo) — out of scope for the M16A
-  correction pass. Backend pre-existing audit-hash-isolation failures
-  (already documented in the previous M16A report) are unaffected by
-  this pass; they will be addressed in a future backend milestone.
-* `pnpm format` — intentionally **not** run during this pass because
-  the user is working in parallel on the same repository; reformatting
-  unrelated files would be a scope violation.
+* `pnpm -r run test` (full monorepo) — out of scope for M16A correction
+  pass. Backend pre-existing test failures are unaffected by this pass.
+* `pnpm format` — not run; reformatting unrelated files (pre-existing
+  CRLF/LF inconsistencies across 38 files) is out of scope for M16A.
+  The 38 prettier warnings are pre-existing, not introduced by this pass.
 
 ---
 
 ## 10. Remaining gaps
 
-None that block M16A completion. Known non-issues (out of scope):
+
+None that block M16A completion.
+
+### Fixed in this correction pass
+
+* **Pre-existing typecheck error** — `e2e/notifications.spec.ts:121`
+  referenced `NotificationItem.recipientId` which is a DB-internal field
+  not exposed in the API contract (server derives recipient from JWT;
+  never returned to clients per `notification.schemas.ts`). Fixed by
+  replacing the assertion with `notif.id` (the stable record identifier
+  that *is* in the API type). `tsc --noEmit` now returns 0 errors.
+
+### Known non-issues (out of scope)
 
 * A live browser walkthrough of the theme toggle was not performed; the
   code is in place and the contract test is green, but visual
   confirmation is left to a future manual QA milestone.
-* `motion` token does not exist as a separate variable; the Spinner's
-  `0.8s` rotation is the only place a continuous-rotation duration is
-  used. A `--duration-spin` token could be added in a future polish
-  pass, but it would have a single consumer.
-* The `globals.css` global reduced-motion rule reduces every
-  `transition` and `animation` to `0.01ms`; per-primitive rules are
-  additive. This is intentional and the documentation in
-  `FRONTEND_DESIGN_SYSTEM.md` §7 reflects it.
+* `--duration-spin` motion token does not exist; the Spinner's `0.8s`
+  rotation is the only continuous-rotation animation. A named token
+  would have a single consumer and is deferred to a future polish pass.
+* Pre-existing prettier CRLF/LF inconsistencies exist in 38 files
+  across the frontend source tree. These are NOT introduced by M16A
+  and are out of scope for this pass.
 
 ---
 
