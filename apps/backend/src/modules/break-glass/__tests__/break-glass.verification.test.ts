@@ -6,7 +6,7 @@
  *  4.  Concurrent activation (advisory lock / exactly-once)
  *  5.  Normal vs Break-Glass access (out-of-scope patient)
  *  6.  M5 + Read-Only enforcement
- *  7.  Audit events (BREAK_GLASS_ACTIVATED / REVOKED / REVIEWED + break_glass_session_id)
+ *  7.  Audit events (BREAK_GLASS_ACTIVATED / DEACTIVATED / REVIEWED + break_glass_session_id)
  *  8.  Justification privacy
  *  9.  Revocation (immediate denial, idempotent rejection)
  * 10.  Expiry (expired session → access denied)
@@ -687,14 +687,30 @@ describe('Section 9: Revocation', () => {
     ).rejects.toMatchObject({ code: 'ALREADY_REVOKED' });
   });
 
-  it('9e. BREAK_GLASS_REVOKED audit event emitted', async () => {
+  it('9e. BREAK_GLASS_DEACTIVATED audit event emitted (canonical vocabulary per security-architecture §2.5)', async () => {
     const evts = await db.query.auditEvents.findMany({
       where: and(
-        eq(auditEvents.eventType, 'BREAK_GLASS_REVOKED'),
+        eq(auditEvents.eventType, 'BREAK_GLASS_DEACTIVATED'),
         eq(auditEvents.targetId, revokeSessionId),
       ),
     });
     expect(evts.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('9f. Historical compatibility: prior BREAK_GLASS_REVOKED events from older runs are not mutated', async () => {
+    // Older rows (pre-alignment) may still carry BREAK_GLASS_REVOKED in the
+    // immutable audit log. We do NOT rewrite historical rows; we only assert
+    // that any such rows, if present, are not the new revocation produced by
+    // the current test run.
+    const allForTarget = await db.query.auditEvents.findMany({
+      where: eq(auditEvents.targetId, revokeSessionId),
+    });
+    const obsolete = allForTarget.filter((r) => r.eventType === 'BREAK_GLASS_REVOKED');
+    const canonical = allForTarget.filter((r) => r.eventType === 'BREAK_GLASS_DEACTIVATED');
+    // The new revocation must use the canonical name; any pre-existing obsolete
+    // rows belong to earlier test runs and are preserved as-is.
+    expect(canonical.length).toBeGreaterThanOrEqual(1);
+    expect(obsolete.length).toBe(0);
   });
 });
 

@@ -1,0 +1,48 @@
+.spinner {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: currentColor;
+  flex-shrink: 0;
+}
+
+.spinner svg {
+  width: 100%;
+  height: 100%;
+  animation: spin 0.8s linear infinite;
+  /* The circle uses stroke-dasharray + stroke-dashoffset for the partial arc. */
+  stroke-dasharray: 31.4;
+  stroke-dashoffset: 10;
+}
+
+.sm {
+  width: 14px;
+  height: 14px;
+}
+
+.md {
+  width: 18px;
+  height: 18px;
+}
+
+.lg {
+  width: 24px;
+  height: 24px;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner svg {
+    animation: none;
+    /* Slight pulse instead of continuous rotation. */
+    opacity: 0.7;
+  }
+}

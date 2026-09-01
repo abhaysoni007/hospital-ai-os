@@ -204,9 +204,14 @@ export class BreakGlassService {
 
       const patientIdForAudit = rawSession.patient_id as string;
 
+      // Audit event vocabulary aligned to security-architecture §2.5:
+      //   BREAK_GLASS_ACTIVATED      — session created
+      //   BREAK_GLASS_DEACTIVATED    — session forcibly ended (manual revoke)
+      //   BREAK_GLASS_REVIEWED       — post-activation review (does not end session)
+      // Historical rows with the prior BREAK_GLASS_REVOKED value remain immutable.
       await auditService.logEvent(
         {
-          eventType: 'BREAK_GLASS_REVOKED',
+          eventType: 'BREAK_GLASS_DEACTIVATED',
           actorId,
           actorRole: authContext.role,
           actorDepartment: authContext.departmentId,

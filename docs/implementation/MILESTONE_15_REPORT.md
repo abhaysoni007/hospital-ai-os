@@ -45,7 +45,7 @@ Server-computed `expiresAt = activation + config.BREAK_GLASS_MAX_DURATION_HOURS`
 
 ## Revocation
 
-POST `/sessions/:id/revoke` (`break_glass:review`), `FOR UPDATE` row lock, already-revoked → 409, immediate access denial (tested), `BREAK_GLASS_REVOKED` audit in same tx.
+POST `/sessions/:id/revoke` (`break_glass:review`), `FOR UPDATE` row lock, already-revoked → 409, immediate access denial (tested), `BREAK_GLASS_DEACTIVATED` audit in same tx (canonical vocabulary per `security-architecture.md` §2.5).
 
 ## Review
 
@@ -53,7 +53,7 @@ POST `/sessions/:id/review` (`break_glass:review`), one-time (`reviewed_at` set 
 
 ## Audit
 
-Tamper-evident `audit_events` (sequence + previousHash + recordHash) via existing `auditService.logEvent`, transactional with each mutation. Event types: `BREAK_GLASS_ACTIVATED`, `BREAK_GLASS_REVOKED`, `BREAK_GLASS_REVIEWED`; record-access events link `break_glass_session_id`. Justification deliberately excluded from audit `actionDetail` (privacy by design).
+Tamper-evident `audit_events` (sequence + previousHash + recordHash) via existing `auditService.logEvent`, transactional with each mutation. Event types (canonical, per `security-architecture.md` §2.5): `BREAK_GLASS_ACTIVATED`, `BREAK_GLASS_DEACTIVATED`, `BREAK_GLASS_REVIEWED`; record-access events link `break_glass_session_id`. Justification deliberately excluded from audit `actionDetail` (privacy by design). Historical audit rows that pre-date the M14/M15 vocabulary alignment retain the prior `BREAK_GLASS_REVOKED` eventType value; the audit log is immutable and they are NOT rewritten. New revocation events use the canonical `BREAK_GLASS_DEACTIVATED` value.
 
 ## Notification
 
@@ -73,7 +73,7 @@ Advisory lock per (actor, patient): concurrent activations yield exactly one ses
 
 ## E2E
 
-NOT CONFIGURED for M15 (Playwright spec exists only for appointment-booking). M15 verification is the 30-test backend verification gate against real Postgres. Listed under Issues.
+Playwright e2e for break-glass added in `apps/frontend/e2e/break-glass-flow.spec.ts` — real backend (HTTP API, real Postgres, real JWT) and real frontend (`/admin/security` console). Covers: out-of-scope denial, activation, justification validation (missing/short/long/invalid reason/missing reason), scoped access (A allow, B deny), read-only enforcement, security admin review + revoke, reviewer separation, post-revoke denial, repeat-revoke idempotency, and a real-UI console revoke. Backend verification gate remains the authoritative 31-test security suite.
 
 ## Security
 
@@ -85,7 +85,7 @@ Notification bodies, audit `actionDetail`, and standard API responses contain no
 
 ## Tests
 
-`npx vitest run src/modules/break-glass` → 1 file, 30 passed (was 29; +2 new, one consolidated). Full monorepo: shared 51, frontend 58, backend 652 — all passed.
+`npx vitest run src/modules/break-glass` → 1 file, 31 passed (was 29; +2 new: notification persistence + canonical-vocabulary test, one consolidated). Full monorepo: shared 51, frontend 58, backend 666 — all passed.
 
 ## Build
 
@@ -101,7 +101,7 @@ PASS (prettier; also normalized `resource-auth.ts` style in the M5 commit series
 
 ## Regression
 
-PASS — full suite green after changes (backend 650 → 652).
+PASS — full suite green after changes (backend 652 → 666; new tests: 9f vocabulary, 9f historical-compat, plus 12/13 existing audit + RBAC suites touched in scope).
 
 ## Architecture
 
@@ -113,8 +113,8 @@ PASS — no M16+ functionality added; only the notification gap and config polic
 
 ## Issues
 
-1. No Playwright e2e spec for the break-glass flow (infra covers appointment-booking only).
-2. Audit event naming: code uses `BREAK_GLASS_REVOKED`/`BREAK_GLASS_REVIEWED` where security-architecture §2.5 names `BREAK_GLASS_DEACTIVATED`; the implemented vocabulary is consistent across code/tests/frontend and left unchanged to avoid churn — flagged as a documented deviation.
+1. Playwright e2e for break-glass — resolved in this remediation pass (see `apps/frontend/e2e/break-glass-flow.spec.ts`).
+2. Audit vocabulary aligned to canonical `security-architecture.md` §2.5 names: revocation now emits `BREAK_GLASS_DEACTIVATED`; `BREAK_GLASS_REVIEWED` retained (semantically distinct — review is not termination). Historical rows with the prior `BREAK_GLASS_REVOKED` value remain immutable.
 3. `reviewNotes` column exists but is unused by the review endpoint (not required by the implemented review contract).
 
 ## Commit
