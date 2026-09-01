@@ -1,9 +1,8 @@
 /**
- * Phase 4 — Playwright global setup.
+ * Phase 5A — Playwright global setup.
  * Logs in once as the demo physician, stores auth state so each test
  * does NOT re-login (avoids hitting the login rate-limit of 6 req/window).
  */
-import { chromium } from '@playwright/test';
 import { FullConfig, chromium } from '@playwright/test';
 import path from 'path';
 
@@ -13,13 +12,11 @@ export const STORAGE_STATE_PATH = path.join(
   'physician.json',
 );
 
-export default async function globalSetup() {
 export default async function globalSetup(config: FullConfig) {
   const browser = await chromium.launch();
   const context = await browser.newContext();
   const page = await context.newPage();
 
-  await page.goto('http://localhost:3000/login');
   const baseURL =
     config.projects[0]?.use?.baseURL ?? 'http://localhost:3002';
   await page.goto(`${baseURL}/login`);
@@ -32,3 +29,4 @@ export default async function globalSetup(config: FullConfig) {
   await context.storageState({ path: STORAGE_STATE_PATH });
   await browser.close();
 }
+

@@ -99,7 +99,6 @@ export function BreakGlassModal({
               placeholder="Provide a detailed clinical justification for breaking the glass..."
               disabled={loading}
               required
-              minLength={20}
               maxLength={2000}
             />
             <div className={styles.charCount}>

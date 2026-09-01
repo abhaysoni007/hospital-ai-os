@@ -1,9 +1,12 @@
 import { Router } from 'express';
 import { breakGlassService } from './break-glass.service';
+import { authMiddleware } from '../../middleware/auth.middleware';
 import { requirePermission } from '../../middleware/rbac.middleware';
 import { validate } from '../../middleware/validation.middleware';
 import { z } from 'zod';
 export const breakGlassRouter = Router();
+
+breakGlassRouter.use(authMiddleware);
 
 const activateSchema = z.object({
   body: z.object({
@@ -25,10 +28,11 @@ breakGlassRouter.post(
         role: u.role,
         departmentId: u.departmentId,
       };
+      const correlationId = (req as any).correlationId || (req.headers['x-correlation-id'] as string) || crypto.randomUUID();
       const session = await breakGlassService.activateSession(
         req.body,
         u.staffId,
-        (req.headers['x-correlation-id'] as string) || 'none',
+        correlationId,
         authCtx
       );
       // We deliberately strip justification from the response just to be safe, though client sent it
@@ -69,10 +73,11 @@ breakGlassRouter.post(
         role: u.role,
         departmentId: u.departmentId,
       };
+      const correlationId = (req as any).correlationId || (req.headers['x-correlation-id'] as string) || crypto.randomUUID();
       const session = await breakGlassService.revokeSession(
         req.params.id,
         u.staffId,
-        (req.headers['x-correlation-id'] as string) || 'none',
+        correlationId,
         authCtx
       );
       res.status(200).json(session);
@@ -92,10 +97,11 @@ breakGlassRouter.post(
         role: u.role,
         departmentId: u.departmentId,
       };
+      const correlationId = (req as any).correlationId || (req.headers['x-correlation-id'] as string) || crypto.randomUUID();
       const session = await breakGlassService.reviewSession(
         req.params.id,
         u.staffId,
-        (req.headers['x-correlation-id'] as string) || 'none',
+        correlationId,
         authCtx
       );
       res.status(200).json(session);

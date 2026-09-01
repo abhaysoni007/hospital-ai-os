@@ -10,7 +10,6 @@ export default defineConfig({
   use: {
     baseURL: 'http://localhost:3002',
     storageState: STORAGE_STATE_PATH,
-    trace: 'on',
     trace: 'on-first-retry',
   },
   webServer: {
