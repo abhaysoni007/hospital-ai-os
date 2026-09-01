@@ -3,40 +3,55 @@ import { db } from '../../db';
 import { breakGlassSessions } from '../../db/schema/break-glass';
 import { patients } from '../../db/schema/patients';
 import { encounters } from '../../db/schema/appointments';
+import { staff } from '../../db/schema/staff';
+import { notifications as notificationsTable } from '../../db/schema/tasks';
 import { auditService } from '../audit/audit.service';
 import { AuthorizationError, ConflictError, NotFoundError } from 'shared/src/errors/AppError';
 import { ROLE_PERMISSIONS, StaffRole } from '../../middleware/rbac/permissions';
+import { config } from '../../config';
 
 type AuthContext = { role: string; departmentId: string };
-const BREAK_GLASS_MAX_DURATION_HOURS = 4;
 
 export class BreakGlassService {
   async activateSession(
-    payload: { patientId: string; encounterId?: string; reason: 'emergency_care' | 'patient_safety' | 'continuity_of_care'; justification: string },
+    payload: {
+      patientId: string;
+      encounterId?: string;
+      reason: 'emergency_care' | 'patient_safety' | 'continuity_of_care';
+      justification: string;
+    },
     actorId: string,
     correlationId: string,
     authContext: AuthContext,
   ) {
     if (!ROLE_PERMISSIONS[authContext.role as StaffRole]?.has('break_glass:activate')) {
-      throw new AuthorizationError('You are not authorized to activate break-glass emergency access.');
+      throw new AuthorizationError(
+        'You are not authorized to activate break-glass emergency access.',
+      );
     }
-    
+
     // Explicitly enforce physician or nurse (per M5) just to be absolutely sure
     if (authContext.role !== 'physician' && authContext.role !== 'nurse') {
       throw new AuthorizationError('Only physicians and nurses may activate break-glass.');
     }
 
-    if (!payload.justification || payload.justification.length < 20 || payload.justification.length > 2000) {
+    if (
+      !payload.justification ||
+      payload.justification.length < 20 ||
+      payload.justification.length > 2000
+    ) {
       throw new ConflictError('Justification must be between 20 and 2000 characters.');
     }
 
     return await db.transaction(async (tx) => {
       // Advisory lock based on actorId and patientId to prevent concurrent activations by same user for same patient
       // Drizzle requires sql`...` to be executed
-      await tx.execute(sql`SELECT pg_advisory_xact_lock( hashtext(${actorId} || ${payload.patientId}) )`);
+      await tx.execute(
+        sql`SELECT pg_advisory_xact_lock( hashtext(${actorId} || ${payload.patientId}) )`,
+      );
 
       const patient = await tx.query.patients.findFirst({
-        where: eq(patients.id, payload.patientId)
+        where: eq(patients.id, payload.patientId),
       });
       if (!patient) {
         throw new NotFoundError('Patient not found');
@@ -44,7 +59,7 @@ export class BreakGlassService {
 
       if (payload.encounterId) {
         const encounter = await tx.query.encounters.findFirst({
-          where: eq(encounters.id, payload.encounterId)
+          where: eq(encounters.id, payload.encounterId),
         });
         if (!encounter || encounter.patientId !== payload.patientId) {
           throw new ConflictError('Encounter not found or does not belong to patient.');
@@ -57,16 +72,20 @@ export class BreakGlassService {
           eq(breakGlassSessions.staffId, actorId),
           eq(breakGlassSessions.patientId, payload.patientId),
           isNull(breakGlassSessions.revokedAt),
-          sql`expires_at > now()`
-        )
+          sql`expires_at > now()`,
+        ),
       });
 
       if (activeSession) {
-        throw new ConflictError('An active break-glass session already exists for this patient.', { code: 'DUPLICATE_ACTIVE_SESSION' });
+        throw new ConflictError('An active break-glass session already exists for this patient.', {
+          code: 'DUPLICATE_ACTIVE_SESSION',
+        });
       }
 
       const now = new Date();
-      const expiresAt = new Date(now.getTime() + BREAK_GLASS_MAX_DURATION_HOURS * 60 * 60 * 1000);
+      const expiresAt = new Date(
+        now.getTime() + config.BREAK_GLASS_MAX_DURATION_HOURS * 60 * 60 * 1000,
+      );
 
       const [session] = await tx
         .insert(breakGlassSessions)
@@ -76,10 +95,14 @@ export class BreakGlassService {
           encounterId: payload.encounterId || null,
           reason: payload.reason,
           justification: payload.justification,
-          grantedScope: { patientId: payload.patientId, encounterId: payload.encounterId || null, operation: 'read' },
+          grantedScope: {
+            patientId: payload.patientId,
+            encounterId: payload.encounterId || null,
+            operation: 'read',
+          },
           isActive: true,
           activatedAt: now,
-          expiresAt: expiresAt
+          expiresAt: expiresAt,
         })
         .returning();
 
@@ -95,12 +118,42 @@ export class BreakGlassService {
           patientId: payload.patientId,
           actionDetail: {
             reason: payload.reason,
-            expiresAt: expiresAt.toISOString()
-          }
+            expiresAt: expiresAt.toISOString(),
+          },
         },
         correlationId,
-        tx
+        tx,
       );
+
+      // Security Admin notification on activation (security-architecture §2.5):
+      // break_glass_alert to active security_admins of the activating user's
+      // department. Body carries reason + session pointer only — no PHI, no
+      // justification (justification is review-API-only).
+      const securityAdmins = await tx
+        .select({ id: staff.id })
+        .from(staff)
+        .where(
+          and(
+            eq(staff.role, 'security_admin'),
+            eq(staff.departmentId, authContext.departmentId),
+            eq(staff.status, 'active'),
+          ),
+        );
+
+      if (securityAdmins.length > 0) {
+        await tx.insert(notificationsTable).values(
+          securityAdmins.map((admin) => ({
+            recipientId: admin.id,
+            notificationType: 'break_glass_alert' as const,
+            title: 'Break-glass access activated',
+            body: `Break-glass session activated by ${authContext.role} (reason: ${payload.reason}). Expires ${expiresAt.toISOString()}.`,
+            referenceType: 'BreakGlassSession',
+            referenceId: session.id,
+            priority: 'urgent' as const,
+            status: 'dispatched' as const,
+          })),
+        );
+      }
 
       const { justification, ...sessionPublic } = session;
       void justification;
@@ -108,24 +161,36 @@ export class BreakGlassService {
     });
   }
 
-  async revokeSession(sessionId: string, actorId: string, correlationId: string, authContext: AuthContext) {
+  async revokeSession(
+    sessionId: string,
+    actorId: string,
+    correlationId: string,
+    authContext: AuthContext,
+  ) {
     if (!ROLE_PERMISSIONS[authContext.role as StaffRole]?.has('break_glass:review')) {
       throw new AuthorizationError('You are not authorized to revoke break-glass sessions.');
     }
 
     return await db.transaction(async (tx) => {
       // Row lock
-      const sessionList = await tx.execute(sql`SELECT * FROM break_glass_sessions WHERE id = ${sessionId} FOR UPDATE`);
+      const sessionList = await tx.execute(
+        sql`SELECT * FROM break_glass_sessions WHERE id = ${sessionId} FOR UPDATE`,
+      );
       if (sessionList.length === 0) {
         throw new NotFoundError('Break-glass session not found.');
       }
       // Raw SQL returns snake_case column names
-      const rawSession = sessionList[0] as { revoked_at: string | null; expires_at: string; patient_id: string; reviewed_at: string | null; };
+      const rawSession = sessionList[0] as {
+        revoked_at: string | null;
+        expires_at: string;
+        patient_id: string;
+        reviewed_at: string | null;
+      };
 
       if (rawSession.revoked_at) {
         throw new ConflictError('Session is already revoked.', { code: 'ALREADY_REVOKED' });
       }
-      
+
       const now = new Date();
       if (new Date(rawSession.expires_at) <= now) {
         throw new ConflictError('Cannot revoke an expired session.', { code: 'ALREADY_EXPIRED' });
@@ -147,10 +212,10 @@ export class BreakGlassService {
           actorDepartment: authContext.departmentId,
           targetType: 'BREAK_GLASS_SESSION',
           targetId: sessionId,
-          patientId: patientIdForAudit
+          patientId: patientIdForAudit,
         },
         correlationId,
-        tx
+        tx,
       );
 
       const { justification, ...revokedPublic } = revoked;
@@ -159,17 +224,24 @@ export class BreakGlassService {
     });
   }
 
-  async reviewSession(sessionId: string, actorId: string, correlationId: string, authContext: AuthContext) {
+  async reviewSession(
+    sessionId: string,
+    actorId: string,
+    correlationId: string,
+    authContext: AuthContext,
+  ) {
     if (!ROLE_PERMISSIONS[authContext.role as StaffRole]?.has('break_glass:review')) {
       throw new AuthorizationError('You are not authorized to review break-glass sessions.');
     }
 
     return await db.transaction(async (tx) => {
-      const sessionList = await tx.execute(sql`SELECT * FROM break_glass_sessions WHERE id = ${sessionId} FOR UPDATE`);
+      const sessionList = await tx.execute(
+        sql`SELECT * FROM break_glass_sessions WHERE id = ${sessionId} FOR UPDATE`,
+      );
       if (sessionList.length === 0) {
         throw new NotFoundError('Break-glass session not found.');
       }
-      const rawSessionR = sessionList[0] as { reviewed_at: string | null; patient_id: string; };
+      const rawSessionR = sessionList[0] as { reviewed_at: string | null; patient_id: string };
 
       if (rawSessionR.reviewed_at) {
         throw new ConflictError('Session is already reviewed.');
@@ -190,10 +262,10 @@ export class BreakGlassService {
           actorDepartment: authContext.departmentId,
           targetType: 'BREAK_GLASS_SESSION',
           targetId: sessionId,
-          patientId: rawSessionR.patient_id as string
+          patientId: rawSessionR.patient_id as string,
         },
         correlationId,
-        tx
+        tx,
       );
 
       const { justification, ...reviewedPublic } = reviewed;
@@ -207,10 +279,10 @@ export class BreakGlassService {
       throw new AuthorizationError('You are not authorized to view break-glass sessions.');
     }
     const rows = await db.query.breakGlassSessions.findMany({
-      orderBy: [desc(breakGlassSessions.activatedAt)]
+      orderBy: [desc(breakGlassSessions.activatedAt)],
     });
 
-    return rows.map(r => {
+    return rows.map((r) => {
       const { justification, staffId, ...rest } = r;
       void justification;
       void staffId;

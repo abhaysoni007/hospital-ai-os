@@ -16,6 +16,9 @@ const configSchema = z.object({
   RATE_LIMIT_WINDOW_MS: z.coerce.number().default(60000),
   RATE_LIMIT_MAX_REQUESTS: z.coerce.number().default(100),
 
+  // Break-glass maximum session duration in hours (server-enforced expiry; policy decision, configurable)
+  BREAK_GLASS_MAX_DURATION_HOURS: z.coerce.number().positive().default(4),
+
   // CORS origin must be an explicit trusted origin.
   // Wildcards are forbidden because CORS credentials are enabled (HTTP-only refresh cookie).
   CORS_ORIGIN: z
@@ -36,7 +39,9 @@ const configSchema = z.object({
   // AI_ENABLED=false or absent AI_API_KEY ⇒ subsystem `disabled`; core
   // clinical workflows never depend on it.
   AI_ENABLED: z.preprocess((v) => v === true || v === 'true', z.boolean()).default(false),
-  AI_PROVIDER: z.enum(['google-gemini', 'fake', 'openai-compatible', 'ollama']).default('google-gemini'),
+  AI_PROVIDER: z
+    .enum(['google-gemini', 'fake', 'openai-compatible', 'ollama'])
+    .default('google-gemini'),
   AI_API_KEY: z.string().optional(),
   AI_BASE_URL: z.string().url().optional(),
   AI_MODEL: z.string().min(1).default('gemini-2.0-flash'),
