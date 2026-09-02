@@ -110,6 +110,34 @@ describe('result payload builder (ADR-015/016: evaluator fields server-derived)'
     if (!r.ok) expect(Object.keys(r.errors)).toContain('0');
   });
 
+  it('reports per-field errors so each input shows its own message (M17)', () => {
+    const r = buildResultPayload([{ parameterName: '', value: 'abc', unit: '' }]);
+    expect(r.ok).toBe(false);
+    if (!r.ok) {
+      const row = r.errors[0];
+      expect(row.parameterName).toBeTruthy();
+      expect(row.value).toBeTruthy();
+      expect(row.unit).toBeTruthy();
+      // Three distinct messages, not one concatenated string.
+      expect(new Set([row.parameterName, row.value, row.unit]).size).toBe(3);
+    }
+  });
+
+  it('an empty value field is a validation error, never a silent 0 (M17 regression)', () => {
+    const r = buildResultPayload([{ parameterName: 'Glucose', value: '', unit: 'mg/dL' }]);
+    expect(r.ok).toBe(false);
+    if (!r.ok) {
+      expect(r.errors[0]?.value).toBeTruthy();
+      expect(r.errors[0]?.parameterName).toBeUndefined();
+      expect(r.errors[0]?.unit).toBeUndefined();
+    }
+  });
+
+  it('whitespace-only rows are rejected rather than coerced to 0', () => {
+    const r = buildResultPayload([{ parameterName: '  ', value: '   ', unit: ' ' }]);
+    expect(r.ok).toBe(false);
+  });
+
   it('rejects an all-empty form', () => {
     expect(buildResultPayload([]).ok).toBe(false);
   });

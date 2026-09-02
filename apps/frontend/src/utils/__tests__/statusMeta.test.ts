@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { AppointmentStatusValue, EncounterStatusValue } from 'shared';
+import type { AppointmentStatusValue, EncounterStatusValue, TaskPriorityEnum, TaskStatusEnum } from 'shared';
 
 import {
   appointmentStatusMeta,
@@ -8,6 +8,8 @@ import {
   priorityMeta,
   recordStatusMeta,
   resultStatusMeta,
+  taskStatusMeta,
+  taskPriorityMeta,
   gapCodeLabel,
   citationSourceLabel,
 } from '../statusMeta';
@@ -69,6 +71,35 @@ describe('statusMeta presentation mapping', () => {
   it('record statuses distinguish draft from immutable signed state', () => {
     expect(recordStatusMeta('draft').label).toBe('Draft');
     expect(recordStatusMeta('signed').label).toContain('locked');
+  });
+
+  it('maps every frozen task status to label + variant (M17)', () => {
+    const statuses: TaskStatusEnum[] = [
+      'created',
+      'assigned',
+      'in_progress',
+      'awaiting_approval',
+      'completed',
+      'cancelled',
+    ];
+    for (const s of statuses) {
+      const meta = taskStatusMeta(s);
+      expect(meta.label).not.toBe(s); // human-readable, not raw enum
+      expect(meta.label.length).toBeGreaterThan(0);
+    }
+    expect(taskStatusMeta('in_progress').variant).toBe('primary');
+    expect(taskStatusMeta('awaiting_approval').variant).toBe('urgent');
+    expect(taskStatusMeta('completed').variant).toBe('stable');
+  });
+
+  it('maps task priority with a distinct critical treatment (M17)', () => {
+    const priorities: TaskPriorityEnum[] = ['low', 'medium', 'high', 'critical'];
+    for (const p of priorities) {
+      expect(taskPriorityMeta(p).label.length).toBeGreaterThan(0);
+    }
+    expect(taskPriorityMeta('critical').variant).toBe('critical');
+    expect(taskPriorityMeta('high').variant).toBe('urgent');
+    expect(taskPriorityMeta('low').variant).toBe('pending');
   });
 
   it('order statuses cover the M10 lifecycle', () => {
