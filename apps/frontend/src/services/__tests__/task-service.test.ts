@@ -81,13 +81,14 @@ describe('taskService (M17 scope + workflow actions)', () => {
         capturedUrl = String(url);
         capturedMethod = init?.method ?? '';
         capturedBody = String(init?.body ?? '');
-        return { ok: true, status: 200, json: async () => ({ data: task }) };
+        // The task controller responds with the bare task (no envelope).
+        return { ok: true, status: 200, json: async () => task };
       }),
     );
 
     const assigneeId = '22222222-2222-2222-2222-222222222222';
     const res = await taskService.reassignTask(task.id, assigneeId);
-    expect(res.data.id).toBe(task.id);
+    expect(res.id).toBe(task.id);
     expect(capturedUrl).toContain(`/tasks/${task.id}/reassign`);
     expect(capturedMethod).toBe('POST');
     expect(capturedBody).toContain(assigneeId);
@@ -100,7 +101,7 @@ describe('taskService (M17 scope + workflow actions)', () => {
       vi.fn(async (url: RequestInfo | URL, init?: RequestInit) => {
         capturedUrl = String(url);
         expect(init?.method).toBe('POST');
-        return { ok: true, status: 200, json: async () => ({ data: task }) };
+        return { ok: true, status: 200, json: async () => task };
       }),
     );
 

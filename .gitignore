@@ -30,3 +30,6 @@ apps/frontend/e2e/.auth/
 opencode.json
 _dashboard-ref.png
 
+
+# M17 Playwright session state (local only)
+apps/frontend/e2e/.m17-auth.json

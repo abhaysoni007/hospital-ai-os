@@ -361,7 +361,7 @@ export default function PatientProfilePage() {
           )}
         </div>
       </div>
-      
+
       {showBreakGlassModal && (
         <BreakGlassModal
           patientId={id}

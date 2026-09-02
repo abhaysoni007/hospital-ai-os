@@ -24,7 +24,10 @@ import {
   TableSkeleton,
 } from '../../components/ui/Table/Table';
 import { Button } from '../../components/ui/Button/Button';
-import { TaskPriorityBadge, TaskStatusBadge } from '../../components/ui/SemanticBadges/SemanticBadges';
+import {
+  TaskPriorityBadge,
+  TaskStatusBadge,
+} from '../../components/ui/SemanticBadges/SemanticBadges';
 import { taskService } from '../../services/task-service';
 import { getStaffIdentities } from '../../services/staff-service';
 import type { TaskResponse, TaskStatusEnum } from 'shared';
@@ -105,9 +108,14 @@ export default function TasksPage() {
   }, [fetchTasks]);
 
   useEffect(() => {
-    if (user && ['physician', 'nurse', 'lab_technician', 'pharmacist', 'receptionist'].includes(user.role)) {
+    if (
+      user &&
+      ['physician', 'nurse', 'lab_technician', 'pharmacist', 'receptionist'].includes(user.role)
+    ) {
       import('../../services/api-client').then(({ apiClient }) => {
-        apiClient<{ data: { id: string; displayName: string; role: string }[] }>('/staff/department')
+        apiClient<{ data: { id: string; displayName: string; role: string }[] }>(
+          '/staff/department',
+        )
           .then((res) => {
             const opts = res.data.map((s: { id: string; displayName: string; role: string }) => ({
               value: s.id,
@@ -193,7 +201,11 @@ export default function TasksPage() {
 
   const isOverdue = (task: TaskResponse) => {
     if (!task.dueAt) return false;
-    return new Date(task.dueAt) < new Date() && task.status !== 'completed' && task.status !== 'cancelled';
+    return (
+      new Date(task.dueAt) < new Date() &&
+      task.status !== 'completed' &&
+      task.status !== 'cancelled'
+    );
   };
 
   const getPageTitle = () => {
@@ -203,7 +215,8 @@ export default function TasksPage() {
   };
 
   const showDepartmentTab =
-    user && ['physician', 'nurse', 'lab_technician', 'pharmacist', 'receptionist'].includes(user.role);
+    user &&
+    ['physician', 'nurse', 'lab_technician', 'pharmacist', 'receptionist'].includes(user.role);
   const showHospitalTab = user?.role === 'hospital_admin';
 
   return (
@@ -256,7 +269,11 @@ export default function TasksPage() {
         {loading ? (
           <TableSkeleton rows={6} />
         ) : error ? (
-          <ErrorState title="Could not load tasks" message={error} onRetry={() => void fetchTasks()} />
+          <ErrorState
+            title="Could not load tasks"
+            message={error}
+            onRetry={() => void fetchTasks()}
+          />
         ) : tasks.length === 0 ? (
           <EmptyState
             icon={<CheckSquare size={32} />}
@@ -306,9 +323,7 @@ export default function TasksPage() {
                     <TD>
                       <TaskPriorityBadge priority={task.priority} size="sm" />
                     </TD>
-                    <TD>
-                      {task.assignedTo ? (staffMap[task.assignedTo] ?? '—') : 'Unassigned'}
-                    </TD>
+                    <TD>{task.assignedTo ? (staffMap[task.assignedTo] ?? '—') : 'Unassigned'}</TD>
                     <TD>
                       {new Date(task.createdAt).toLocaleString([], {
                         month: 'short',

@@ -521,10 +521,7 @@ export default function ClinicalRecordPage() {
               </Button>
             </>
           ) : (
-            <Button
-              variant="outline"
-              onClick={() => router.push(`/encounters/${encounterId}`)}
-            >
+            <Button variant="outline" onClick={() => router.push(`/encounters/${encounterId}`)}>
               Back to encounter
             </Button>
           )}

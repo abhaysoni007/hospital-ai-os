@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import type { AppointmentStatusValue, EncounterStatusValue, TaskPriorityEnum, TaskStatusEnum } from 'shared';
+import type {
+  AppointmentStatusValue,
+  EncounterStatusValue,
+  TaskPriorityEnum,
+  TaskStatusEnum,
+} from 'shared';
 
 import {
   appointmentStatusMeta,

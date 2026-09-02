@@ -33,7 +33,10 @@ export default function DiagnosticOrderDetailPage() {
   return (
     <Suspense
       fallback={
-        <AppShell breadcrumbs={['Operations', 'Diagnostics']} requiredPermission="diagnostic_order:read">
+        <AppShell
+          breadcrumbs={['Operations', 'Diagnostics']}
+          requiredPermission="diagnostic_order:read"
+        >
           <div className={styles.container}>
             <Skeleton variant="rectangular" height={280} />
           </div>
@@ -82,7 +85,7 @@ function OrderDetailContent() {
     try {
       const orderRes = await diagnosticsService.getOrder(orderId);
       setOrder(orderRes.data);
-      
+
       let fetchedTask: TaskResponse | null = null;
       if (taskId) {
         try {
@@ -97,7 +100,7 @@ function OrderDetailContent() {
       try {
         const resRes = await diagnosticsService.getResult(orderId);
         setResult(resRes.data); // result may legitimately not exist yet
-        
+
         const idsToFetch = [resRes.data.enteredBy, resRes.data.verifiedBy];
         if (fetchedTask?.assignedTo) {
           idsToFetch.push(fetchedTask.assignedTo);
@@ -297,9 +300,7 @@ function OrderDetailContent() {
             <div className={styles.taskCard}>
               <div className={styles.taskInfo}>
                 <h3 className={styles.taskTitle}>
-                  {task.priority === 'critical' && (
-                    <AlertTriangle size={16} aria-hidden="true" />
-                  )}
+                  {task.priority === 'critical' && <AlertTriangle size={16} aria-hidden="true" />}
                   Related task: {task.title}
                 </h3>
                 <div className={styles.metaGrid}>

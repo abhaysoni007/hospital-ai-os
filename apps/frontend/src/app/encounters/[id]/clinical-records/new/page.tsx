@@ -217,7 +217,11 @@ function NewRecordForm() {
           onRetry={() => setContextTick((tick) => tick + 1)}
           encounter={
             encounter
-              ? { type: encounter.encounterType, status: encounter.status, startedAt: encounter.startedAt }
+              ? {
+                  type: encounter.encounterType,
+                  status: encounter.status,
+                  startedAt: encounter.startedAt,
+                }
               : null
           }
           patientHref={encounter ? `/patients/${encounter.patientId}` : undefined}

@@ -78,7 +78,9 @@ export interface RowFieldErrors {
  */
 export function buildResultPayload(
   values: Array<{ parameterName: string; value: string; unit: string }>,
-): { ok: true; payload: EnterResultRequest } | { ok: false; errors: Record<number, RowFieldErrors> } {
+):
+  | { ok: true; payload: EnterResultRequest }
+  | { ok: false; errors: Record<number, RowFieldErrors> } {
   const errors: Record<number, RowFieldErrors> = {};
   const cleaned = values
     .map((v) => ({
