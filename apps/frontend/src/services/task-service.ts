@@ -11,6 +11,7 @@ class TaskService {
     if (query.status) params.append('status', query.status);
     if (query.priority) params.append('priority', query.priority);
     if (query.taskType) params.append('taskType', query.taskType);
+    if (query.scope) params.append('scope', query.scope);
 
     return apiClient<TaskListResponse>(`${this.baseUrl}?${params.toString()}`, { method: 'GET' });
   }
@@ -25,6 +26,18 @@ class TaskService {
 
   async completeTask(id: string): Promise<TaskResponse> {
     return apiClient<TaskResponse>(`${this.baseUrl}/${id}/complete`, { method: 'POST' });
+  }
+
+  /** M17 — reassign/escalate route through the service layer like every other task action. */
+  async reassignTask(id: string, newAssigneeId: string): Promise<TaskResponse> {
+    return apiClient<TaskResponse>(`${this.baseUrl}/${id}/reassign`, {
+      method: 'POST',
+      body: { newAssigneeId },
+    });
+  }
+
+  async escalateTask(id: string): Promise<TaskResponse> {
+    return apiClient<TaskResponse>(`${this.baseUrl}/${id}/escalate`, { method: 'POST' });
   }
 }
 

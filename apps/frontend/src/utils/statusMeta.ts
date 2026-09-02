@@ -6,6 +6,8 @@ import type {
   EncounterStatusValue,
   NotificationPriority,
   OrderPriority,
+  TaskPriorityEnum,
+  TaskStatusEnum,
 } from 'shared';
 import type { BadgeVariant } from '../components/ui/Badge/Badge';
 
@@ -79,6 +81,22 @@ const RECORD_STATUS: Record<string, StatusMeta> = {
   amended: meta('Amended', 'info'),
 };
 
+const TASK_STATUS: Record<string, StatusMeta> = {
+  created: meta('Created', 'pending'),
+  assigned: meta('Assigned', 'info'),
+  in_progress: meta('In progress', 'primary'),
+  awaiting_approval: meta('Awaiting approval', 'urgent'),
+  completed: meta('Completed', 'stable'),
+  cancelled: meta('Cancelled', 'pending'),
+};
+
+const TASK_PRIORITY: Record<string, StatusMeta> = {
+  low: meta('Low', 'pending'),
+  medium: meta('Medium', 'info'),
+  high: meta('High', 'urgent'),
+  critical: meta('Critical', 'critical'),
+};
+
 export function appointmentStatusMeta(status: string): StatusMeta {
   return APPOINTMENT_STATUS[status] ?? meta(status, 'neutral');
 }
@@ -103,6 +121,14 @@ export function recordStatusMeta(status: string): StatusMeta {
   return RECORD_STATUS[status] ?? meta(status, 'neutral');
 }
 
+export function taskStatusMeta(status: string): StatusMeta {
+  return TASK_STATUS[status] ?? meta(status, 'neutral');
+}
+
+export function taskPriorityMeta(priority: string): StatusMeta {
+  return TASK_PRIORITY[priority] ?? meta(priority, 'neutral');
+}
+
 /** Typed convenience re-exports for call sites holding the concrete enums. */
 export const appointmentStatus = (s: AppointmentStatusValue): StatusMeta =>
   appointmentStatusMeta(s);
@@ -112,6 +138,8 @@ export const resultStatus = (s: DiagnosticResultStatus): StatusMeta => resultSta
 export const orderPriority = (p: OrderPriority): StatusMeta => priorityMeta(p);
 export const notificationPriority = (p: NotificationPriority): StatusMeta => priorityMeta(p);
 export const recordStatus = (s: ClinicalRecordStatusValue): StatusMeta => recordStatusMeta(s);
+export const taskStatus = (s: TaskStatusEnum): StatusMeta => taskStatusMeta(s);
+export const taskPriority = (p: TaskPriorityEnum): StatusMeta => taskPriorityMeta(p);
 
 /** Gap codes → clinician-readable "not documented" statements (ADR-018 §6). */
 const GAP_LABELS: Record<string, string> = {

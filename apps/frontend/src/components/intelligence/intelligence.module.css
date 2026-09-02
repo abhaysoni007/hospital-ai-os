@@ -1,0 +1,321 @@
+/* M17 — shared presentation for the governed intelligence components
+   (ChartBrief, ClinicalTimeline, DiagnosticTrend). Replaces the unresolvable
+   Tailwind utility classes these components previously used. */
+
+/* ---------- ChartBrief ---------- */
+
+.aiCard {
+  border: 1px solid var(--status-ai-border);
+}
+
+.aiHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.aiTitle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  font-size: var(--font-size-h4);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.aiKicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin: var(--space-1) 0 0;
+  font-size: var(--font-size-caption);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--status-ai-text);
+}
+
+.aiError {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  margin: var(--space-3) 0 0;
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--color-danger-bg);
+  border: 1px solid var(--color-danger-border);
+  color: var(--color-danger-text);
+  font-size: var(--font-size-body);
+}
+
+.aiBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+
+.aiTimestamp {
+  margin: 0;
+  font-size: var(--font-size-caption);
+  color: var(--text-tertiary);
+  font-style: italic;
+}
+
+.aiSummary {
+  margin: 0;
+  padding: var(--space-3);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--bg-surface);
+  font-size: var(--font-size-body);
+  line-height: 1.6;
+  color: var(--text-primary);
+  white-space: pre-wrap;
+}
+
+.aiGaps {
+  padding: var(--space-3);
+  border: 1px solid var(--color-warning-border);
+  border-radius: var(--radius-md);
+  background: var(--color-warning-bg);
+}
+
+.aiGapsTitle {
+  margin: 0 0 var(--space-2);
+  font-size: var(--font-size-caption);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-warning-text);
+}
+
+.aiGaps ul {
+  margin: 0;
+  padding-left: var(--space-5);
+  font-size: var(--font-size-body);
+  color: var(--color-warning-text);
+}
+
+.aiCitations {
+  padding: var(--space-3);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--bg-surface);
+}
+
+.aiCitationsTitle {
+  margin: 0 0 var(--space-2);
+  font-size: var(--font-size-caption);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-tertiary);
+}
+
+.aiCitations ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.aiCitations li {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  font-size: var(--font-size-caption);
+  color: var(--text-secondary);
+}
+
+.aiCitations li svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--color-success-main);
+}
+
+.aiCitations strong {
+  color: var(--text-primary);
+}
+
+.aiDisclaimers {
+  margin-top: var(--space-1);
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--border-subtle);
+}
+
+.aiDisclaimers p {
+  margin: 0 0 2px;
+  font-size: var(--font-size-caption);
+  color: var(--text-tertiary);
+}
+
+/* ---------- ClinicalTimeline ---------- */
+
+.timelineCard {
+  display: block;
+}
+
+.timelineTitle {
+  margin: 0 0 var(--space-4);
+  font-size: var(--font-size-h4);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.timeline {
+  list-style: none;
+  margin: 0 0 0 var(--space-2);
+  padding: 0 0 0 var(--space-4);
+  border-left: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.timelineItem {
+  position: relative;
+}
+
+.eventBadge {
+  position: absolute;
+  left: calc(-1 * var(--space-4) - 13px);
+  top: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: var(--radius-full);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+}
+
+.eventIconStart {
+  color: var(--color-primary-500);
+}
+
+.eventIconNote {
+  color: var(--color-primary-700);
+}
+
+.eventIconOrder {
+  color: var(--status-urgent-badge);
+}
+
+.eventIconResult {
+  color: var(--color-success-main);
+}
+
+.eventIconTask,
+.eventIconDefault {
+  color: var(--text-tertiary);
+}
+
+.eventBody {
+  min-width: 0;
+}
+
+.eventType {
+  margin: 0;
+  font-size: var(--font-size-body);
+  font-weight: 600;
+  color: var(--text-primary);
+  text-transform: capitalize;
+}
+
+.eventTime {
+  margin: 0;
+  font-size: var(--font-size-caption);
+  color: var(--text-tertiary);
+  font-variant-numeric: tabular-nums;
+}
+
+.eventDetail {
+  margin: var(--space-1) 0 0;
+  padding: var(--space-2);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  background: var(--bg-subtle);
+  font-size: var(--font-size-body);
+  color: var(--text-secondary);
+}
+
+.timelineTruncated {
+  margin: var(--space-4) 0 0;
+  text-align: center;
+  font-size: var(--font-size-caption);
+  color: var(--text-tertiary);
+}
+
+/* ---------- DiagnosticTrend ---------- */
+
+.trendCard {
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--bg-surface);
+  padding: var(--space-3);
+}
+
+.trendTitle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-2);
+  font-size: var(--font-size-body);
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.trendTitle svg {
+  color: var(--color-primary-500);
+}
+
+/* Horizontal scroll lives inside the card, never on the page. */
+.trendRow {
+  list-style: none;
+  display: flex;
+  gap: var(--space-2);
+  overflow-x: auto;
+  margin: 0;
+  padding: 0 0 var(--space-1);
+}
+
+.trendPoint {
+  flex-shrink: 0;
+  min-width: 100px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--space-2);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--bg-subtle);
+}
+
+.trendCritical {
+  background: var(--status-critical-bg);
+  border-color: var(--status-critical-border);
+}
+
+.trendAbnormal {
+  background: var(--status-urgent-bg);
+  border-color: var(--status-urgent-border);
+}
+
+.trendDate {
+  font-size: var(--font-size-caption);
+  color: var(--text-tertiary);
+}
+
+.trendValue {
+  font-size: var(--font-size-body);
+  font-weight: 700;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}

@@ -8,6 +8,8 @@ import {
   priorityMeta,
   recordStatusMeta,
   resultStatusMeta,
+  taskPriorityMeta,
+  taskStatusMeta,
 } from '../../../utils/statusMeta';
 
 /**
@@ -61,4 +63,20 @@ export function PriorityBadge({ priority, size }: { priority: string; size?: Bad
 
 export function RecordStatusBadge({ status, size }: { status: string; size?: BadgeSize }) {
   return <SemanticBadge meta={recordStatusMeta(status)} size={size} />;
+}
+
+export function TaskStatusBadge({ status, size }: { status: string; size?: BadgeSize }) {
+  return <SemanticBadge meta={taskStatusMeta(status)} size={size} />;
+}
+
+/** Critical carries an icon so urgency is never colour-only. */
+export function TaskPriorityBadge({ priority, size }: { priority: string; size?: BadgeSize }) {
+  const meta = taskPriorityMeta(priority);
+  const icon =
+    priority === 'critical' ? (
+      <AlertTriangle size={11} aria-hidden="true" />
+    ) : priority === 'high' ? (
+      <AlertTriangle size={11} aria-hidden="true" />
+    ) : undefined;
+  return <SemanticBadge meta={meta} size={size} icon={icon} />;
 }
