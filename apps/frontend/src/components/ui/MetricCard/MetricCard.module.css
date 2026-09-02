@@ -84,6 +84,37 @@
   letter-spacing: -0.02em;
 }
 
+.trendWrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  width: 88px;
+  height: 28px;
+  flex-shrink: 0;
+}
+
+.delta {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: var(--font-size-caption);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.delta_up {
+  color: var(--color-success-main);
+}
+
+.delta_down {
+  color: var(--color-danger-main);
+}
+
+.delta_flat {
+  color: var(--text-tertiary);
+}
+
 .footer {
   margin-top: var(--space-1);
   display: flex;

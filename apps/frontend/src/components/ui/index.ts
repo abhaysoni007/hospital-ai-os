@@ -26,3 +26,6 @@ export * from './Tabs/Tabs';
 export * from './Toast/Toast';
 export * from './Divider/Divider';
 export * from './ThemeToggle/ThemeToggle';
+export * from './Sparkline/Sparkline';
+export * from './LineChart/LineChart';
+export * from './DonutChart/DonutChart';
