@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { Suspense, useCallback, useEffect, useState } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { AppShell } from '../../../components/layout/AppShell/AppShell';
 import { Button } from '../../../components/ui/Button/Button';
@@ -10,11 +10,15 @@ import { ErrorState } from '../../../components/ui/ErrorState/ErrorState';
 import { AlertBanner } from '../../../components/ui/Alert/AlertBanner';
 import { ConfirmDialog } from '../../../components/ui/ConfirmDialog/ConfirmDialog';
 import { PageHeader } from '../../../components/ui/PageHeader/PageHeader';
+import { PatientContextHeader } from '../../../components/clinical/PatientContextHeader/PatientContextHeader';
 import {
   OrderStatusBadge,
   PriorityBadge,
   ResultStatusBadge,
+  TaskPriorityBadge,
+  TaskStatusBadge,
 } from '../../../components/ui/SemanticBadges/SemanticBadges';
+import { usePatient } from '../../../hooks/usePatient';
 import { Lock, AlertTriangle, RefreshCw } from 'lucide-react';
 import { diagnosticsService } from '../../../services/diagnostics-service';
 import { getStaffIdentities } from '../../../services/staff-service';
@@ -24,7 +28,24 @@ import styles from './order-detail.module.css';
 import { useAuth } from '../../../hooks/useAuth';
 import { canEnterResults, canVerifyResults, canCollectSamples } from '../../../utils/diagnostics';
 import { DiagnosticTrend } from '../../../components/intelligence/DiagnosticTrend';
+
 export default function DiagnosticOrderDetailPage() {
+  return (
+    <Suspense
+      fallback={
+        <AppShell breadcrumbs={['Operations', 'Diagnostics']} requiredPermission="diagnostic_order:read">
+          <div className={styles.container}>
+            <Skeleton variant="rectangular" height={280} />
+          </div>
+        </AppShell>
+      }
+    >
+      <OrderDetailContent />
+    </Suspense>
+  );
+}
+
+function OrderDetailContent() {
   const params = useParams<{ orderId: string }>();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -51,6 +72,9 @@ export default function DiagnosticOrderDetailPage() {
   const [taskActionLoading, setTaskActionLoading] = useState<string | null>(null);
   const [taskActionError, setTaskActionError] = useState<string | null>(null);
 
+  // M17 — patient identity band; the order payload only carries patientId.
+  const { patient, error: patientError, reload: reloadPatient } = usePatient(order?.patientId);
+
   const fetchData = useCallback(async () => {
     if (!orderId) return;
     setLoading(true);
@@ -64,8 +88,9 @@ export default function DiagnosticOrderDetailPage() {
         try {
           fetchedTask = await taskService.getTask(taskId);
           setTask(fetchedTask);
-        } catch (e) {
-          console.error('Failed to fetch task context', e);
+        } catch {
+          // Task context is supplementary — the order detail stays usable
+          // without it; the related-task card is simply not shown.
         }
       }
 
@@ -222,8 +247,16 @@ export default function DiagnosticOrderDetailPage() {
       requiredPermission="diagnostic_order:read"
     >
       <div className={styles.container}>
+        <PatientContextHeader
+          patient={patient}
+          loading={Boolean(order && !patient && !patientError)}
+          error={patientError}
+          onRetry={reloadPatient}
+        />
+
         <PageHeader
           title={order.testName}
+          description={`Test code ${order.testCode}`}
           meta={
             <>
               <PriorityBadge priority={order.priority} size="sm" />
@@ -235,9 +268,7 @@ export default function DiagnosticOrderDetailPage() {
 
         {critical && (
           <div className={styles.criticalBanner} role="alert">
-            <span className={styles.criticalIcon} aria-hidden="true">
-              ⚠
-            </span>
+            <AlertTriangle size={20} aria-hidden="true" className={styles.criticalIcon} />
             <div>
               <p className={styles.criticalTitle}>CRITICAL RESULT</p>
               <p className={styles.criticalText}>
@@ -263,52 +294,54 @@ export default function DiagnosticOrderDetailPage() {
 
         {task && (
           <Card>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-              <div>
-                <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  {task.priority === 'critical' && <AlertTriangle size={16} color="var(--color-critical-600)" />}
-                  Related Task: {task.title}
+            <div className={styles.taskCard}>
+              <div className={styles.taskInfo}>
+                <h3 className={styles.taskTitle}>
+                  {task.priority === 'critical' && (
+                    <AlertTriangle size={16} aria-hidden="true" />
+                  )}
+                  Related task: {task.title}
                 </h3>
-                <div className={styles.metaGrid} style={{ marginTop: '0.5rem' }}>
-                  <div>
+                <div className={styles.metaGrid}>
+                  <div className={styles.taskMeta}>
                     <span className={styles.metaLabel}>Type</span>
-                    <span style={{ textTransform: 'capitalize' }}>{task.taskType.replace('_', ' ')}</span>
+                    <span>{task.taskType.replace('_', ' ')}</span>
                   </div>
-                  <div>
+                  <div className={styles.taskMeta}>
                     <span className={styles.metaLabel}>Priority</span>
-                    <span style={{ textTransform: 'capitalize' }}>{task.priority}</span>
+                    <TaskPriorityBadge priority={task.priority} size="sm" />
                   </div>
-                  <div>
+                  <div className={styles.taskMeta}>
                     <span className={styles.metaLabel}>Status</span>
-                    <span style={{ textTransform: 'capitalize' }}>{task.status.replace('_', ' ')}</span>
+                    <TaskStatusBadge status={task.status} size="sm" />
                   </div>
-                  <div>
+                  <div className={styles.taskMeta}>
                     <span className={styles.metaLabel}>Assignee</span>
-                    {taskAssigneeName ?? task.assignedTo?.slice(0,8) ?? 'Unassigned'}
+                    {taskAssigneeName ?? task.assignedTo?.slice(0, 8) ?? 'Unassigned'}
                   </div>
                 </div>
               </div>
-              
+
               {task.assignedTo === user?.id && (
-                <div style={{ display: 'flex', gap: '0.5rem', flexDirection: 'column' }}>
+                <div className={styles.taskActions}>
                   {task.status === 'created' && (
                     <Button
                       variant="primary"
                       size="sm"
+                      isLoading={taskActionLoading === 'acknowledge'}
                       onClick={() => void handleAcknowledgeTask()}
-                      disabled={taskActionLoading !== null}
                     >
-                      {taskActionLoading === 'acknowledge' ? 'Acknowledging...' : 'Acknowledge'}
+                      Acknowledge
                     </Button>
                   )}
                   {task.status === 'in_progress' && (
                     <Button
                       variant="primary"
                       size="sm"
+                      isLoading={taskActionLoading === 'complete'}
                       onClick={() => void handleCompleteTask()}
-                      disabled={taskActionLoading !== null}
                     >
-                      {taskActionLoading === 'complete' ? 'Completing...' : 'Complete Task'}
+                      Complete task
                     </Button>
                   )}
                 </div>
@@ -504,9 +537,9 @@ export default function DiagnosticOrderDetailPage() {
                   <Button
                     variant="primary"
                     onClick={() => void handleCollectSample()}
-                    disabled={collecting}
+                    isLoading={collecting}
                   >
-                    {collecting ? 'Collecting...' : 'Collect sample'}
+                    Collect sample
                   </Button>
                 )}
               </>

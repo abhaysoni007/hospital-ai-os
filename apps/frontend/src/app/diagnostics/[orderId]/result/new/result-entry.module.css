@@ -1,74 +1,68 @@
 .container {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-6);
-  padding: var(--spacing-6);
-  max-width: 760px;
-  margin: 0 auto;
-}
-
-.header {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-3);
-}
-
-.title {
-  font-size: var(--font-size-2xl);
-  font-weight: var(--font-weight-600);
-  color: var(--color-slate-900);
+  gap: var(--space-5);
+  width: 100%;
 }
 
 .meta {
   display: flex;
-  gap: var(--spacing-6);
+  gap: var(--space-6);
   flex-wrap: wrap;
 }
 
 .metaLabel {
   display: block;
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-600);
-  color: var(--color-slate-500);
+  font-size: var(--font-size-caption);
+  font-weight: 600;
+  color: var(--text-tertiary);
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
 
 .evaluationNote {
-  font-size: var(--font-size-sm);
-  color: var(--color-slate-500);
-  background: var(--color-slate-50);
+  font-size: var(--font-size-body);
+  color: var(--text-secondary);
+  background: var(--bg-subtle);
   border-left: 3px solid var(--color-primary-400);
-  padding: var(--spacing-2) var(--spacing-3);
-  margin-bottom: var(--spacing-4);
+  padding: var(--space-2) var(--space-3);
+  margin-bottom: var(--space-4);
 }
 
 .paramRow {
   display: grid;
   grid-template-columns: 1fr 120px 110px auto;
-  gap: var(--spacing-3);
+  gap: var(--space-3);
   align-items: end;
-  margin-bottom: var(--spacing-3);
+  margin-bottom: var(--space-3);
 }
 
 .removeRow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   background: none;
   border: none;
-  color: var(--color-slate-400);
-  font-size: var(--font-size-md);
+  color: var(--text-tertiary);
   cursor: pointer;
-  padding: var(--spacing-2);
+  padding: var(--space-2);
+  border-radius: var(--radius-sm);
 }
 
 .removeRow:hover {
-  color: var(--color-critical-600);
+  color: var(--color-danger-main);
+}
+
+.removeRow:focus-visible {
+  outline: 2px solid var(--focus-ring-color);
+  outline-offset: 2px;
 }
 
 .addRow {
   background: none;
   border: none;
   color: var(--color-primary-600);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-body);
   font-weight: 500;
   cursor: pointer;
   padding: 0;
@@ -78,66 +72,93 @@
   text-decoration: underline;
 }
 
+.addRow:focus-visible {
+  outline: 2px solid var(--focus-ring-color);
+  outline-offset: 2px;
+}
+
 .reviewTitle {
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-600);
-  color: var(--color-slate-800);
-  margin-bottom: var(--spacing-4);
+  font-size: var(--font-size-h4);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: var(--space-4);
 }
 
 .reviewList div {
   display: grid;
   grid-template-columns: 180px 1fr;
-  padding: var(--spacing-2) 0;
-  border-bottom: 1px solid var(--color-slate-100);
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--border-subtle);
 }
 
 .reviewList dt {
-  color: var(--color-slate-500);
-  font-size: var(--font-size-sm);
+  color: var(--text-tertiary);
+  font-size: var(--font-size-body);
 }
 
 .reviewList dd {
   margin: 0;
-  font-weight: var(--font-weight-500);
+  font-weight: 500;
 }
 
 .reviewNote {
-  margin-top: var(--spacing-4);
-  font-size: var(--font-size-sm);
-  color: var(--color-slate-500);
+  margin-top: var(--space-4);
+  font-size: var(--font-size-body);
+  color: var(--text-tertiary);
 }
 
 .actions {
   display: flex;
   justify-content: flex-end;
-  gap: var(--spacing-3);
+  gap: var(--space-3);
+  flex-wrap: wrap;
 }
 
 .criticalBanner {
   display: flex;
-  gap: var(--spacing-4);
+  gap: var(--space-4);
   align-items: flex-start;
-  border: 2px solid var(--color-critical-600);
-  background: var(--color-critical-50, #fef2f2);
+  border: 2px solid var(--status-critical-border);
+  background: var(--status-critical-bg);
   border-radius: var(--radius-lg);
-  padding: var(--spacing-5);
+  padding: var(--space-4) var(--space-5);
 }
 
 .criticalIcon {
-  font-size: 32px;
-  line-height: 1;
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--status-critical-border);
 }
 
 .criticalTitle {
-  font-size: var(--font-size-xl);
-  font-weight: var(--font-weight-700);
+  font-size: var(--font-size-h3);
+  font-weight: 700;
   letter-spacing: 0.04em;
-  color: var(--color-critical-700, #b91c1c);
-  margin: 0 0 var(--spacing-1);
+  color: var(--status-critical-text);
+  margin: 0 0 var(--space-1);
 }
 
 .criticalMeta {
-  font-size: var(--font-size-sm);
-  color: var(--color-slate-600);
+  font-size: var(--font-size-body);
+  color: var(--text-secondary);
+}
+
+@media (max-width: 640px) {
+  /* One parameter per row-set: the 4-column grid cannot survive 375px. */
+  .paramRow {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .paramRow > :first-child {
+    grid-column: 1 / -1;
+  }
+
+  .removeRow {
+    justify-self: end;
+  }
+
+  .reviewList div {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
 }

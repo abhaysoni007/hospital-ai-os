@@ -10,12 +10,15 @@ import { AlertBanner } from '../../../../../components/ui/Alert/AlertBanner';
 import { ErrorState } from '../../../../../components/ui/ErrorState/ErrorState';
 import { Skeleton } from '../../../../../components/ui/Skeleton/Skeleton';
 import { PageHeader } from '../../../../../components/ui/PageHeader/PageHeader';
+import { PatientContextHeader } from '../../../../../components/clinical/PatientContextHeader/PatientContextHeader';
 import {
   OrderStatusBadge,
   PriorityBadge,
 } from '../../../../../components/ui/SemanticBadges/SemanticBadges';
-import { buildResultPayload } from '../../../../../utils/diagnostics';
+import { buildResultPayload, type RowFieldErrors } from '../../../../../utils/diagnostics';
+import { usePatient } from '../../../../../hooks/usePatient';
 import { diagnosticsService } from '../../../../../services/diagnostics-service';
+import { AlertTriangle, X } from 'lucide-react';
 import type { DiagnosticOrderResponse } from 'shared';
 import styles from './result-entry.module.css';
 
@@ -37,12 +40,15 @@ export default function ResultEntryPage() {
   const [error, setError] = useState<Error | null>(null);
 
   const [rows, setRows] = useState<Row[]>([{ ...EMPTY_ROW }, { ...EMPTY_ROW }, { ...EMPTY_ROW }]);
-  const [rowErrors, setRowErrors] = useState<Record<number, string>>({});
+  const [rowErrors, setRowErrors] = useState<Record<number, RowFieldErrors>>({});
   const [reviewing, setReviewing] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [enteredResultId, setEnteredResultId] = useState<string | null>(null);
   const [enteredCritical, setEnteredCritical] = useState(false);
+
+  // M17 — patient identity band; the order payload only carries patientId.
+  const { patient, error: patientError, reload: reloadPatient } = usePatient(order?.patientId);
 
   useEffect(() => {
     if (!orderId) return;
@@ -140,9 +146,7 @@ export default function ResultEntryPage() {
         <div className={styles.container}>
           {enteredCritical ? (
             <div className={`${styles.criticalBanner}`} role="alert">
-              <span className={styles.criticalIcon} aria-hidden="true">
-                ⚠
-              </span>
+              <AlertTriangle size={20} aria-hidden="true" className={styles.criticalIcon} />
               <div>
                 <h1 className={styles.criticalTitle}>CRITICAL RESULT</h1>
                 <p>
@@ -175,6 +179,13 @@ export default function ResultEntryPage() {
       requiredPermission="diagnostic_result:enter"
     >
       <div className={styles.container}>
+        <PatientContextHeader
+          patient={patient}
+          loading={Boolean(order && !patient && !patientError)}
+          error={patientError}
+          onRetry={reloadPatient}
+        />
+
         <PageHeader
           title="Enter result"
           description={`${order.testName} (${order.testCode})`}
@@ -220,7 +231,7 @@ export default function ResultEntryPage() {
                     label={`Parameter ${idx + 1} name`}
                     value={row.parameterName}
                     onChange={(e) => updateRow(idx, { parameterName: e.target.value })}
-                    error={rowErrors[idx]}
+                    error={rowErrors[idx]?.parameterName}
                   />
                   <Input
                     id={`value-${idx}`}
@@ -229,12 +240,14 @@ export default function ResultEntryPage() {
                     step="any"
                     value={row.value}
                     onChange={(e) => updateRow(idx, { value: e.target.value })}
+                    error={rowErrors[idx]?.value}
                   />
                   <Input
                     id={`unit-${idx}`}
                     label="Unit"
                     value={row.unit}
                     onChange={(e) => updateRow(idx, { unit: e.target.value })}
+                    error={rowErrors[idx]?.unit}
                   />
                   {rows.length > 1 && (
                     <button
@@ -243,7 +256,7 @@ export default function ResultEntryPage() {
                       aria-label={`Remove parameter ${idx + 1}`}
                       onClick={() => setRows((prev) => prev.filter((_, i) => i !== idx))}
                     >
-                      ✕
+                      <X size={14} aria-hidden="true" />
                     </button>
                   )}
                 </div>
@@ -279,7 +292,9 @@ export default function ResultEntryPage() {
                 </div>
                 <div>
                   <dt>Priority</dt>
-                  <dd>{order.priority}</dd>
+                  <dd>
+                    <PriorityBadge priority={order.priority} size="sm" />
+                  </dd>
                 </div>
                 {rows
                   .filter((r) => r.parameterName.trim())

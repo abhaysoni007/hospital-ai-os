@@ -9,6 +9,9 @@ import { PageHeader } from '../../components/ui/PageHeader/PageHeader';
 import { EmptyState } from '../../components/ui/EmptyState/EmptyState';
 import { ErrorState } from '../../components/ui/ErrorState/ErrorState';
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog/ConfirmDialog';
+import { AlertBanner } from '../../components/ui/Alert/AlertBanner';
+import { Badge } from '../../components/ui/Badge/Badge';
+import { Tabs, Tab } from '../../components/ui/Tabs/Tabs';
 import { useAuth } from '../../hooks/useAuth';
 import {
   Table,
@@ -21,11 +24,21 @@ import {
   TableSkeleton,
 } from '../../components/ui/Table/Table';
 import { Button } from '../../components/ui/Button/Button';
+import { TaskPriorityBadge, TaskStatusBadge } from '../../components/ui/SemanticBadges/SemanticBadges';
 import { taskService } from '../../services/task-service';
+import { getStaffIdentities } from '../../services/staff-service';
 import type { TaskResponse, TaskStatusEnum } from 'shared';
 import styles from './tasks.module.css';
 
-// DEMO_STAFF removed; we now fetch live department staff
+const STATUS_FILTERS: Array<{ value: string; label: string }> = [
+  { value: '', label: 'All statuses' },
+  { value: 'created', label: 'Created' },
+  { value: 'assigned', label: 'Assigned' },
+  { value: 'in_progress', label: 'In progress' },
+  { value: 'awaiting_approval', label: 'Awaiting approval' },
+  { value: 'completed', label: 'Completed' },
+  { value: 'cancelled', label: 'Cancelled' },
+];
 
 export default function TasksPage() {
   const router = useRouter();
@@ -34,25 +47,25 @@ export default function TasksPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
-  
+
   const [status, setStatus] = useState('');
   const [scope, setScope] = useState<'me' | 'department' | 'hospital'>('me');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
-  // Reassign Modal State
+  // Reassign modal state
   const [reassignTask, setReassignTask] = useState<TaskResponse | null>(null);
   const [newAssignee, setNewAssignee] = useState<string>('');
   const [departmentStaff, setDepartmentStaff] = useState<{ value: string; label: string }[]>([]);
+  const [departmentStaffError, setDepartmentStaffError] = useState(false);
   const [staffMap, setStaffMap] = useState<Record<string, string>>({});
 
-  // Escalate Modal State
+  // Escalate modal state
   const [escalateTask, setEscalateTask] = useState<TaskResponse | null>(null);
 
   const fetchTasks = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      // Pass the selected scope to the API.
       const response = await taskService.listTasks({
         page: 1,
         pageSize: 100,
@@ -61,25 +74,23 @@ export default function TasksPage() {
       });
       setTasks(response.data);
 
-      // Fetch identities for all assignees
-      const assignees = response.data
-        .map((t) => t.assignedTo)
-        .filter((id): id is string => !!id);
-      
-      const uniqueAssignees = [...new Set(assignees)];
-      if (uniqueAssignees.length > 0) {
-        const { apiClient } = await import('../../services/api-client');
+      // Resolve assignee identities through the cached M12.2 projection.
+      // Names that cannot be resolved render as "—", never "Loading...".
+      const assignees = [
+        ...new Set(response.data.map((t) => t.assignedTo).filter((id): id is string => !!id)),
+      ].slice(0, 50);
+      if (assignees.length > 0) {
         try {
-          const idResponse = await apiClient<{ data: { id: string; displayName: string }[] }>(`/staff/identity?ids=${uniqueAssignees.slice(0, 50).join(',')}`);
-          setStaffMap(prev => {
+          const identities = await getStaffIdentities(assignees);
+          setStaffMap((prev) => {
             const next = { ...prev };
-            idResponse.data.forEach((staff: { id: string; displayName: string }) => {
-              next[staff.id] = staff.displayName;
+            identities.forEach((identity, id) => {
+              next[id] = identity.displayName;
             });
             return next;
           });
-        } catch (e) {
-          console.error('Failed to fetch staff identities', e);
+        } catch {
+          // Cells fall back to "—"; the queue itself stays usable.
         }
       }
     } catch {
@@ -96,14 +107,17 @@ export default function TasksPage() {
   useEffect(() => {
     if (user && ['physician', 'nurse', 'lab_technician', 'pharmacist', 'receptionist'].includes(user.role)) {
       import('../../services/api-client').then(({ apiClient }) => {
-        apiClient<{ data: { id: string; displayName: string; role: string }[] }>('/staff/department').then(res => {
-          const opts = res.data.map((s: { id: string; displayName: string; role: string }) => ({
-            value: s.id,
-            label: `${s.displayName} (${s.role.replace('_', ' ')})`
-          }));
-          setDepartmentStaff(opts);
-          if (opts.length > 0) setNewAssignee(opts[0].value);
-        }).catch(() => {});
+        apiClient<{ data: { id: string; displayName: string; role: string }[] }>('/staff/department')
+          .then((res) => {
+            const opts = res.data.map((s: { id: string; displayName: string; role: string }) => ({
+              value: s.id,
+              label: `${s.displayName} (${s.role.replace('_', ' ')})`,
+            }));
+            setDepartmentStaff(opts);
+            setDepartmentStaffError(false);
+            if (opts.length > 0) setNewAssignee((current) => current || opts[0].value);
+          })
+          .catch(() => setDepartmentStaffError(true));
       });
     }
   }, [user]);
@@ -141,18 +155,14 @@ export default function TasksPage() {
     setActionError(null);
     setActionLoading(reassignTask.id);
     try {
-      const { apiClient } = await import('../../services/api-client');
-      await apiClient(`/tasks/${reassignTask.id}/reassign`, {
-        method: 'POST',
-        body: { newAssigneeId: newAssignee },
-      });
+      await taskService.reassignTask(reassignTask.id, newAssignee);
       setReassignTask(null);
       await fetchTasks();
     } catch {
       setActionError('Failed to reassign task. Please try again.');
+      setReassignTask(null);
     } finally {
       setActionLoading(null);
-      setReassignTask(null);
     }
   };
 
@@ -161,26 +171,24 @@ export default function TasksPage() {
     setActionError(null);
     setActionLoading(escalateTask.id);
     try {
-      const { apiClient } = await import('../../services/api-client');
-      await apiClient(`/tasks/${escalateTask.id}/escalate`, {
-        method: 'POST',
-      });
+      await taskService.escalateTask(escalateTask.id);
       setEscalateTask(null);
       await fetchTasks();
     } catch {
       setActionError('Failed to escalate task.');
+      setEscalateTask(null);
     } finally {
       setActionLoading(null);
-      setEscalateTask(null);
     }
   };
 
-  const navigateToTask = (task: TaskResponse) => {
+  /** Navigation target for a task's clinical context, if one exists. */
+  const taskContextHref = (task: TaskResponse): string | null => {
     if (task.referenceType === 'DiagnosticOrder' && task.referenceId) {
-      router.push(`/diagnostics/${task.referenceId}?taskId=${task.id}`);
-    } else if (task.encounterId) {
-      router.push(`/encounters/${task.encounterId}`);
+      return `/diagnostics/${task.referenceId}?taskId=${task.id}`;
     }
+    if (task.encounterId) return `/encounters/${task.encounterId}`;
+    return null;
   };
 
   const isOverdue = (task: TaskResponse) => {
@@ -191,11 +199,11 @@ export default function TasksPage() {
   const getPageTitle = () => {
     if (scope === 'me') return 'My Work';
     if (scope === 'department') return 'Department Queue';
-    if (scope === 'hospital') return 'Hospital Queue';
-    return 'My Work';
+    return 'Hospital Queue';
   };
 
-  const showDepartmentTab = user && ['physician', 'nurse', 'lab_technician', 'pharmacist', 'receptionist'].includes(user.role);
+  const showDepartmentTab =
+    user && ['physician', 'nurse', 'lab_technician', 'pharmacist', 'receptionist'].includes(user.role);
   const showHospitalTab = user?.role === 'hospital_admin';
 
   return (
@@ -209,27 +217,25 @@ export default function TasksPage() {
               : 'Operational view of clinical tasks.'
           }
           meta={
-            <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-end' }}>
-              <div className={styles.tabs} style={{ display: 'flex', gap: '0.5rem', marginBottom: '4px' }}>
-                <Button variant={scope === 'me' ? 'primary' : 'secondary'} size="sm" onClick={() => setScope('me')}>My Work</Button>
-                {showDepartmentTab && (
-                  <Button variant={scope === 'department' ? 'primary' : 'secondary'} size="sm" onClick={() => setScope('department')}>Department Queue</Button>
-                )}
-                {showHospitalTab && (
-                  <Button variant={scope === 'hospital' ? 'primary' : 'secondary'} size="sm" onClick={() => setScope('hospital')}>Hospital Queue</Button>
-                )}
-              </div>
+            <div className={styles.headerControls}>
+              <Tabs
+                value={scope}
+                onValueChange={(v) => setScope(v as typeof scope)}
+                variant="pills"
+                ariaLabel="Task queue scope"
+                className={styles.scopeTabs}
+              >
+                <Tab value="me">My Work</Tab>
+                {showDepartmentTab && <Tab value="department">Department Queue</Tab>}
+                {showHospitalTab && <Tab value="hospital">Hospital Queue</Tab>}
+              </Tabs>
               <Select
                 id="status"
                 label="Filter by status"
-                placeholder="All statuses"
                 value={status}
                 onChange={(e) => setStatus(e.target.value)}
-                options={[
-                  { value: 'created', label: 'Created' },
-                  { value: 'in_progress', label: 'In Progress' },
-                  { value: 'completed', label: 'Completed' },
-                ]}
+                options={STATUS_FILTERS.filter((o) => o.value !== '')}
+                placeholder="All statuses"
                 className={styles.statusSelect}
               />
             </div>
@@ -237,27 +243,20 @@ export default function TasksPage() {
         />
 
         {actionError && (
-          <div className={styles.actionError} role="alert">
+          <AlertBanner
+            severity="critical"
+            title="Action failed"
+            dismissible
+            onDismiss={() => setActionError(null)}
+          >
             {actionError}
-            <button
-              type="button"
-              className={styles.actionErrorDismiss}
-              onClick={() => setActionError(null)}
-              aria-label="Dismiss error"
-            >
-              ×
-            </button>
-          </div>
+          </AlertBanner>
         )}
 
         {loading ? (
           <TableSkeleton rows={6} />
         ) : error ? (
-          <ErrorState
-            title="Could not load tasks"
-            message={error}
-            onRetry={() => void fetchTasks()}
-          />
+          <ErrorState title="Could not load tasks" message={error} onRetry={() => void fetchTasks()} />
         ) : tasks.length === 0 ? (
           <EmptyState
             icon={<CheckSquare size={32} />}
@@ -276,146 +275,163 @@ export default function TasksPage() {
                 <TH width="120px">Priority</TH>
                 <TH width="160px">Assignee</TH>
                 <TH width="140px">Created</TH>
-                <TH width="140px">Due At</TH>
-                <TH width="140px">Status</TH>
+                <TH width="140px">Due</TH>
+                <TH width="150px">Status</TH>
                 <TH aria-label="Actions" />
               </tr>
             </THead>
             <TBody>
-              {tasks.map((task) => (
-                <TR
-                  key={task.id}
-                  interactive
-                  onClick={() => navigateToTask(task)}
-                  aria-label={`Open task: ${task.title}`}
-                >
-                  <TD>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      <strong>{task.title}</strong>
-                      {isOverdue(task) && (
-                        <span style={{ color: 'var(--color-danger-600)', display: 'flex', alignItems: 'center', fontSize: '0.75rem', fontWeight: 600, gap: '2px' }}>
-                          <AlertCircle size={12} /> OVERDUE
-                        </span>
+              {tasks.map((task) => {
+                const contextHref = taskContextHref(task);
+                return (
+                  <TR
+                    key={task.id}
+                    interactive={!!contextHref}
+                    onClick={contextHref ? () => router.push(contextHref) : undefined}
+                    aria-label={contextHref ? `Open task context: ${task.title}` : undefined}
+                  >
+                    <TD>
+                      <div className={styles.titleCell}>
+                        <strong>{task.title}</strong>
+                        {isOverdue(task) && (
+                          <Badge variant="critical" size="sm" icon={<AlertCircle size={11} />}>
+                            Overdue
+                          </Badge>
+                        )}
+                      </div>
+                      {task.description && (
+                        <div className={styles.titleDescription}>{task.description}</div>
                       )}
-                    </div>
-                    <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-                      {task.description}
-                    </div>
-                  </TD>
-                  <TD className={styles.capitalize}>
-                    {task.priority === 'critical' ? (
-                      <span style={{ color: 'var(--color-danger-600)', fontWeight: 600 }}>Critical</span>
-                    ) : (
-                      task.priority
-                    )}
-                  </TD>
-                  <TD>
-                    {task.assignedTo ? staffMap[task.assignedTo] || 'Loading...' : 'Unassigned'}
-                  </TD>
-                  <TD>
-                    {new Date(task.createdAt).toLocaleString([], {
-                      month: 'short',
-                      day: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
-                  </TD>
-                  <TD>
-                    {task.dueAt ? new Date(task.dueAt).toLocaleString([], {
-                      month: 'short',
-                      day: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    }) : '-'}
-                  </TD>
-                  <TD className={styles.capitalize}>{task.status.replace('_', ' ')}</TD>
-                  <TD align="right">
-                    <div className={styles.actions} style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-                      {task.assignedTo === user?.id && task.status === 'created' && (
-                        <Button
-                          variant="primary"
-                          size="sm"
-                          isLoading={actionLoading === task.id}
-                          onClick={(e) => handleAcknowledge(e, task.id)}
-                        >
-                          Acknowledge
-                        </Button>
-                      )}
-                      {task.assignedTo === user?.id && task.status === 'in_progress' && (
-                        <Button
-                          variant="primary"
-                          size="sm"
-                          isLoading={actionLoading === task.id}
-                          onClick={(e) => handleComplete(e, task.id)}
-                        >
-                          Complete
-                        </Button>
-                      )}
-                      {task.assignedTo === user?.id && !['completed', 'cancelled'].includes(task.status) && (
-                        <>
+                    </TD>
+                    <TD>
+                      <TaskPriorityBadge priority={task.priority} size="sm" />
+                    </TD>
+                    <TD>
+                      {task.assignedTo ? (staffMap[task.assignedTo] ?? '—') : 'Unassigned'}
+                    </TD>
+                    <TD>
+                      {new Date(task.createdAt).toLocaleString([], {
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </TD>
+                    <TD>
+                      {task.dueAt
+                        ? new Date(task.dueAt).toLocaleString([], {
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })
+                        : '—'}
+                    </TD>
+                    <TD>
+                      <TaskStatusBadge status={task.status} size="sm" />
+                    </TD>
+                    <TD align="right">
+                      <div className={styles.rowActions}>
+                        {task.assignedTo === user?.id && task.status === 'created' && (
                           <Button
-                            variant="secondary"
+                            variant="primary"
                             size="sm"
-                            onClick={(e) => { e.stopPropagation(); setReassignTask(task); }}
+                            isLoading={actionLoading === task.id}
+                            onClick={(e) => handleAcknowledge(e, task.id)}
                           >
-                            Reassign
+                            Acknowledge
                           </Button>
+                        )}
+                        {task.assignedTo === user?.id && task.status === 'in_progress' && (
                           <Button
-                            variant="danger"
+                            variant="primary"
                             size="sm"
-                            onClick={(e) => { e.stopPropagation(); setEscalateTask(task); }}
-                            disabled={task.priority === 'critical'}
+                            isLoading={actionLoading === task.id}
+                            onClick={(e) => handleComplete(e, task.id)}
                           >
-                            Escalate
+                            Complete
                           </Button>
-                        </>
-                      )}
-                      {(task.status === 'completed' || task.status === 'cancelled') && (
-                        <RowLink href="#" onClick={(e) => { e.preventDefault(); navigateToTask(task); }} aria-label={`View task context`}>
-                          View Details
-                        </RowLink>
-                      )}
-                    </div>
-                  </TD>
-                </TR>
-              ))}
+                        )}
+                        {task.assignedTo === user?.id &&
+                          !['completed', 'cancelled'].includes(task.status) && (
+                            <>
+                              <Button
+                                variant="secondary"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setReassignTask(task);
+                                }}
+                              >
+                                Reassign
+                              </Button>
+                              <Button
+                                variant="danger"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setEscalateTask(task);
+                                }}
+                                disabled={task.priority === 'critical'}
+                              >
+                                Escalate
+                              </Button>
+                            </>
+                          )}
+                        {['completed', 'cancelled'].includes(task.status) && contextHref && (
+                          <RowLink href={contextHref} aria-label="View task context">
+                            View context
+                          </RowLink>
+                        )}
+                      </div>
+                    </TD>
+                  </TR>
+                );
+              })}
             </TBody>
           </Table>
         )}
 
         <ConfirmDialog
           isOpen={!!reassignTask}
-          title={`Reassign Task: ${reassignTask?.title}`}
+          title={`Reassign task: ${reassignTask?.title ?? ''}`}
           confirmLabel="Reassign"
           onConfirm={submitReassign}
           onCancel={() => setReassignTask(null)}
           isLoading={actionLoading === reassignTask?.id}
         >
-          <div style={{ marginBottom: '1rem' }}>
+          <div className={styles.dialogBody}>
             <p>Select a staff member within your department to reassign this task to.</p>
-            <div style={{ marginTop: '1rem' }}>
+            {departmentStaff.length > 0 ? (
               <Select
                 id="newAssignee"
-                label="New Assignee"
+                label="New assignee"
                 value={newAssignee}
                 onChange={(e) => setNewAssignee(e.target.value)}
                 options={departmentStaff}
               />
-            </div>
+            ) : (
+              <p className={styles.dialogNote} role="status">
+                {departmentStaffError
+                  ? 'The department staff list could not be loaded. Close this dialog and try again.'
+                  : 'No department staff are available for reassignment.'}
+              </p>
+            )}
           </div>
         </ConfirmDialog>
 
         <ConfirmDialog
           isOpen={!!escalateTask}
-          title={`Escalate Task: ${escalateTask?.title}`}
-          confirmLabel="Escalate to Critical"
+          title={`Escalate task: ${escalateTask?.title ?? ''}`}
+          confirmLabel="Escalate to critical"
           variant="danger"
           onConfirm={submitEscalate}
           onCancel={() => setEscalateTask(null)}
           isLoading={actionLoading === escalateTask?.id}
         >
           <p>
-            Are you sure you want to escalate this task? This will set the priority to <strong>critical</strong> and notify the supervisor or assigner.
+            Are you sure you want to escalate this task? This will set the priority to{' '}
+            <strong>critical</strong> and notify the supervisor or assigner.
           </p>
         </ConfirmDialog>
       </div>

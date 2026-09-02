@@ -61,39 +61,64 @@ export function isResultEnterer(record: { enteredBy: string }, userId?: string):
   return !!userId && record.enteredBy === userId;
 }
 
+/** Per-field validation messages for one result-entry row (M17 forms). */
+export interface RowFieldErrors {
+  parameterName?: string;
+  value?: string;
+  unit?: string;
+}
+
 /**
  * Builds and validates the result-entry payload client-side.
  * Evaluator-owned fields (isCritical/isAbnormal/criticalRuleId) are never
  * part of the payload — they are server-derived.
+ *
+ * M17: an empty value field is a validation error, never a silent `0`
+ * (`Number('') === 0`, so the raw string must be inspected, not the coercion).
  */
 export function buildResultPayload(
   values: Array<{ parameterName: string; value: string; unit: string }>,
-): { ok: true; payload: EnterResultRequest } | { ok: false; errors: Record<number, string> } {
-  const errors: Record<number, string> = {};
+): { ok: true; payload: EnterResultRequest } | { ok: false; errors: Record<number, RowFieldErrors> } {
+  const errors: Record<number, RowFieldErrors> = {};
   const cleaned = values
     .map((v) => ({
       parameterName: v.parameterName.trim(),
-      value: Number(v.value),
+      rawValue: v.value.trim(),
       unit: v.unit.trim(),
     }))
-    .filter((v) => v.parameterName !== '' || !Number.isNaN(v.value));
+    .filter((v) => v.parameterName !== '' || v.rawValue !== '' || v.unit !== '');
 
   cleaned.forEach((v, i) => {
-    if (!v.parameterName) errors[i] = errors[i] ?? 'Parameter name required.';
-    if (v.value === undefined || Number.isNaN(v.value)) {
-      errors[i] = `${errors[i] ?? ''}Numeric value required.`.trim();
+    const row: RowFieldErrors = {};
+    if (!v.parameterName) row.parameterName = 'Parameter name required.';
+    if (v.rawValue === '' || Number.isNaN(Number(v.rawValue))) {
+      row.value = 'Numeric value required.';
     }
-    if (!v.unit) errors[i] = `${errors[i] ?? ''}Unit required.`.trim();
+    if (!v.unit) row.unit = 'Unit required.';
+    if (row.parameterName || row.value || row.unit) errors[i] = row;
   });
 
   if (Object.keys(errors).length > 0) return { ok: false, errors };
 
-  const parsed = enterResultSchema.safeParse({ resultValues: cleaned });
+  const parsed = enterResultSchema.safeParse({
+    resultValues: cleaned.map((v) => ({
+      parameterName: v.parameterName,
+      value: Number(v.rawValue),
+      unit: v.unit,
+    })),
+  });
   if (!parsed.success) {
     parsed.error.issues.forEach((issue) => {
-      const idxMatch = /resultValues\.(\d+)/.exec(issue.path.join('.'));
+      const idxMatch = /resultValues\.(\d+)\.?(\w*)/.exec(issue.path.join('.'));
       const idx = idxMatch ? Number(idxMatch[1]) : 0;
-      errors[idx] = errors[idx] ?? issue.message;
+      const field = (idxMatch?.[2] ?? '') as keyof RowFieldErrors;
+      const row = errors[idx] ?? {};
+      if (field === 'parameterName' || field === 'value' || field === 'unit') {
+        row[field] = row[field] ?? issue.message;
+      } else {
+        row.value = row.value ?? issue.message;
+      }
+      errors[idx] = row;
     });
     return { ok: false, errors };
   }
