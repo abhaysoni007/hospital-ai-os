@@ -30,12 +30,33 @@
   min-width: 0;
 }
 
+/* ---- Content container variants ------------------------------------
+ * `standard` — default, capped at the design-system content max-width.
+ * `wide`     — wider admin consoles and dashboards with many columns.
+ * `full`     — no max-width cap; horizontal padding removed so clinical
+ *              workspaces can use every pixel for side-by-side panels.
+ * The vertical page rhythm (header offset, top/bottom padding) is
+ * preserved across all three variants.
+ * ------------------------------------------------------------------- */
+
 .contentContainer {
   flex: 1;
   padding: var(--space-6) var(--space-8);
-  max-width: var(--content-max-width);
   width: 100%;
   margin: 0 auto;
+}
+
+.standard {
+  max-width: var(--content-max-width);
+}
+
+.wide {
+  max-width: 1600px;
+}
+
+.full {
+  max-width: none;
+  padding-inline: 0;
 }
 
 @media (max-width: 1024px) {
@@ -47,5 +68,17 @@
 @media (max-width: 768px) {
   .contentContainer {
     padding: var(--space-4);
+  }
+  .full {
+    padding-inline: var(--space-2);
+  }
+}
+
+@media (max-width: 375px) {
+  .contentContainer {
+    padding: var(--space-3);
+  }
+  .full {
+    padding-inline: 0;
   }
 }

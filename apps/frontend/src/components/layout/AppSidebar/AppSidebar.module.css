@@ -181,3 +181,40 @@
     z-index: 1999;
   }
 }
+
+/* Tablet (769-1023): the persistent desktop sidebar is too wide next to
+   the narrower tablet content area. Auto-collapse to icon-only rail so
+   the clinician sees the navigation but workspace content is preserved.
+   This is a CSS-only collapse — the clinician's localStorage preference
+   (which controls the desktop collapsed state) is intentionally left
+   untouched. */
+@media (min-width: 769px) and (max-width: 1023px) {
+  .sidebar {
+    width: var(--sidebar-width-collapsed);
+  }
+  .brandTitles {
+    display: none;
+  }
+  .sectionTitle {
+    display: none;
+  }
+  .sectionDivider {
+    display: block;
+  }
+  /* Mirror the desktop collapsed-footer treatment so the toggle remains
+     visible. The label is hidden, only the chevron remains. */
+  .collapseLabel {
+    display: none;
+  }
+  .collapseButton {
+    justify-content: center;
+  }
+}
+
+/* iPhone-SE-class viewports: tighten the mobile drawer width so the
+   backdrop still leaves a usable slice of the page visible. */
+@media (max-width: 375px) {
+  .sidebar {
+    width: min(85vw, 280px) !important;
+  }
+}

@@ -34,9 +34,17 @@ export function SidebarItem({
       `}
       title={isCollapsed ? label : undefined}
       aria-current={isActive ? 'page' : undefined}
+      // M16B — when collapsed, the visible label is hidden so the link
+      // would otherwise be icon-only with no accessible name. The label
+      // is exposed to screen readers via an SR-only span. The `title`
+      // attribute remains as a sighted-user affordance.
+      aria-label={isCollapsed ? label : undefined}
     >
-      <span className={styles.icon}>{icon}</span>
+      <span className={styles.icon} aria-hidden="true">
+        {icon}
+      </span>
       {!isCollapsed && <span className={styles.label}>{label}</span>}
+      {isCollapsed && <span className={styles.srOnly}>{label}</span>}
       {!isCollapsed && badge && <span className={styles.badge}>{badge}</span>}
       {isCollapsed && badge && <span className={styles.collapsedBadgeDot} aria-hidden="true" />}
     </Link>

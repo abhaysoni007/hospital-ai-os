@@ -1,0 +1,52 @@
+.wrapper {
+  display: inline-flex;
+  align-items: center;
+}
+
+.indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 4px var(--space-3);
+  border-radius: var(--radius-full);
+  background-color: var(--status-critical-bg);
+  color: var(--status-critical-text);
+  border: 1px solid var(--status-critical-border);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  text-decoration: none;
+  line-height: 1;
+  transition:
+    background-color var(--duration-fast) var(--ease-standard),
+    border-color var(--duration-fast) var(--ease-standard);
+}
+
+.indicatorLink {
+  cursor: pointer;
+}
+
+.indicatorLink:hover {
+  background-color: var(--color-danger-bg);
+  border-color: var(--color-danger-border);
+}
+
+.indicatorLink:focus-visible {
+  outline: 2px solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.label {
+  white-space: nowrap;
+}
+
+/* On very narrow viewports (≤375px) collapse to icon-only and rely on the
+   visible label above + tooltip/title for sighted users. Screen readers
+   still announce via the <span>. */
+@media (max-width: 375px) {
+  .label {
+    display: none;
+  }
+  .indicator {
+    padding: 4px;
+  }
+}

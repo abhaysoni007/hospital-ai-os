@@ -8,6 +8,9 @@
  */
 
 import { StaffRole, Permission } from '../types/auth';
+import { isNavItemActive } from './nav-helpers';
+
+export { isNavItemActive };
 
 /**
  * Role to Permission Mapping matching M5 Static Code Configuration

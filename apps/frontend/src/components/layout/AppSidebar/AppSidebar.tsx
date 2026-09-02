@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard,
@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../../hooks/useAuth';
 import { getNavItemsForRole, NavItemConfig } from '../../../utils/rbac';
+import { isNavItemActive } from '../../../utils/nav-helpers';
 import { SidebarItem } from '../../ui/SidebarItem/SidebarItem';
 import styles from './AppSidebar.module.css';
 
@@ -25,6 +26,25 @@ export interface AppSidebarProps {
   isCollapsed?: boolean;
   onToggleCollapse?: () => void;
 }
+
+const getIcon = (iconName: string) => {
+  switch (iconName) {
+    case 'LayoutDashboard':
+      return <LayoutDashboard size={18} />;
+    case 'Users':
+      return <Users size={18} />;
+    case 'Calendar':
+      return <Calendar size={18} />;
+    case 'Stethoscope':
+      return <Stethoscope size={18} />;
+    case 'Activity':
+      return <Activity size={18} />;
+    case 'CheckSquare':
+      return <CheckSquare size={18} />;
+    default:
+      return <LayoutDashboard size={18} />;
+  }
+};
 
 export function AppSidebar({
   isMobileOpen = false,
@@ -37,6 +57,60 @@ export function AppSidebar({
   const pathname = usePathname();
   const { user } = useAuth();
 
+  // M16B — focus management for the mobile drawer.
+  // When the drawer opens, remember the element that had focus (usually
+  // the toggle button in AppHeader) so we can restore it on close.
+  // While open, Escape closes and focus is moved into the drawer.
+  const drawerRef = useRef<HTMLDivElement | null>(null);
+  const lastFocusedRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    if (!isMobileOpen) return;
+    lastFocusedRef.current = (document.activeElement as HTMLElement) ?? null;
+    // Move focus into the drawer so keyboard users land inside it.
+    const drawer = drawerRef.current;
+    if (drawer) {
+      // The first focusable element inside the drawer; fall back to the
+      // drawer itself if nothing is focusable.
+      const firstFocusable = drawer.querySelector<HTMLElement>(
+        'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      );
+      (firstFocusable ?? drawer).focus();
+    }
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onMobileClose?.();
+        return;
+      }
+      // Focus trap: Tab cycles within the open drawer.
+      if (e.key === 'Tab' && drawerRef.current) {
+        const focusables = drawerRef.current.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        );
+        if (focusables.length === 0) return;
+        const first = focusables[0];
+        const last = focusables[focusables.length - 1];
+        const active = document.activeElement as HTMLElement | null;
+        if (e.shiftKey && active === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && active === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      // Restore focus to the element that opened the drawer.
+      lastFocusedRef.current?.focus?.();
+    };
+  }, [isMobileOpen, onMobileClose]);
+
   const navItems = getNavItemsForRole(user?.role);
 
   // Group nav items by section
@@ -44,25 +118,6 @@ export function AppSidebar({
   const clinicalItems = navItems.filter((i) => i.section === 'clinical');
   const workspaceItems = navItems.filter((i) => i.section === 'workspace');
   const adminItems = navItems.filter((i) => i.section === 'administration');
-
-  const getIcon = (iconName: string) => {
-    switch (iconName) {
-      case 'LayoutDashboard':
-        return <LayoutDashboard size={18} />;
-      case 'Users':
-        return <Users size={18} />;
-      case 'Calendar':
-        return <Calendar size={18} />;
-      case 'Stethoscope':
-        return <Stethoscope size={18} />;
-      case 'Activity':
-        return <Activity size={18} />;
-      case 'CheckSquare':
-        return <CheckSquare size={18} />;
-      default:
-        return <LayoutDashboard size={18} />;
-    }
-  };
 
   const renderSection = (title: string, items: NavItemConfig[]) => {
     if (items.length === 0) return null;
@@ -77,10 +132,7 @@ export function AppSidebar({
               label={item.label}
               href={item.href}
               icon={getIcon(item.iconName)}
-              isActive={
-                pathname === item.href ||
-                (item.href !== '/dashboard' && pathname.startsWith(item.href))
-              }
+              isActive={isNavItemActive(pathname, item.href)}
               isCollapsed={isCollapsed}
               onClick={onMobileClose}
             />
@@ -90,6 +142,12 @@ export function AppSidebar({
     );
   };
 
+  // The sidebar element must be reachable to assistive tech when it is
+  // visible on desktop or open as a drawer on mobile. When the mobile
+  // drawer is closed, the sidebar is hidden via transform — but we still
+  // keep it in the accessibility tree because the CSS transform does not
+  // remove it from layout. (This is intentional: the close-on-Escape
+  // logic relies on the sidebar being mounted.)
   return (
     <>
       {/* Mobile Backdrop Overlay */}
@@ -98,6 +156,7 @@ export function AppSidebar({
       )}
 
       <aside
+        ref={drawerRef}
         className={`
           ${styles.sidebar}
           ${isCollapsed ? styles.collapsed : styles.expanded}
@@ -128,15 +187,19 @@ export function AppSidebar({
           )}
         </div>
 
-        {/* Navigation Sections */}
-        <div className={styles.navContent}>
+        {/* Primary Navigation Landmark */}
+        <nav
+          id="primary-navigation"
+          className={styles.navContent}
+          aria-label="Primary"
+        >
           {renderSection('Operations', operationsItems)}
           {renderSection('Clinical', clinicalItems)}
           {renderSection('Workspace', workspaceItems)}
           {renderSection('Administration', adminItems)}
-        </div>
+        </nav>
 
-        {/* Collapse Toggle Footer */}
+        {/* Collapse Toggle Footer (desktop only — hidden on mobile via CSS) */}
         <div className={styles.sidebarFooter}>
           <button
             type="button"
@@ -145,6 +208,7 @@ export function AppSidebar({
               onToggleCollapse ? onToggleCollapse() : setInternalCollapsed((p) => !p)
             }
             aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            aria-pressed={isCollapsed}
           >
             {isCollapsed ? (
               <ChevronRight size={18} />

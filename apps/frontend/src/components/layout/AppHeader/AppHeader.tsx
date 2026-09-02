@@ -15,6 +15,7 @@ import {
 } from '../../ui/Dropdown/Dropdown';
 import { GlobalSearch } from '../GlobalSearch/GlobalSearch';
 import { NotificationPanel } from '../NotificationPanel/NotificationPanel';
+import { BreakGlassStatusIndicator } from '../BreakGlassStatusIndicator';
 import { useNotifications } from '../../../hooks/useNotifications';
 import { ThemeToggle } from '../../ui/ThemeToggle/ThemeToggle';
 import styles from './AppHeader.module.css';
@@ -22,11 +23,18 @@ import styles from './AppHeader.module.css';
 export interface AppHeaderProps {
   breadcrumbs?: string[];
   onToggleMobileSidebar?: () => void;
+  /**
+   * Whether the mobile navigation drawer is currently open. Used to set
+   * `aria-expanded` on the menu toggle (WCAG 2.2 AA — disclosure pattern).
+   * Owned by AppShell.
+   */
+  isMobileSidebarOpen?: boolean;
 }
 
 export function AppHeader({
   breadcrumbs = ['Operations', 'Dashboard'],
   onToggleMobileSidebar,
+  isMobileSidebarOpen = false,
 }: AppHeaderProps) {
   const { user, logout } = useAuth();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -70,6 +78,8 @@ export function AppHeader({
               className={styles.mobileMenuButton}
               onClick={onToggleMobileSidebar}
               aria-label="Toggle navigation drawer"
+              aria-expanded={isMobileSidebarOpen}
+              aria-controls="primary-navigation"
             >
               <Menu size={20} />
             </button>
@@ -125,6 +135,9 @@ export function AppHeader({
           >
             <Search size={18} />
           </button>
+
+          {/* Break-glass session indicator (shell-level surfacing of M15). */}
+          <BreakGlassStatusIndicator />
 
           {/* Notifications Trigger */}
           <div className={styles.notificationWrapper}>
