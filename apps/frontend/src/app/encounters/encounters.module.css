@@ -4,6 +4,12 @@
   gap: var(--space-5);
 }
 
+.resultNote {
+  font-size: var(--font-size-sm);
+  color: var(--text-tertiary);
+  margin-bottom: var(--space-2);
+}
+
 .statusSelect {
   min-width: 200px;
 }

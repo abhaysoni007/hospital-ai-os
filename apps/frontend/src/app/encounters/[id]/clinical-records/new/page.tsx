@@ -11,8 +11,10 @@ import { ErrorState } from '../../../../../components/ui/ErrorState/ErrorState';
 import { ConfirmDialog } from '../../../../../components/ui/ConfirmDialog/ConfirmDialog';
 import { PageHeader } from '../../../../../components/ui/PageHeader/PageHeader';
 import { Skeleton } from '../../../../../components/ui/Skeleton/Skeleton';
+import { PatientContextHeader } from '../../../../../components/clinical/PatientContextHeader/PatientContextHeader';
 import { clinicalService } from '../../../../../services/clinical-service';
-import { createClinicalRecordSchema, type Vitals } from 'shared';
+import { encounterService } from '../../../../../services/encounter-service';
+import { createClinicalRecordSchema, type EncounterDetailResponse, type Vitals } from 'shared';
 import styles from './new-clinical-record.module.css';
 
 type RecordType = 'soap' | 'progress_note' | 'vital_signs';
@@ -59,6 +61,28 @@ function NewRecordForm() {
   const [leaveOpen, setLeaveOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+  // M17 — patient/encounter identity band so the clinician always knows whose
+  // chart they are documenting in.
+  const [encounter, setEncounter] = useState<EncounterDetailResponse | null>(null);
+  const [contextError, setContextError] = useState<string | null>(null);
+  const [contextTick, setContextTick] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    setContextError(null);
+    encounterService
+      .getEncounterById(encounterId!)
+      .then((res) => {
+        if (!cancelled) setEncounter(res.data);
+      })
+      .catch(() => {
+        if (!cancelled) setContextError('Could not load the patient context for this encounter.');
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [encounterId, contextTick]);
 
   const [soapSections, setSoapSections] = useState<Record<string, string>>({
     subjective: '',
@@ -187,6 +211,18 @@ function NewRecordForm() {
           description="Saved as a draft under your name. Signing later makes the document permanent."
         />
 
+        <PatientContextHeader
+          patient={encounter?.patient ?? null}
+          error={contextError}
+          onRetry={() => setContextTick((tick) => tick + 1)}
+          encounter={
+            encounter
+              ? { type: encounter.encounterType, status: encounter.status, startedAt: encounter.startedAt }
+              : null
+          }
+          patientHref={encounter ? `/patients/${encounter.patientId}` : undefined}
+        />
+
         {error && (
           <AlertBanner
             severity={error.includes('not authorized') ? 'warning' : 'critical'}
@@ -200,31 +236,34 @@ function NewRecordForm() {
 
         <Card elevation="xs">
           <form onSubmit={handleSubmit} noValidate>
-            {validType === 'soap' &&
-              SOAP_HEADINGS.map((h) => (
-                <div key={h} className={styles.fieldGroup}>
-                  <label htmlFor={`soap-${h}`} className={`${styles.label} ${styles.capitalize}`}>
-                    {h}
-                  </label>
-                  <textarea
-                    id={`soap-${h}`}
-                    className={styles.textarea}
-                    value={soapSections[h]}
-                    onChange={(e) => {
-                      setSoapSections((p) => ({ ...p, [h]: e.target.value }));
-                      setDirty(true);
-                    }}
-                    maxLength={10_000}
-                    rows={4}
-                    placeholder={`${h.charAt(0).toUpperCase() + h.slice(1)} findings…`}
-                  />
-                  {sectionError && (
-                    <span className={styles.fieldError} role="alert">
-                      {sectionError}
-                    </span>
-                  )}
-                </div>
-              ))}
+            {validType === 'soap' && (
+              <>
+                {sectionError && (
+                  <p className={styles.fieldError} role="alert">
+                    {sectionError}
+                  </p>
+                )}
+                {SOAP_HEADINGS.map((h) => (
+                  <div key={h} className={styles.fieldGroup}>
+                    <label htmlFor={`soap-${h}`} className={`${styles.label} ${styles.capitalize}`}>
+                      {h}
+                    </label>
+                    <textarea
+                      id={`soap-${h}`}
+                      className={styles.textarea}
+                      value={soapSections[h]}
+                      onChange={(e) => {
+                        setSoapSections((p) => ({ ...p, [h]: e.target.value }));
+                        setDirty(true);
+                      }}
+                      maxLength={10_000}
+                      rows={4}
+                      placeholder={`${h.charAt(0).toUpperCase() + h.slice(1)} findings…`}
+                    />
+                  </div>
+                ))}
+              </>
+            )}
 
             {validType === 'progress_note' && (
               <div className={styles.fieldGroup}>

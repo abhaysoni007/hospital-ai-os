@@ -81,6 +81,13 @@ export default function EncountersPage() {
           }
         />
 
+        {!loading && !error && encounters.length > 0 && (
+          <p className={styles.resultNote} aria-live="polite">
+            {encounters.length} encounter{encounters.length === 1 ? '' : 's'}
+            {status ? ' matching this filter' : ''}
+          </p>
+        )}
+
         {loading ? (
           <TableSkeleton rows={6} />
         ) : error ? (

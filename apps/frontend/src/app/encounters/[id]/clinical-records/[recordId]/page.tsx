@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { AppShell } from '../../../../../components/layout/AppShell/AppShell';
 import { Button } from '../../../../../components/ui/Button/Button';
 import { Card } from '../../../../../components/ui/Card/Card';
@@ -12,8 +12,10 @@ import { ConfirmDialog } from '../../../../../components/ui/ConfirmDialog/Confir
 import { PageHeader } from '../../../../../components/ui/PageHeader/PageHeader';
 import { StaffIdentity } from '../../../../../components/ui/Identity/Identity';
 import { RecordStatusBadge } from '../../../../../components/ui/SemanticBadges/SemanticBadges';
+import { PatientContextHeader } from '../../../../../components/clinical/PatientContextHeader/PatientContextHeader';
 import { Lock, RefreshCw, Sparkles } from 'lucide-react';
 import { clinicalService } from '../../../../../services/clinical-service';
+import { encounterService } from '../../../../../services/encounter-service';
 import { getCachedStaffIdentity, getStaffIdentities } from '../../../../../services/staff-service';
 import {
   soapContentSchema,
@@ -21,6 +23,7 @@ import {
   vitalsSchema,
   vitalSignsContentSchema,
   type ClinicalRecordResponse,
+  type EncounterDetailResponse,
   type Vitals,
 } from 'shared';
 import styles from './clinical-record.module.css';
@@ -43,6 +46,7 @@ const SOAP_HEADINGS = ['subjective', 'objective', 'assessment', 'plan'] as const
 
 export default function ClinicalRecordPage() {
   const params = useParams<{ id: string; recordId: string }>();
+  const router = useRouter();
   const { user } = useAuth();
   const encounterId = params?.id;
   const recordId = params?.recordId;
@@ -58,6 +62,29 @@ export default function ClinicalRecordPage() {
   const [actionError, setActionError] = useState<string | null>(null);
   const [confirmSign, setConfirmSign] = useState(false);
   const [authorName, setAuthorName] = useState<string | null>(null);
+
+  // M17 — patient/encounter identity band. Roles holding clinical_record:read
+  // but not encounter:read (pharmacist, lab technician) see the quiet
+  // recovery note instead of the identity — never fabricated demographics.
+  const [encounter, setEncounter] = useState<EncounterDetailResponse | null>(null);
+  const [contextError, setContextError] = useState<string | null>(null);
+  const [contextTick, setContextTick] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    setContextError(null);
+    encounterService
+      .getEncounterById(encounterId!)
+      .then((res) => {
+        if (!cancelled) setEncounter(res.data);
+      })
+      .catch(() => {
+        if (!cancelled) setContextError('Patient context is not available for your role.');
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [encounterId, contextTick]);
 
   // Editable form state
   const [soapSections, setSoapSections] = useState<Record<string, string>>({});
@@ -303,6 +330,22 @@ export default function ClinicalRecordPage() {
           }
         />
 
+        <PatientContextHeader
+          patient={encounter?.patient ?? null}
+          error={contextError}
+          onRetry={() => setContextTick((tick) => tick + 1)}
+          encounter={
+            encounter
+              ? {
+                  type: encounter.encounterType,
+                  status: encounter.status,
+                  startedAt: encounter.startedAt,
+                }
+              : null
+          }
+          patientHref={encounter ? `/patients/${encounter.patientId}` : undefined}
+        />
+
         {conflict && (
           <AlertBanner
             severity="warning"
@@ -462,18 +505,8 @@ export default function ClinicalRecordPage() {
           )}
         </Card>
 
-        {signed && (
-          <div className={styles.signedNotice}>
-            <Lock size={15} aria-hidden="true" />
-            <span>
-              <strong>Signed &amp; locked.</strong> This document is part of the permanent clinical
-              record and cannot be edited or deleted.
-            </span>
-          </div>
-        )}
-
         <div className={styles.actionsBar}>
-          {editing && editable && !signed && (
+          {editing && editable && !signed ? (
             <>
               <Button variant="outline" onClick={() => window.history.back()} disabled={saving}>
                 Back
@@ -487,6 +520,13 @@ export default function ClinicalRecordPage() {
                 {dirty ? 'Save changes' : 'No changes'}
               </Button>
             </>
+          ) : (
+            <Button
+              variant="outline"
+              onClick={() => router.push(`/encounters/${encounterId}`)}
+            >
+              Back to encounter
+            </Button>
           )}
         </div>
       </div>

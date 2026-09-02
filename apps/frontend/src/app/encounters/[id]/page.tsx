@@ -68,6 +68,7 @@ export default function EncounterDetailPage() {
   const [dischargeSummary, setDischargeSummary] = useState('');
   const [discharging, setDischarging] = useState(false);
   const [dischargeError, setDischargeError] = useState<string | null>(null);
+  const [summaryError, setSummaryError] = useState<string | null>(null);
 
   const canReadClinical = hasPermission(role, 'clinical_record:read');
   const canActivate =
@@ -216,8 +217,13 @@ export default function EncounterDetailPage() {
 
   const handleDischarge = async () => {
     if (!encounter) return;
+    if (!dischargeSummary.trim()) {
+      setSummaryError('A discharge summary is required before the record can be locked.');
+      return;
+    }
     setDischarging(true);
     setDischargeError(null);
+    setSummaryError(null);
     try {
       await encounterService.dischargeEncounter(encounter.id, {
         expectedVersion: encounter.version,
@@ -437,7 +443,7 @@ export default function EncounterDetailPage() {
               )}
 
             {canReadClinical && encounter.status !== 'registered' && (
-              <section className="mb-6 space-y-4">
+              <section className={styles.intelligenceStack}>
                 <ChartBrief patientId={encounter.patientId} />
                 <ClinicalTimeline patientId={encounter.patientId} />
               </section>
@@ -676,11 +682,21 @@ export default function EncounterDetailPage() {
               <textarea
                 id="discharge-summary"
                 value={dischargeSummary}
-                onChange={(e) => setDischargeSummary(e.target.value)}
+                onChange={(e) => {
+                  setDischargeSummary(e.target.value);
+                  if (summaryError) setSummaryError(null);
+                }}
                 rows={5}
                 placeholder="Enter the final discharge summary..."
                 className={styles.textarea}
+                aria-invalid={summaryError ? true : undefined}
+                aria-describedby={summaryError ? 'discharge-summary-error' : undefined}
               />
+              {summaryError && (
+                <p id="discharge-summary-error" className={styles.fieldError} role="alert">
+                  {summaryError}
+                </p>
+              )}
             </div>
           </div>
         </ConfirmDialog>

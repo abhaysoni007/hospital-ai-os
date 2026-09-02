@@ -239,6 +239,60 @@ li:last-child > .entityRow {
   color: var(--text-tertiary);
 }
 
+/* Governed intelligence stack (ChartBrief + ClinicalTimeline) */
+.intelligenceStack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+/* Discharge dialog */
+.dischargeModalContent {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.summaryField {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.summaryField label {
+  font-size: var(--font-size-body);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.textarea {
+  width: 100%;
+  padding: var(--space-3);
+  font-family: inherit;
+  font-size: var(--font-size-body);
+  color: var(--text-primary);
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  resize: vertical;
+  min-height: 96px;
+}
+
+.textarea:focus-visible {
+  outline: 2px solid var(--color-primary-600);
+  outline-offset: 1px;
+}
+
+.textarea[aria-invalid='true'] {
+  border-color: var(--color-danger-main);
+}
+
+.fieldError {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-danger-text);
+}
+
 @media (max-width: 1024px) {
   .layout {
     grid-template-columns: 1fr;

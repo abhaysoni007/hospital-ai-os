@@ -54,6 +54,7 @@ export default function PatientProfilePage() {
 
   const [patient, setPatient] = useState<PatientResponse | null>(null);
   const [patientState, setPatientState] = useState<Block<null>['state']>('loading');
+  const [patientRetryTick, setPatientRetryTick] = useState(0);
   const [showBreakGlassModal, setShowBreakGlassModal] = useState(false);
 
   const [appointments, setAppointments] = useState<Block<AppointmentListItem[]>>({
@@ -82,7 +83,7 @@ export default function PatientProfilePage() {
     return () => {
       cancelled = true;
     };
-  }, [id]);
+  }, [id, patientRetryTick]);
 
   const loadRelated = useCallback(() => {
     if (canReadAppointments) {
@@ -141,6 +142,7 @@ export default function PatientProfilePage() {
         <ErrorState
           title="This record is no longer available"
           message="The patient may not exist, or your role does not permit access. Return to the directory and search again."
+          onRetry={() => setPatientRetryTick((tick) => tick + 1)}
         />
       </AppShell>
     );
@@ -240,9 +242,10 @@ export default function PatientProfilePage() {
                 </CardContent>
               ) : encounters.state === 'error' ? (
                 <CardContent>
-                  <EmptyState
+                  <ErrorState
                     title="Could not load encounters"
-                    description="The encounter service did not respond."
+                    message="The encounter service did not respond."
+                    onRetry={loadRelated}
                   />
                 </CardContent>
               ) : (encounters.data?.length ?? 0) === 0 ? (
@@ -297,9 +300,10 @@ export default function PatientProfilePage() {
                 </CardContent>
               ) : appointments.state === 'error' ? (
                 <CardContent>
-                  <EmptyState
+                  <ErrorState
                     title="Could not load appointments"
-                    description="The scheduling service did not respond."
+                    message="The scheduling service did not respond."
+                    onRetry={loadRelated}
                   />
                 </CardContent>
               ) : (appointments.data?.length ?? 0) === 0 ? (

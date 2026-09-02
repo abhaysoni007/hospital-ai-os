@@ -1,14 +1,21 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { AppShell } from '../../../../../components/layout/AppShell/AppShell';
 import { Button } from '../../../../../components/ui/Button/Button';
 import { Card } from '../../../../../components/ui/Card/Card';
 import { Input } from '../../../../../components/ui/Input/Input';
 import { AlertBanner } from '../../../../../components/ui/Alert/AlertBanner';
+import { PageHeader } from '../../../../../components/ui/PageHeader/PageHeader';
+import { PatientContextHeader } from '../../../../../components/clinical/PatientContextHeader/PatientContextHeader';
 import { diagnosticsService } from '../../../../../services/diagnostics-service';
-import { createDiagnosticOrderSchema, type OrderPriority } from 'shared';
+import { encounterService } from '../../../../../services/encounter-service';
+import {
+  createDiagnosticOrderSchema,
+  type EncounterDetailResponse,
+  type OrderPriority,
+} from 'shared';
 import styles from './new-diagnostic-order.module.css';
 
 const TEST_CATALOG = [
@@ -38,6 +45,28 @@ export default function NewDiagnosticOrderPage() {
   const [saving, setSaving] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
+
+  // M17 — patient/encounter identity band (ordering physician holds
+  // encounter:read, so the embedded patient needs no extra PHI request).
+  const [encounter, setEncounter] = useState<EncounterDetailResponse | null>(null);
+  const [contextError, setContextError] = useState<string | null>(null);
+  const [contextTick, setContextTick] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    setContextError(null);
+    encounterService
+      .getEncounterById(encounterId!)
+      .then((res) => {
+        if (!cancelled) setEncounter(res.data);
+      })
+      .catch(() => {
+        if (!cancelled) setContextError('Could not load the patient context for this encounter.');
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [encounterId, contextTick]);
 
   const handleCatalogSelect = (code: string) => {
     const entry = TEST_CATALOG.find((t) => t.code === code);
@@ -86,7 +115,26 @@ export default function NewDiagnosticOrderPage() {
       requiredPermission="diagnostic_order:create"
     >
       <div className={styles.container}>
-        <h1 className={styles.title}>Order diagnostic</h1>
+        <PageHeader
+          title="Order diagnostic"
+          description="Placed against this encounter and routed to the laboratory queue."
+        />
+
+        <PatientContextHeader
+          patient={encounter?.patient ?? null}
+          error={contextError}
+          onRetry={() => setContextTick((tick) => tick + 1)}
+          encounter={
+            encounter
+              ? {
+                  type: encounter.encounterType,
+                  status: encounter.status,
+                  startedAt: encounter.startedAt,
+                }
+              : null
+          }
+          patientHref={encounter ? `/patients/${encounter.patientId}` : undefined}
+        />
 
         {error && (
           <AlertBanner
@@ -190,8 +238,8 @@ export default function NewDiagnosticOrderPage() {
               >
                 Cancel
               </Button>
-              <Button type="submit" variant="primary" disabled={saving}>
-                {saving ? 'Placing order…' : 'Place Order'}
+              <Button type="submit" variant="primary" isLoading={saving}>
+                Place order
               </Button>
             </div>
           </form>
