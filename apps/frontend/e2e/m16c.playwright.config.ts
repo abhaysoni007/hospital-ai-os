@@ -10,6 +10,11 @@ export default defineConfig({
   timeout: 120000,
   workers: 1,
   retries: 1,
-  use: { baseURL: 'http://localhost:3000', trace: 'off', actionTimeout: 20000, navigationTimeout: 60000 },
+  use: {
+    baseURL: 'http://localhost:3000',
+    trace: 'off',
+    actionTimeout: 20000,
+    navigationTimeout: 60000,
+  },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
 });

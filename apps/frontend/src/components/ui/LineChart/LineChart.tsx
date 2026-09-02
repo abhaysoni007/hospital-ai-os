@@ -67,10 +67,7 @@ export function LineChart({
   const gridYs = [0, 0.25, 0.5, 0.75, 1].map((f) => padTop + innerH * (1 - f));
 
   const summary = series
-    .map(
-      (s) =>
-        `${s.label}: min ${Math.min(...s.data)}, max ${Math.max(...s.data)}`,
-    )
+    .map((s) => `${s.label}: min ${Math.min(...s.data)}, max ${Math.max(...s.data)}`)
     .join('; ');
   const label = ariaLabel ?? `Line chart. ${summary}.`;
 
@@ -124,12 +121,7 @@ export function LineChart({
           </span>
         ))}
       </figcaption>
-      <svg
-        className={styles.svg}
-        viewBox={`0 0 ${width} ${height}`}
-        role="img"
-        aria-label={label}
-      >
+      <svg className={styles.svg} viewBox={`0 0 ${width} ${height}`} role="img" aria-label={label}>
         <defs>
           {series.map((s, sIdx) => (
             <linearGradient

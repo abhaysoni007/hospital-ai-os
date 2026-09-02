@@ -66,11 +66,7 @@ export function AppShell({
   };
 
   const variantClass =
-    variant === 'wide'
-      ? styles.wide
-      : variant === 'full'
-        ? styles.full
-        : styles.standard;
+    variant === 'wide' ? styles.wide : variant === 'full' ? styles.full : styles.standard;
 
   return (
     <AuthGuard requiredPermission={requiredPermission} requiredRoles={requiredRoles}>

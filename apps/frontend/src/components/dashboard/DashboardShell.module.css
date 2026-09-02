@@ -62,7 +62,8 @@
   .dashboardContainer .metricRow > *,
   .dashboardContainer .analyticsGrid > *,
   .dashboardContainer .sideRail > * {
-    transition: transform var(--duration-base) var(--ease-standard),
+    transition:
+      transform var(--duration-base) var(--ease-standard),
       box-shadow var(--duration-base) var(--ease-standard);
   }
 

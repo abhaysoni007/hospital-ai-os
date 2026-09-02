@@ -87,8 +87,7 @@ export function Sparkline({
   const lastX = Number(last[0]);
   const lastY = Number(last[1]);
 
-  const label =
-    ariaLabel ?? `Trend: range ${min} to ${max}, ${data.length} data points`;
+  const label = ariaLabel ?? `Trend: range ${min} to ${max}, ${data.length} data points`;
 
   return (
     <svg

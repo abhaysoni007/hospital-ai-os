@@ -135,8 +135,7 @@ function deltaFromSeries(
   const last = series[series.length - 1];
   if (first === last) return { direction: 'flat', label: '0% vs yesterday' };
   const direction = last > first ? 'up' : 'down';
-  const percent =
-    first === 0 ? 100 : Math.round((Math.abs(last - first) / first) * 100);
+  const percent = first === 0 ? 100 : Math.round((Math.abs(last - first) / first) * 100);
   return { direction, label: `${percent}% vs yesterday` };
 }
 
@@ -842,7 +841,9 @@ export function DashboardShell() {
                             Review result
                           </RowLink>
                         )}
-                        {n.relatedOrderId && <span className={styles.actionDivider} aria-hidden="true" />}
+                        {n.relatedOrderId && (
+                          <span className={styles.actionDivider} aria-hidden="true" />
+                        )}
                         <button
                           type="button"
                           className={styles.textButton}
@@ -940,98 +941,98 @@ export function DashboardShell() {
         </aside>
 
         <Card elevation="xs" padding="none" className={styles.tableCard}>
-            <div className={styles.sectionCardHeader}>
-              <div className={styles.sectionHeaderTitle}>
-                <h3>Active Encounters</h3>
-                <p>Your department · most recent first</p>
-              </div>
-              {activeEncounters.state === 'ready' && (
-                <Link href="/encounters" className={styles.viewAllLink}>
-                  View all <ChevronRight size={12} aria-hidden="true" />
-                </Link>
-              )}
+          <div className={styles.sectionCardHeader}>
+            <div className={styles.sectionHeaderTitle}>
+              <h3>Active Encounters</h3>
+              <p>Your department · most recent first</p>
             </div>
-            {activeEncounters.state === 'loading' ? (
-              <TableSkeleton rows={5} />
-            ) : activeEncounters.state === 'error' ? (
-              <CardContent>
-                <AlertBanner severity="warning" title="Could not load encounters">
-                  The encounter service did not respond.
-                </AlertBanner>
-              </CardContent>
-            ) : tableRows.length === 0 ? (
-              <CardContent>
-                <p className={styles.quietEmpty}>
-                  No active encounters. New consultations appear here after check-in.
-                </p>
-              </CardContent>
-            ) : (
-              <Table ariaLabel="Active encounters">
-                <THead>
-                  <tr>
-                    <TH>Patient</TH>
-                    <TH>Type</TH>
-                    <TH>Physician</TH>
-                    <TH>Status</TH>
-                    <TH>Duration</TH>
-                    <TH>Last Updated</TH>
-                    <TH aria-label="Open" />
-                  </tr>
-                </THead>
-                <TBody>
-                  {tableRows.map((e) => {
-                    const minutes = encounterDurationMinutes(e, now);
-                    return (
-                      <TR key={e.id}>
-                        <TD>
-                          <PatientIdentity
-                            compact
-                            firstName={e.patient.firstName}
-                            lastName={e.patient.lastName}
-                            mrn={e.patient.mrn}
-                          />
-                        </TD>
-                        <TD>
-                          <Badge variant="primary" size="sm">
-                            {e.encounterType === 'opd' ? 'OPD' : 'FOLLOW-UP'}
-                          </Badge>
-                        </TD>
-                        <TD>
-                          <span className={styles.physicianCell}>
-                            <span className={styles.physicianName}>
-                              {user?.firstName ? `Dr. ${user.firstName}` : 'Attending'}
-                            </span>
-                            <span className={styles.physicianRole}>Attending</span>
-                          </span>
-                        </TD>
-                        <TD>
-                          <Badge variant="info" size="sm">
-                            In Progress
-                          </Badge>
-                        </TD>
-                        <TD>
-                          <span className={styles.timeCell}>
-                            <Clock size={12} aria-hidden="true" />
-                            {minutes === null ? '—' : formatDurationMinutes(minutes)}
-                          </span>
-                        </TD>
-                        <TD>
-                          <span className={styles.timeCell}>
-                            {formatStartedAt(e.startedAt ?? e.createdAt)}
-                          </span>
-                        </TD>
-                        <TD align="right">
-                          <RowLink href={`/encounters/${e.id}`} aria-label="Open encounter">
-                            Open
-                          </RowLink>
-                        </TD>
-                      </TR>
-                    );
-                  })}
-                </TBody>
-              </Table>
+            {activeEncounters.state === 'ready' && (
+              <Link href="/encounters" className={styles.viewAllLink}>
+                View all <ChevronRight size={12} aria-hidden="true" />
+              </Link>
             )}
-          </Card>
+          </div>
+          {activeEncounters.state === 'loading' ? (
+            <TableSkeleton rows={5} />
+          ) : activeEncounters.state === 'error' ? (
+            <CardContent>
+              <AlertBanner severity="warning" title="Could not load encounters">
+                The encounter service did not respond.
+              </AlertBanner>
+            </CardContent>
+          ) : tableRows.length === 0 ? (
+            <CardContent>
+              <p className={styles.quietEmpty}>
+                No active encounters. New consultations appear here after check-in.
+              </p>
+            </CardContent>
+          ) : (
+            <Table ariaLabel="Active encounters">
+              <THead>
+                <tr>
+                  <TH>Patient</TH>
+                  <TH>Type</TH>
+                  <TH>Physician</TH>
+                  <TH>Status</TH>
+                  <TH>Duration</TH>
+                  <TH>Last Updated</TH>
+                  <TH aria-label="Open" />
+                </tr>
+              </THead>
+              <TBody>
+                {tableRows.map((e) => {
+                  const minutes = encounterDurationMinutes(e, now);
+                  return (
+                    <TR key={e.id}>
+                      <TD>
+                        <PatientIdentity
+                          compact
+                          firstName={e.patient.firstName}
+                          lastName={e.patient.lastName}
+                          mrn={e.patient.mrn}
+                        />
+                      </TD>
+                      <TD>
+                        <Badge variant="primary" size="sm">
+                          {e.encounterType === 'opd' ? 'OPD' : 'FOLLOW-UP'}
+                        </Badge>
+                      </TD>
+                      <TD>
+                        <span className={styles.physicianCell}>
+                          <span className={styles.physicianName}>
+                            {user?.firstName ? `Dr. ${user.firstName}` : 'Attending'}
+                          </span>
+                          <span className={styles.physicianRole}>Attending</span>
+                        </span>
+                      </TD>
+                      <TD>
+                        <Badge variant="info" size="sm">
+                          In Progress
+                        </Badge>
+                      </TD>
+                      <TD>
+                        <span className={styles.timeCell}>
+                          <Clock size={12} aria-hidden="true" />
+                          {minutes === null ? '—' : formatDurationMinutes(minutes)}
+                        </span>
+                      </TD>
+                      <TD>
+                        <span className={styles.timeCell}>
+                          {formatStartedAt(e.startedAt ?? e.createdAt)}
+                        </span>
+                      </TD>
+                      <TD align="right">
+                        <RowLink href={`/encounters/${e.id}`} aria-label="Open encounter">
+                          Open
+                        </RowLink>
+                      </TD>
+                    </TR>
+                  );
+                })}
+              </TBody>
+            </Table>
+          )}
+        </Card>
       </section>
 
       {/* 5. Quiet empty state when no critical notifications at all */}

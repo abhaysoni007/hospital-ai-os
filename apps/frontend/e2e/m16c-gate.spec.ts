@@ -57,30 +57,30 @@ async function settle(page: Page) {
 test.describe('M16C — horizontal overflow audit', () => {
   for (const width of [1440, 1280, 1024, 768, 375]) {
     test(`no horizontal overflow at ${width}px`, async ({ page }) => {
-    await page.setViewportSize({ width, height: 900 });
-    await login(page);
-    for (const route of ['/dashboard', '/patients', '/encounters', '/diagnostics', '/tasks']) {
-      await page.goto(`${BASE}${route}`);
-      await page.waitForTimeout(2500);
+      await page.setViewportSize({ width, height: 900 });
+      await login(page);
+      for (const route of ['/dashboard', '/patients', '/encounters', '/diagnostics', '/tasks']) {
+        await page.goto(`${BASE}${route}`);
+        await page.waitForTimeout(2500);
         const overflow = await page.evaluate(
           () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
         );
-        expect(overflow, `${route} overflows by ${overflow}px at ${width}px`).toBeLessThanOrEqual(2);
+        expect(overflow, `${route} overflows by ${overflow}px at ${width}px`).toBeLessThanOrEqual(
+          2,
+        );
       }
     });
   }
 });
 
 test.describe('M16C — dashboard layout gates', () => {
-  test('KPI cards share one row height; sparklines stay inside their tiles', async ({
-    page,
-  }) => {
+  test('KPI cards share one row height; sparklines stay inside their tiles', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await login(page);
     await settle(page);
     const bottoms = await page.evaluate(() =>
-      [...document.querySelectorAll('[aria-label="Operational summary"] > *')].map(
-        (c) => Math.round(c.getBoundingClientRect().bottom),
+      [...document.querySelectorAll('[aria-label="Operational summary"] > *')].map((c) =>
+        Math.round(c.getBoundingClientRect().bottom),
       ),
     );
     expect(bottoms.length).toBeGreaterThan(1);
@@ -160,8 +160,8 @@ test.describe('M16C — reduced motion', () => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.setViewportSize({ width: 1440, height: 900 });
     await login(page);
-    const running = await page.evaluate(() =>
-      document.getAnimations().filter((a) => a.playState === 'running').length,
+    const running = await page.evaluate(
+      () => document.getAnimations().filter((a) => a.playState === 'running').length,
     );
     expect(running, 'no CSS animations should be running under reduced motion').toBe(0);
   });
