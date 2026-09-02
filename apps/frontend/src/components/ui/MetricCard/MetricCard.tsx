@@ -82,8 +82,7 @@ export function MetricCard({
               className={`${styles.delta} ${styles[`delta_${delta.direction}`]}`}
               aria-label={delta.label}
             >
-              {delta.direction === 'up' ? '↑' : delta.direction === 'down' ? '↓' : '→'}
-              {' '}
+              {delta.direction === 'up' ? '↑' : delta.direction === 'down' ? '↓' : '→'}{' '}
               {delta.label}
             </span>
           )}
@@ -96,12 +95,12 @@ export function MetricCard({
 
   if (href) {
     return (
-      <Link href={href} className={styles.cardAsLink}>
+      <Link href={href} className={`${styles.cardAsLink} ${TONE_CLASS[tone]}`}>
         {body}
       </Link>
     );
   }
-  return <div className={styles.card}>{body}</div>;
+  return <div className={`${styles.card} ${TONE_CLASS[tone]}`}>{body}</div>;
 }
 
 export function MetricRetry({ onRetry, label }: { onRetry: () => void; label: string }) {

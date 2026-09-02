@@ -36,16 +36,7 @@ import { Badge } from '../ui/Badge/Badge';
 import { AlertBanner } from '../ui/Alert/AlertBanner';
 import { MetricCard, MetricRetry } from '../ui/MetricCard/MetricCard';
 import { PatientIdentity } from '../ui/Identity/Identity';
-import {
-  Table,
-  THead,
-  TH,
-  TBody,
-  TR,
-  TD,
-  RowLink,
-  TableSkeleton,
-} from '../ui/Table/Table';
+import { Table, THead, TH, TBody, TR, TD, RowLink, TableSkeleton } from '../ui/Table/Table';
 import { LineChart, LineChartTone } from '../ui/LineChart/LineChart';
 import { DonutChart, DonutTone } from '../ui/DonutChart/DonutChart';
 import styles from './DashboardShell.module.css';
@@ -110,12 +101,24 @@ function formatStartedAt(iso: string | null | undefined): string {
   return t.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
-function encounterDurationMinutes(enc: { startedAt: string | null | undefined }, now: Date): number | null {
+function encounterDurationMinutes(
+  enc: { startedAt: string | null | undefined },
+  now: Date,
+): number | null {
   if (!enc.startedAt) return null;
   const t = new Date(enc.startedAt);
   if (Number.isNaN(t.getTime())) return null;
   const minutes = (now.getTime() - t.getTime()) / 60000;
   return minutes >= 0 ? minutes : null;
+}
+
+/**
+ * Entrance-animation ordering. Sets the `--stagger-order` custom property
+ * consumed by `.dashboardContainer > *`; the animation itself is disabled
+ * under `prefers-reduced-motion: reduce`, so this is purely presentational.
+ */
+function stagger(order: number): React.CSSProperties {
+  return { '--stagger-order': order } as React.CSSProperties;
 }
 
 export function DashboardShell() {
@@ -139,7 +142,9 @@ export function DashboardShell() {
     state: canReadEncounters ? 'loading' : 'ready',
     data: null,
   });
-  const [pendingDiagnostics, setPendingDiagnostics] = useState<Block<{ ordered: number; collected: number }>>({
+  const [pendingDiagnostics, setPendingDiagnostics] = useState<
+    Block<{ ordered: number; collected: number }>
+  >({
     state: canReadDiagnostics ? 'loading' : 'ready',
     data: null,
   });
@@ -159,124 +164,151 @@ export function DashboardShell() {
   // Refs guard against state updates after unmount.
   const mounted = useRef(true);
 
-  const loadActiveEncounters = useCallback(async () => {
-    if (!canReadEncounters) return;
-    setActiveEncounters({ state: 'loading', data: null });
-    try {
-      const res = await encounterService.getEncounters({
-        page: 1,
-        status: 'active',
-        pageSize: 100,
-      });
-      if (!mounted.current) return;
-      setActiveEncounters({ state: 'ready', data: res.data });
-    } catch {
-      if (!mounted.current) return;
-      setActiveEncounters({ state: 'error', data: null });
-    }
-  }, [canReadEncounters]);
-
-  const loadEncounterSeries = useCallback(async () => {
-    if (!canReadEncounters) return;
-    setEncounterSeries({ state: 'loading', data: null });
-    try {
-      const res = await encounterService.getEncounters({ page: 1, pageSize: 100 });
-      if (!mounted.current) return;
-      setEncounterSeries({ state: 'ready', data: res.data });
-    } catch {
-      if (!mounted.current) return;
-      setEncounterSeries({ state: 'error', data: null });
-    }
-  }, [canReadEncounters]);
-
-  const loadPendingDiagnostics = useCallback(async () => {
-    if (!canReadDiagnostics) return;
-    setPendingDiagnostics({ state: 'loading', data: null });
-    try {
-      const [ordered, collected] = await Promise.all([
-        diagnosticsService.getLabQueue({ page: 1, status: 'ordered', pageSize: 1 }),
-        diagnosticsService.getLabQueue({ page: 1, status: 'sample_collected', pageSize: 1 }),
-      ]);
-      if (!mounted.current) return;
-      setPendingDiagnostics({
-        state: 'ready',
-        data: { ordered: ordered.meta.total, collected: collected.meta.total },
-      });
-    } catch {
-      if (!mounted.current) return;
-      setPendingDiagnostics({ state: 'error', data: null });
-    }
-  }, [canReadDiagnostics]);
-
-  const loadAwaitingReview = useCallback(async () => {
-    if (!canReadDiagnostics) return;
-    setAwaitingReview({ state: 'loading', data: null });
-    try {
-      // 'in_progress' on the order status enum maps to "result entered
-      // but not yet verified" — this is the authoritative state-machine
-      // value exposed by the lab queue endpoint.
-      const res = await diagnosticsService.getLabQueue({
-        page: 1,
-        status: 'in_progress',
-        pageSize: 1,
-      });
-      if (!mounted.current) return;
-      setAwaitingReview({ state: 'ready', data: res.meta.total });
-    } catch {
-      if (!mounted.current) return;
-      setAwaitingReview({ state: 'error', data: null });
-    }
-  }, [canReadDiagnostics]);
-
-  const loadMyTasks = useCallback(async () => {
-    if (!canReadTasks) return;
-    setMyTasks({ state: 'loading', data: null });
-    try {
-      // 'created' is the initial pending bucket — newly created tasks
-      // that have not been assigned or worked on yet. The task endpoint
-      // does not accept 'pending' as a status filter.
-      const res = await taskService.listTasks({ page: 1, status: 'created', pageSize: 1 });
-      if (!mounted.current) return;
-      setMyTasks({ state: 'ready', data: res.meta.total });
-    } catch {
-      if (!mounted.current) return;
-      setMyTasks({ state: 'error', data: null });
-    }
-  }, [canReadTasks]);
-
-  const loadLabTat = useCallback(async () => {
-    if (!canReadDiagnostics) return;
-    setLabTat({ state: 'loading', data: null });
-    try {
-      // The lab-queue endpoint returns orders, not results; we cannot
-      // compute true verification TAT without the result endpoint. As a
-      // honest surrogate we measure the mean age of the most-recent 50
-      // 'completed' orders (i.e. results entered) — useful as a freshness
-      // signal for the lab queue, not as a literal TAT.
-      const res = await diagnosticsService.getLabQueue({
-        page: 1,
-        status: 'completed',
-        pageSize: 50,
-      });
-      if (!mounted.current) return;
-      const rows = res.data as unknown as Array<Record<string, unknown>>;
-      const now = Date.now();
-      const ages: number[] = [];
-      for (const r of rows) {
-        const updated = typeof r.updatedAt === 'string' ? new Date(r.updatedAt).getTime() : NaN;
-        if (Number.isFinite(updated) && now > updated) {
-          ages.push((now - updated) / 60000);
-        }
+  // `silent` = background refresh: keep already-rendered data on screen
+  // (no loading flash) and keep the previous values if the poll fails.
+  const loadActiveEncounters = useCallback(
+    async (opts?: { silent?: boolean }) => {
+      if (!canReadEncounters) return;
+      if (!opts?.silent) setActiveEncounters({ state: 'loading', data: null });
+      try {
+        const res = await encounterService.getEncounters({
+          page: 1,
+          status: 'active',
+          pageSize: 100,
+        });
+        if (!mounted.current) return;
+        setActiveEncounters({ state: 'ready', data: res.data });
+      } catch {
+        if (!mounted.current) return;
+        if (opts?.silent) return;
+        setActiveEncounters({ state: 'error', data: null });
       }
-      const mean = ages.length > 0
-        ? Math.round((ages.reduce((a, b) => a + b, 0) / ages.length) * 10) / 10
-        : null;
-      setLabTat({ state: 'ready', data: { mean, sample: ages.length } });
-    } catch {
-      if (!mounted.current) return;
-      setLabTat({ state: 'error', data: null });
-    }
-  }, [canReadDiagnostics]);
+    },
+    [canReadEncounters],
+  );
+
+  const loadEncounterSeries = useCallback(
+    async (opts?: { silent?: boolean }) => {
+      if (!canReadEncounters) return;
+      if (!opts?.silent) setEncounterSeries({ state: 'loading', data: null });
+      try {
+        const res = await encounterService.getEncounters({ page: 1, pageSize: 100 });
+        if (!mounted.current) return;
+        setEncounterSeries({ state: 'ready', data: res.data });
+      } catch {
+        if (!mounted.current) return;
+        if (opts?.silent) return;
+        setEncounterSeries({ state: 'error', data: null });
+      }
+    },
+    [canReadEncounters],
+  );
+
+  const loadPendingDiagnostics = useCallback(
+    async (opts?: { silent?: boolean }) => {
+      if (!canReadDiagnostics) return;
+      if (!opts?.silent) setPendingDiagnostics({ state: 'loading', data: null });
+      try {
+        const [ordered, collected] = await Promise.all([
+          diagnosticsService.getLabQueue({ page: 1, status: 'ordered', pageSize: 1 }),
+          diagnosticsService.getLabQueue({ page: 1, status: 'sample_collected', pageSize: 1 }),
+        ]);
+        if (!mounted.current) return;
+        setPendingDiagnostics({
+          state: 'ready',
+          data: { ordered: ordered.meta.total, collected: collected.meta.total },
+        });
+      } catch {
+        if (!mounted.current) return;
+        if (opts?.silent) return;
+        setPendingDiagnostics({ state: 'error', data: null });
+      }
+    },
+    [canReadDiagnostics],
+  );
+
+  const loadAwaitingReview = useCallback(
+    async (opts?: { silent?: boolean }) => {
+      if (!canReadDiagnostics) return;
+      if (!opts?.silent) setAwaitingReview({ state: 'loading', data: null });
+      try {
+        // 'in_progress' on the order status enum maps to "result entered
+        // but not yet verified" — this is the authoritative state-machine
+        // value exposed by the lab queue endpoint.
+        const res = await diagnosticsService.getLabQueue({
+          page: 1,
+          status: 'in_progress',
+          pageSize: 1,
+        });
+        if (!mounted.current) return;
+        setAwaitingReview({ state: 'ready', data: res.meta.total });
+      } catch {
+        if (!mounted.current) return;
+        if (opts?.silent) return;
+        setAwaitingReview({ state: 'error', data: null });
+      }
+    },
+    [canReadDiagnostics],
+  );
+
+  const loadMyTasks = useCallback(
+    async (opts?: { silent?: boolean }) => {
+      if (!canReadTasks) return;
+      if (!opts?.silent) setMyTasks({ state: 'loading', data: null });
+      try {
+        // 'created' is the initial pending bucket — newly created tasks
+        // that have not been assigned or worked on yet. The task endpoint
+        // does not accept 'pending' as a status filter.
+        const res = await taskService.listTasks({ page: 1, status: 'created', pageSize: 1 });
+        if (!mounted.current) return;
+        setMyTasks({ state: 'ready', data: res.meta.total });
+      } catch {
+        if (!mounted.current) return;
+        if (opts?.silent) return;
+        setMyTasks({ state: 'error', data: null });
+      }
+    },
+    [canReadTasks],
+  );
+
+  const loadLabTat = useCallback(
+    async (opts?: { silent?: boolean }) => {
+      if (!canReadDiagnostics) return;
+      if (!opts?.silent) setLabTat({ state: 'loading', data: null });
+      try {
+        // The lab-queue endpoint returns orders, not results; we cannot
+        // compute true verification TAT without the result endpoint. As a
+        // honest surrogate we measure the mean age of the most-recent 50
+        // 'completed' orders (i.e. results entered) — useful as a freshness
+        // signal for the lab queue, not as a literal TAT.
+        const res = await diagnosticsService.getLabQueue({
+          page: 1,
+          status: 'completed',
+          pageSize: 50,
+        });
+        if (!mounted.current) return;
+        const rows = res.data as unknown as Array<Record<string, unknown>>;
+        const now = Date.now();
+        const ages: number[] = [];
+        for (const r of rows) {
+          const updated = typeof r.updatedAt === 'string' ? new Date(r.updatedAt).getTime() : NaN;
+          if (Number.isFinite(updated) && now > updated) {
+            ages.push((now - updated) / 60000);
+          }
+        }
+        const mean =
+          ages.length > 0
+            ? Math.round((ages.reduce((a, b) => a + b, 0) / ages.length) * 10) / 10
+            : null;
+        setLabTat({ state: 'ready', data: { mean, sample: ages.length } });
+      } catch {
+        if (!mounted.current) return;
+        if (opts?.silent) return;
+        setLabTat({ state: 'error', data: null });
+      }
+    },
+    [canReadDiagnostics],
+  );
 
   useEffect(() => {
     mounted.current = true;
@@ -289,7 +321,14 @@ export function DashboardShell() {
     return () => {
       mounted.current = false;
     };
-  }, [loadActiveEncounters, loadEncounterSeries, loadPendingDiagnostics, loadAwaitingReview, loadMyTasks, loadLabTat]);
+  }, [
+    loadActiveEncounters,
+    loadEncounterSeries,
+    loadPendingDiagnostics,
+    loadAwaitingReview,
+    loadMyTasks,
+    loadLabTat,
+  ]);
 
   const greetingName =
     user?.firstName && user?.lastName
@@ -300,14 +339,18 @@ export function DashboardShell() {
   // Critical notification items (server-scoped; no fabricated counts).
   const criticalItems = useMemo(
     () =>
-      notifications.items.filter(
-        (n) => n.priority === 'critical' && n.status !== 'acknowledged',
-      ),
+      notifications.items.filter((n) => n.priority === 'critical' && n.status !== 'acknowledged'),
     [notifications.items],
   );
 
   // Time series (encounters per day, 7 days) + distribution (status).
-  const now = useMemo(() => new Date(), []);
+  // `now` is state, ticked by the same interval as the silent poll, so
+  // elapsed-duration cells and the greeting re-render live (truthfully:
+  // it re-renders wall-clock time, not fabricated data).
+  const [now, setNow] = useState(() => new Date());
+  // Wall-clock time of the last successful refresh (manual or poll).
+  const [lastUpdatedAt, setLastUpdatedAt] = useState<Date | null>(null);
+
   const buckets = useMemo(() => {
     if (encounterSeries.state !== 'ready' || !encounterSeries.data) return [];
     return bucketEncountersByDay(encounterSeries.data, 7, now);
@@ -366,9 +409,10 @@ export function DashboardShell() {
     return Array.from({ length: 7 }, (_, i) => Math.max(0, n - i));
   })();
   const avgMinutes = computeAvgEncounterMinutes(activeEncounters.data ?? [], now);
-  const avgDurationSparkline = avgMinutes !== null
-    ? Array.from({ length: 7 }, (_, i) => Math.max(1, Math.round(avgMinutes + (3 - i))))
-    : undefined;
+  const avgDurationSparkline =
+    avgMinutes !== null
+      ? Array.from({ length: 7 }, (_, i) => Math.max(1, Math.round(avgMinutes + (3 - i))))
+      : undefined;
 
   // Active encounters table — most recent first.
   const tableRows = useMemo(() => {
@@ -380,28 +424,54 @@ export function DashboardShell() {
     });
   }, [activeEncounters]);
 
-  const refreshAll = useCallback(() => {
-    void notifications.reload();
-    void loadActiveEncounters();
-    void loadEncounterSeries();
-    void loadPendingDiagnostics();
-    void loadAwaitingReview();
-    void loadMyTasks();
-    void loadLabTat();
-  }, [
-    notifications.reload,
-    loadActiveEncounters,
-    loadEncounterSeries,
-    loadPendingDiagnostics,
-    loadAwaitingReview,
-    loadMyTasks,
-    loadLabTat,
-  ]);
+  const refreshAll = useCallback(
+    (opts?: { silent?: boolean }) =>
+      Promise.all([
+        notifications.reload({ silent: opts?.silent }),
+        loadActiveEncounters(opts),
+        loadEncounterSeries(opts),
+        loadPendingDiagnostics(opts),
+        loadAwaitingReview(opts),
+        loadMyTasks(opts),
+        loadLabTat(opts),
+      ]).then(() => {
+        setNow(new Date());
+        setLastUpdatedAt(new Date());
+      }),
+    [
+      notifications.reload,
+      loadActiveEncounters,
+      loadEncounterSeries,
+      loadPendingDiagnostics,
+      loadAwaitingReview,
+      loadMyTasks,
+      loadLabTat,
+    ],
+  );
+
+  // Live polling: silent background refresh every 60s. Rendered data
+  // stays on screen (no loading flash), prior values are preserved if a
+  // transient poll fails, and the loop pauses while the tab is hidden.
+  // The inFlight ref prevents overlapping polls when a request is slow.
+  const pollInFlight = useRef(false);
+  useEffect(() => {
+    const id = window.setInterval(() => {
+      if (document.visibilityState === 'hidden') return;
+      if (pollInFlight.current) return;
+      pollInFlight.current = true;
+      void refreshAll({ silent: true })
+        .catch(() => {})
+        .finally(() => {
+          pollInFlight.current = false;
+        });
+    }, 60_000);
+    return () => window.clearInterval(id);
+  }, [refreshAll]);
 
   return (
     <div className={styles.dashboardContainer}>
       {/* 1. Greeting + last-updated */}
-      <header className={styles.greetingBanner}>
+      <header className={styles.greetingBanner} style={stagger(0)}>
         <div>
           <h1 className={styles.greetingTitle}>
             {greetingForHour(now.getHours())}, {greetingName}
@@ -418,10 +488,14 @@ export function DashboardShell() {
           </p>
         </div>
         <div className={styles.greetingMeta}>
-          <span className={styles.lastUpdated}>
-            Last updated: {formatTimeOfDay(now)}
+          <span className={styles.livePill}>
+            <span className={styles.liveDot} aria-hidden="true" />
+            Live
           </span>
-          <button type="button" className={styles.refreshButton} onClick={refreshAll}>
+          <span className={styles.lastUpdated}>
+            Last updated: {formatTimeOfDay(lastUpdatedAt ?? now)}
+          </span>
+          <button type="button" className={styles.refreshButton} onClick={() => void refreshAll()}>
             <RefreshCw size={14} aria-hidden="true" />
             Refresh
           </button>
@@ -430,22 +504,17 @@ export function DashboardShell() {
 
       {/* 2. Critical alert strip */}
       {!notifications.isLoading && !notifications.error && criticalItems.length > 0 && (
-        <div className={styles.criticalStrip} role="alert">
+        <div className={styles.criticalStrip} role="alert" style={stagger(1)}>
           <span className={styles.criticalIcon} aria-hidden="true">
             <AlertOctagon size={16} />
           </span>
           <span className={styles.criticalLabel}>CRITICAL ALERT</span>
+          {/* body = "{testName} ({testCode}) flagged CRITICAL and requires immediate physician review."
+              per ADR-016: no patient identifiers in notification body. Render title + body directly. */}
           <span className={styles.criticalBody}>
-            <strong>{criticalItems[0].title}</strong>
-            {' for '}
-            <span className={styles.criticalSubject}>
-              {criticalItems[0].body.split(' for ').pop() ?? criticalItems[0].body}
-            </span>
-            {' is flagged CRITICAL and requires immediate review.'}
+            <strong>{criticalItems[0].title}.</strong> {criticalItems[0].body}
           </span>
-          <span className={styles.criticalTime}>
-            {formatStartedAt(criticalItems[0].createdAt)}
-          </span>
+          <span className={styles.criticalTime}>{formatStartedAt(criticalItems[0].createdAt)}</span>
           {criticalItems[0].relatedOrderId ? (
             <Link
               href={`/diagnostics/${criticalItems[0].relatedOrderId}`}
@@ -459,7 +528,7 @@ export function DashboardShell() {
       )}
 
       {/* 3. Six metric tiles */}
-      <section aria-label="Operational summary" className={styles.metricRow}>
+      <section aria-label="Operational summary" className={styles.metricRow} style={stagger(2)}>
         {canReadEncounters && (
           <MetricCard
             label="Active Encounters"
@@ -541,11 +610,7 @@ export function DashboardShell() {
           liveValue
           trend={criticalSparkline}
           value={
-            notifications.isLoading ? (
-              <span aria-label="Loading">—</span>
-            ) : (
-              criticalItems.length
-            )
+            notifications.isLoading ? <span aria-label="Loading">—</span> : criticalItems.length
           }
           hint={
             !notifications.isLoading && criticalItems.length === 0
@@ -605,7 +670,7 @@ export function DashboardShell() {
       </section>
 
       {/* 4. Two charts side by side */}
-      <section aria-label="Encounter analytics" className={styles.chartsRow}>
+      <section aria-label="Encounter analytics" className={styles.chartsRow} style={stagger(3)}>
         <Card elevation="xs" padding="md">
           <div className={styles.chartHeader}>
             <div>
@@ -614,12 +679,15 @@ export function DashboardShell() {
                 Last {buckets.length || 7} days · your department
               </p>
             </div>
-            {volumeDeltaChip && (
-              <span className={styles.chartMeta}>
-                <TrendingUp size={14} aria-hidden="true" />
-                {volumeDeltaChip.label}
-              </span>
-            )}
+            <div className={styles.chartHeaderRight}>
+              {volumeDeltaChip && (
+                <span className={styles.chartMeta}>
+                  <TrendingUp size={14} aria-hidden="true" />
+                  {volumeDeltaChip.label}
+                </span>
+              )}
+              <span className={styles.timeRangeChip}>7D</span>
+            </div>
           </div>
           {encounterSeries.state === 'loading' ? (
             <div className={styles.chartSkeleton} aria-label="Loading encounter volume" />
@@ -635,25 +703,23 @@ export function DashboardShell() {
             </CardContent>
           ) : (
             <LineChart
-              series={
-                [
-                  {
-                    label: 'Total',
-                    tone: 'info' as LineChartTone,
-                    data: seriesTotal,
-                  },
-                  {
-                    label: 'In Progress',
-                    tone: 'primary' as LineChartTone,
-                    data: seriesInProgress,
-                  },
-                  {
-                    label: 'Completed',
-                    tone: 'success' as LineChartTone,
-                    data: seriesCompleted,
-                  },
-                ]
-              }
+              series={[
+                {
+                  label: 'Total',
+                  tone: 'info' as LineChartTone,
+                  data: seriesTotal,
+                },
+                {
+                  label: 'In Progress',
+                  tone: 'primary' as LineChartTone,
+                  data: seriesInProgress,
+                },
+                {
+                  label: 'Completed',
+                  tone: 'success' as LineChartTone,
+                  data: seriesCompleted,
+                },
+              ]}
               xLabels={xLabels}
               yMax={yMax}
             />
@@ -694,7 +760,7 @@ export function DashboardShell() {
       </section>
 
       {/* 5. Active Encounters table + right column (work queue + AI) */}
-      <div className={styles.splitLayout}>
+      <div className={styles.splitLayout} style={stagger(4)}>
         <div className={styles.leftColumn}>
           <Card elevation="xs" padding="none">
             <div className={styles.sectionCardHeader}>
@@ -827,12 +893,9 @@ export function DashboardShell() {
                         <Clock size={12} aria-hidden="true" />
                         <span>{formatStartedAt(n.createdAt)}</span>
                       </div>
-                      <p className={styles.taskBody}>
-                        {n.body.split(' for ')[0]}{' '}
-                        <span className={styles.taskSubject}>
-                          · {n.body.split(' for ').pop()}
-                        </span>
-                      </p>
+                      {/* body = "{testName} ({testCode}) flagged CRITICAL and requires immediate physician review."
+                          per ADR-016: no patient data in body. Render as-is. */}
+                      <p className={styles.taskBody}>{n.body}</p>
                       <div className={styles.taskActions}>
                         {n.relatedOrderId && (
                           <RowLink
@@ -848,8 +911,8 @@ export function DashboardShell() {
                           onClick={() => void notifications.acknowledge(n.id)}
                           aria-label={`Acknowledge ${n.title}`}
                         >
-                            Acknowledge
-                          </button>
+                          Acknowledge
+                        </button>
                       </div>
                     </li>
                   ))}
@@ -889,7 +952,7 @@ export function DashboardShell() {
       </div>
 
       {/* 6. Today's Snapshot strip */}
-      <section aria-label="Today's snapshot" className={styles.snapshotStrip}>
+      <section aria-label="Today's snapshot" className={styles.snapshotStrip} style={stagger(5)}>
         <div className={styles.snapshotHeader}>
           <h2 className={styles.snapshotTitle}>Today&apos;s Snapshot</h2>
           <span className={styles.snapshotVs}>vs yesterday</span>
@@ -904,7 +967,6 @@ export function DashboardShell() {
                   ? '—'
                   : tableRows.length
             }
-            hint={activeEncounters.state === 'ready' ? 'created today' : undefined}
           />
           <SnapshotCell
             label="Lab Orders"
@@ -915,7 +977,6 @@ export function DashboardShell() {
                 ? '—'
                 : pendingDiagnostics.data.ordered + pendingDiagnostics.data.collected
             }
-            hint={pendingDiagnostics.state === 'ready' ? 'ordered today' : undefined}
           />
           <SnapshotCell
             label="Results Reviewed"
@@ -926,7 +987,6 @@ export function DashboardShell() {
                 ? '—'
                 : awaitingReview.data
             }
-            hint={awaitingReview.state === 'ready' ? 'entered today' : undefined}
           />
           <SnapshotCell
             label="Avg. TAT (Labs)"
@@ -938,10 +998,8 @@ export function DashboardShell() {
                   : formatDurationMinutes(labTat.data.mean)
             }
             hint={
-              labTat.state === 'ready' && labTat.data
-                ? labTat.data.mean === null
-                  ? 'Lab TAT data unavailable'
-                  : `across ${labTat.data.sample} verified results`
+              labTat.state === 'ready' && labTat.data && labTat.data.mean !== null
+                ? `across ${labTat.data.sample} results`
                 : undefined
             }
           />

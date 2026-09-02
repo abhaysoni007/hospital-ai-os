@@ -2,5 +2,10 @@
   display: block;
   width: 100%;
   height: 100%;
-  overflow: visible;
+  /* The stroke cap and endpoint dot are padded inside the viewBox, and
+     `vector-effect: non-scaling-stroke` keeps them a constant width under any
+     parent scale. Clipping at the SVG bounds is the hard backstop: nothing
+     may bleed past the metric tile's sparkline slot. */
+  overflow: hidden;
+  pointer-events: none;
 }

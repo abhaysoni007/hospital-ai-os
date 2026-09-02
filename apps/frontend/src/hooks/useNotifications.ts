@@ -17,7 +17,7 @@ export interface NotificationsState {
   criticalCount: number;
   isLoading: boolean;
   error: string | null;
-  reload: () => Promise<void>;
+  reload: (opts?: { silent?: boolean }) => Promise<void>;
   acknowledge: (id: string) => Promise<boolean>;
 }
 
@@ -28,22 +28,35 @@ export function useNotifications(pageSize = 20): NotificationsState {
   const [error, setError] = useState<string | null>(null);
   const mounted = useRef(true);
 
-  const reload = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const response = await notificationService.list({ page: 1, pageSize });
-      if (!mounted.current) return;
-      setItems(response.data);
-      setTotal(response.meta.total);
-    } catch {
-      if (!mounted.current) return;
-      // Truthful error surface — never fabricated fallback data.
-      setError('Notifications are unavailable right now.');
-    } finally {
-      if (mounted.current) setIsLoading(false);
-    }
-  }, [pageSize]);
+  const reload = useCallback(
+    async (opts?: { silent?: boolean }) => {
+      // Silent refresh keeps already-rendered data on screen instead of
+      // flashing a loading state during background polling; a transient
+      // failure also keeps the previous items rather than wiping the view.
+      if (!opts?.silent) {
+        setIsLoading(true);
+        setError(null);
+      }
+      try {
+        const response = await notificationService.list({ page: 1, pageSize });
+        if (!mounted.current) return;
+        setItems(response.data);
+        setTotal(response.meta.total);
+        setError(null);
+      } catch {
+        if (!mounted.current) return;
+        if (!opts?.silent) {
+          // Truthful error surface — never fabricated fallback data.
+          setError('Notifications are unavailable right now.');
+        }
+      } finally {
+        if (mounted.current) {
+          if (!opts?.silent) setIsLoading(false);
+        }
+      }
+    },
+    [pageSize],
+  );
 
   const acknowledge = useCallback(async (id: string): Promise<boolean> => {
     try {

@@ -3,6 +3,7 @@
   display: block;
   background-color: var(--bg-surface);
   border: 1px solid var(--border-subtle);
+  border-left-width: 3px;
   border-radius: var(--radius-lg);
   padding: var(--space-4) var(--space-5);
   box-shadow: var(--shadow-xs);
@@ -11,8 +12,36 @@
     box-shadow var(--duration-fast) var(--ease-standard);
 }
 
+/* Tone accent: left-border color per semantic meaning */
+.card.neutral,
+.cardAsLink.neutral {
+  border-left-color: var(--color-neutral-300);
+}
+.card.primary,
+.cardAsLink.primary {
+  border-left-color: var(--color-primary-400);
+}
+.card.info,
+.cardAsLink.info {
+  border-left-color: var(--color-info-main);
+}
+.card.warning,
+.cardAsLink.warning {
+  border-left-color: var(--color-warning-main);
+}
+.card.critical,
+.cardAsLink.critical {
+  border-left-color: var(--color-danger-main);
+}
+.card.success,
+.cardAsLink.success {
+  border-left-color: var(--color-success-main);
+}
+
 .cardAsLink:hover {
-  border-color: var(--color-primary-300);
+  border-top-color: var(--color-primary-300);
+  border-right-color: var(--color-primary-300);
+  border-bottom-color: var(--color-primary-300);
   box-shadow: var(--shadow-sm);
 }
 

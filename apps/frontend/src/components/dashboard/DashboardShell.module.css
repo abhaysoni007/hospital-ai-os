@@ -1,8 +1,92 @@
 .dashboardContainer {
   display: flex;
   flex-direction: column;
-  gap: var(--space-5);
+  gap: var(--space-4);
   width: 100%;
+}
+
+/* Staggered entrance for the top-level sections. Each section sets
+   --stagger-order in JSX; the animation is gated behind
+   prefers-reduced-motion so users who request reduced motion get a
+   static, instantly-visible layout. */
+.dashboardContainer > * {
+  animation: sectionEntrance var(--duration-slow) var(--ease-entrance) both;
+  animation-delay: calc(var(--stagger-order, 0) * 60ms);
+}
+
+@keyframes sectionEntrance {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* LIVE indicator — a breathing dot next to "Last updated". */
+.livePill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--font-size-caption);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-success-main);
+}
+
+.liveDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: currentColor;
+  animation: livePulse 1.8s var(--ease-standard) infinite;
+}
+
+@keyframes livePulse {
+  0%,
+  100% {
+    opacity: 1;
+    box-shadow: 0 0 0 0 var(--color-success-main);
+  }
+  50% {
+    opacity: 0.45;
+    box-shadow: 0 0 0 4px transparent;
+  }
+}
+
+/* Hover lift on cards — subtle, pointer-only, motion-gated. */
+@media (hover: hover) and (pointer: fine) {
+  .dashboardContainer .metricRow > *,
+  .dashboardContainer .chartsRow > *,
+  .dashboardContainer .splitLayout > * {
+    transition: transform var(--duration-base) var(--ease-standard),
+      box-shadow var(--duration-base) var(--ease-standard);
+  }
+
+  .dashboardContainer .metricRow > *:hover,
+  .dashboardContainer .chartsRow > *:hover,
+  .dashboardContainer .splitLayout > *:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dashboardContainer > * {
+    animation: none;
+  }
+  .liveDot {
+    animation: none;
+  }
+  .dashboardContainer .metricRow > *,
+  .dashboardContainer .chartsRow > *,
+  .dashboardContainer .splitLayout > * {
+    transition: none;
+    transform: none;
+  }
 }
 
 /* ---------- Greeting banner ------------------------------------------------ */
@@ -211,11 +295,31 @@
   white-space: nowrap;
 }
 
+.chartHeaderRight {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-shrink: 0;
+}
+
+.timeRangeChip {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border-subtle);
+  background-color: var(--bg-subtle);
+  font-size: var(--font-size-caption);
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
 .chartSkeleton {
   height: 220px;
   border-radius: var(--radius-md);
-  background:
-    linear-gradient(90deg, var(--bg-subtle), var(--border-subtle), var(--bg-subtle));
+  background: linear-gradient(90deg, var(--bg-subtle), var(--border-subtle), var(--bg-subtle));
   background-size: 200% 100%;
   animation: chartPulse 1.4s linear infinite;
 }
@@ -232,7 +336,7 @@
 /* ---------- Split layout (table + side) ----------------------------------- */
 .splitLayout {
   display: grid;
-  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
   gap: var(--space-4);
   align-items: start;
 }
@@ -538,9 +642,8 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
-  padding: var(--space-3);
-  border-radius: var(--radius-md);
-  background-color: var(--bg-subtle);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
 }
 
 .snapshotLabel {
