@@ -130,8 +130,9 @@ export function DonutChart({
                 aria-hidden="true"
               />
               <span className={styles.legendLabel}>{seg.label}</span>
-              <span className={styles.legendValue}>{seg.value}</span>
-              <span className={styles.legendPercent}>{percentText}</span>
+              <span className={styles.legendValue}>
+                {seg.value} ({percentText})
+              </span>
             </li>
           );
         })}

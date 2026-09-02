@@ -1,40 +1,39 @@
 .card,
 .cardAsLink {
-  display: block;
+  display: flex;
+  flex-direction: column;
   background-color: var(--bg-surface);
   border: 1px solid var(--border-subtle);
   border-left-width: 3px;
   border-radius: var(--radius-lg);
   padding: var(--space-4) var(--space-5);
   box-shadow: var(--shadow-xs);
+  /* Hard backstop: nothing inside a metric tile (sparkline stroke,
+     endpoint dot) may ever render past the tile's rounded border. */
+  overflow: hidden;
   transition:
     border-color var(--duration-fast) var(--ease-standard),
     box-shadow var(--duration-fast) var(--ease-standard);
 }
 
-/* Tone accent: left-border color per semantic meaning */
-.card.neutral,
-.cardAsLink.neutral {
+/* Tone accent: left-border colour per semantic meaning. These classes set
+   ONLY the accent — never a background — so the card surface stays themed. */
+.accentNeutral {
   border-left-color: var(--color-neutral-300);
 }
-.card.primary,
-.cardAsLink.primary {
+.accentPrimary {
   border-left-color: var(--color-primary-400);
 }
-.card.info,
-.cardAsLink.info {
+.accentInfo {
   border-left-color: var(--color-info-main);
 }
-.card.warning,
-.cardAsLink.warning {
+.accentWarning {
   border-left-color: var(--color-warning-main);
 }
-.card.critical,
-.cardAsLink.critical {
+.accentCritical {
   border-left-color: var(--color-danger-main);
 }
-.card.success,
-.cardAsLink.success {
+.accentSuccess {
   border-left-color: var(--color-success-main);
 }
 
@@ -55,12 +54,18 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--space-3);
+  /* The row must never push children wider than the tile: the label
+     shrinks (with wrapping) before the sparkline slot can overflow. */
+  min-width: 0;
 }
 
 .label {
   font-size: var(--font-size-sm);
   font-weight: 600;
   color: var(--text-secondary);
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-wrap: break-word;
 }
 
 .iconWrap {
@@ -117,9 +122,17 @@
   display: inline-flex;
   align-items: center;
   justify-content: flex-end;
-  width: 88px;
+  /* Fill whatever space the delta chip leaves (up to 88px), but never
+     compress below 56px — below that the squeezed polyline reads as a
+     broken/truncated line. The row above guarantees nowrap fitting. */
+  flex: 1 1 auto;
+  min-width: 56px;
+  max-width: 88px;
   height: 28px;
-  flex-shrink: 0;
+  margin-left: auto;
+  /* Clip the sparkline to its slot regardless of how the inner SVG
+     resolves its size — the container is the authoritative bound. */
+  overflow: hidden;
 }
 
 .delta {
@@ -130,6 +143,8 @@
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   line-height: 1;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .delta_up {
@@ -145,15 +160,28 @@
 }
 
 .footer {
-  margin-top: var(--space-1);
+  /* Push the hint/trend row to the card bottom so the sparklines of all
+     cards in the KPI row align, whatever the hint text length. */
+  margin-top: auto;
+  padding-top: var(--space-1);
   display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: var(--space-2);
 }
 
 .hint {
   font-size: var(--font-size-caption);
   color: var(--text-tertiary);
+}
+
+/* Bottom row: delta chip on the left, sparkline anchored right. */
+.trendRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  min-width: 0;
+  flex-wrap: nowrap;
 }
 
 .retry {

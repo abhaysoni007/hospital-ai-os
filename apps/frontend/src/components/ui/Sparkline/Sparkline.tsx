@@ -93,6 +93,8 @@ export function Sparkline({
   return (
     <svg
       className={styles.svg}
+      width={width}
+      height={height}
       viewBox={`0 0 ${width} ${height}`}
       preserveAspectRatio="none"
       role="img"

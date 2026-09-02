@@ -96,10 +96,13 @@ export function AppShell({
             tabIndex={-1}
             // While the mobile drawer overlays content, mark <main> as inert
             // so keyboard focus cannot escape into the background. React 18
-            // types `inert` as `boolean | undefined` — React serializes a
-            // boolean `true` to the present HTML attribute and `false` to its
-            // absence, which is exactly the browser behavior we need.
-            inert={isMobileSidebarOpen}
+            // silently drops boolean-valued unknown attributes (`inert` only
+            // became a real boolean prop in React 19), so pass the empty
+            // string — the valid boolean-attribute form — and cast it to the
+            // prop type React 18's typings expect. Verified in-browser:
+            // `inert=""` renders while the drawer is open and is removed
+            // when it closes.
+            inert={isMobileSidebarOpen ? ('' as unknown as boolean) : undefined}
           >
             {children}
           </main>

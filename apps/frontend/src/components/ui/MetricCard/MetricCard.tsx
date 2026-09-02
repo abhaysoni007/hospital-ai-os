@@ -39,6 +39,21 @@ const TONE_CLASS: Record<NonNullable<MetricCardProps['tone']>, string> = {
   success: styles.success,
 };
 
+/**
+ * Card-level accent classes: border-left colour only. The card must NOT
+ * reuse TONE_CLASS — those also set a light tinted background (meant for
+ * the icon chip) which would override the card's themed surface and make
+ * the value text unreadable in dark mode.
+ */
+const TONE_ACCENT: Record<NonNullable<MetricCardProps['tone']>, string> = {
+  neutral: styles.accentNeutral,
+  primary: styles.accentPrimary,
+  info: styles.accentInfo,
+  warning: styles.accentWarning,
+  critical: styles.accentCritical,
+  success: styles.accentSuccess,
+};
+
 const TONE_SPARKLINE: Record<NonNullable<MetricCardProps['tone']>, SparklineTone> = {
   neutral: 'primary',
   primary: 'primary',
@@ -64,30 +79,36 @@ export function MetricCard({
     <>
       <div className={styles.top}>
         <span className={styles.label}>{label}</span>
-        {trend && trend.length >= 2 ? (
-          <span className={styles.trendWrap} aria-hidden="true">
-            <Sparkline data={trend} tone={TONE_SPARKLINE[tone]} />
-          </span>
-        ) : (
-          <span className={`${styles.iconWrap} ${TONE_CLASS[tone]}`}>{icon}</span>
-        )}
+        <span className={`${styles.iconWrap} ${TONE_CLASS[tone]}`}>{icon}</span>
       </div>
       <div className={styles.value} {...(liveValue ? { 'aria-live': 'polite' as const } : {})}>
         {value}
       </div>
-      {(hint || action || delta) && (
+      {(hint || action || delta || (trend && trend.length >= 2)) && (
         <div className={styles.footer}>
-          {delta && (
-            <span
-              className={`${styles.delta} ${styles[`delta_${delta.direction}`]}`}
-              aria-label={delta.label}
-            >
-              {delta.direction === 'up' ? '↑' : delta.direction === 'down' ? '↓' : '→'}{' '}
-              {delta.label}
-            </span>
-          )}
           {hint && <span className={styles.hint}>{hint}</span>}
           {action}
+          {(delta || (trend && trend.length >= 2)) && (
+            <span className={styles.trendRow} aria-hidden={trend ? 'true' : undefined}>
+              {delta && (
+                <span
+                  className={`${styles.delta} ${styles[`delta_${delta.direction}`]}`}
+                  aria-label={delta.label}
+                  title={delta.label}
+                >
+                  {delta.direction === 'up' ? '↑' : delta.direction === 'down' ? '↓' : '→'}{' '}
+                  {/* Compact chip: arrow + percent only; the full
+                      "… vs yesterday" context is in the tooltip. */}
+                  {delta.label.split(' ')[0]}
+                </span>
+              )}
+              {trend && trend.length >= 2 && (
+                <span className={styles.trendWrap}>
+                  <Sparkline data={trend} tone={TONE_SPARKLINE[tone]} />
+                </span>
+              )}
+            </span>
+          )}
         </div>
       )}
     </>
@@ -95,12 +116,12 @@ export function MetricCard({
 
   if (href) {
     return (
-      <Link href={href} className={`${styles.cardAsLink} ${TONE_CLASS[tone]}`}>
+      <Link href={`${href}`} className={`${styles.cardAsLink} ${TONE_ACCENT[tone]}`}>
         {body}
       </Link>
     );
   }
-  return <div className={`${styles.card} ${TONE_CLASS[tone]}`}>{body}</div>;
+  return <div className={`${styles.card} ${TONE_ACCENT[tone]}`}>{body}</div>;
 }
 
 export function MetricRetry({ onRetry, label }: { onRetry: () => void; label: string }) {

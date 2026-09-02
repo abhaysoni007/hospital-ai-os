@@ -23,3 +23,10 @@ tests/e2e/.auth/
 .agents/
 skills-lock.json
 apps/frontend/e2e/.auth/
+
+# Local IDE and scratch artifacts
+.claude/
+.zcode/
+opencode.json
+_dashboard-ref.png
+

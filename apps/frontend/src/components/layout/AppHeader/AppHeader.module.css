@@ -15,6 +15,14 @@
   display: flex;
   align-items: center;
   gap: var(--space-4);
+  /* Allow the section (and its breadcrumb wrapper) to shrink so the
+     rightSection's fixed-size controls never force horizontal overflow
+     on narrow viewports — the breadcrumb list clips instead. */
+  min-width: 0;
+}
+
+.leftSection > * {
+  min-width: 0;
 }
 
 .mobileMenuButton {
@@ -277,5 +285,8 @@
   .searchIconButton {
     width: 32px;
     height: 32px;
+  }
+  .divider {
+    display: none;
   }
 }

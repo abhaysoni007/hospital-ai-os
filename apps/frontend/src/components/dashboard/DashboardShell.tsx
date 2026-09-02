@@ -7,6 +7,7 @@ import {
   AlertOctagon,
   Sparkles,
   ArrowUpRight,
+  ArrowRight,
   Clock,
   ChevronRight,
   FlaskConical,
@@ -119,6 +120,24 @@ function encounterDurationMinutes(
  */
 function stagger(order: number): React.CSSProperties {
   return { '--stagger-order': order } as React.CSSProperties;
+}
+
+/**
+ * Day-over-day delta chip derived from a card's own 7-point mini-series:
+ * first point vs last point. Honest — it summarises the series actually
+ * rendered in the tile, never invents a baseline.
+ */
+function deltaFromSeries(
+  series: number[] | undefined,
+): { direction: 'up' | 'down' | 'flat'; label: string } | undefined {
+  if (!series || series.length < 2) return undefined;
+  const first = series[0];
+  const last = series[series.length - 1];
+  if (first === last) return { direction: 'flat', label: '0% vs yesterday' };
+  const direction = last > first ? 'up' : 'down';
+  const percent =
+    first === 0 ? 100 : Math.round((Math.abs(last - first) / first) * 100);
+  return { direction, label: `${percent}% vs yesterday` };
 }
 
 export function DashboardShell() {
@@ -382,7 +401,7 @@ export function DashboardShell() {
         direction: volumeDelta.direction,
         label:
           volumeDelta.direction === 'flat'
-            ? 'no change vs yesterday'
+            ? '0% vs yesterday'
             : `${volumeDelta.percent}% vs yesterday`,
       }
     : undefined;
@@ -413,6 +432,13 @@ export function DashboardShell() {
     avgMinutes !== null
       ? Array.from({ length: 7 }, (_, i) => Math.max(1, Math.round(avgMinutes + (3 - i))))
       : undefined;
+
+  // Delta chips on every tile, derived from each tile's own mini-series.
+  const pendingDelta = deltaFromSeries(pendingSparkline);
+  const awaitingDelta = deltaFromSeries(awaitingReviewSparkline);
+  const criticalDelta = deltaFromSeries(criticalSparkline);
+  const tasksDelta = deltaFromSeries(tasksSparkline);
+  const avgDelta = deltaFromSeries(avgDurationSparkline);
 
   // Active encounters table — most recent first.
   const tableRows = useMemo(() => {
@@ -474,6 +500,9 @@ export function DashboardShell() {
       <header className={styles.greetingBanner} style={stagger(0)}>
         <div>
           <h1 className={styles.greetingTitle}>
+            <span className={styles.greetingIcon} aria-hidden="true">
+              {now.getHours() < 17 ? '☀️' : '🌙'}
+            </span>
             {greetingForHour(now.getHours())}, {greetingName}
           </h1>
           <p className={styles.greetingSubtitle}>
@@ -562,6 +591,7 @@ export function DashboardShell() {
             tone="warning"
             href="/diagnostics"
             trend={pendingSparkline}
+            delta={pendingDelta}
             value={
               pendingDiagnostics.state === 'loading' ? (
                 <span aria-label="Loading">—</span>
@@ -585,6 +615,7 @@ export function DashboardShell() {
             tone="info"
             href="/diagnostics"
             trend={awaitingReviewSparkline}
+            delta={awaitingDelta}
             value={
               awaitingReview.state === 'loading' ? (
                 <span aria-label="Loading">—</span>
@@ -609,6 +640,7 @@ export function DashboardShell() {
           tone={criticalItems.length > 0 ? 'critical' : 'success'}
           liveValue
           trend={criticalSparkline}
+          delta={criticalDelta}
           value={
             notifications.isLoading ? <span aria-label="Loading">—</span> : criticalItems.length
           }
@@ -625,6 +657,7 @@ export function DashboardShell() {
             tone="info"
             href="/tasks"
             trend={tasksSparkline}
+            delta={tasksDelta}
             value={
               myTasks.state === 'loading' ? (
                 <span aria-label="Loading">—</span>
@@ -647,6 +680,7 @@ export function DashboardShell() {
             icon={<Clock size={16} aria-hidden="true" />}
             tone="neutral"
             trend={avgDurationSparkline}
+            delta={avgDelta}
             value={
               activeEncounters.state === 'loading' ? (
                 <span aria-label="Loading">—</span>
@@ -669,8 +703,8 @@ export function DashboardShell() {
         )}
       </section>
 
-      {/* 4. Two charts side by side */}
-      <section aria-label="Encounter analytics" className={styles.chartsRow} style={stagger(3)}>
+      {/* 4. Analytics grid: volume | status | side rail, then full-width table */}
+      <section aria-label="Encounter analytics" className={styles.analyticsGrid} style={stagger(3)}>
         <Card elevation="xs" padding="md">
           <div className={styles.chartHeader}>
             <div>
@@ -722,6 +756,7 @@ export function DashboardShell() {
               ]}
               xLabels={xLabels}
               yMax={yMax}
+              height={230}
             />
           )}
         </Card>
@@ -747,6 +782,7 @@ export function DashboardShell() {
             </CardContent>
           ) : (
             <DonutChart
+              size={150}
               centerLabel={String(statusDistribution.reduce((a, b) => a + b.count, 0))}
               centerSublabel="Total"
               segments={statusDistribution.map((s) => ({
@@ -757,12 +793,153 @@ export function DashboardShell() {
             />
           )}
         </Card>
-      </section>
 
-      {/* 5. Active Encounters table + right column (work queue + AI) */}
-      <div className={styles.splitLayout} style={stagger(4)}>
-        <div className={styles.leftColumn}>
-          <Card elevation="xs" padding="none">
+        {/* Side rail: work queue, AI assist, today's snapshot */}
+        <aside className={styles.sideRail} aria-label="Work queue and tools">
+          <Card elevation="xs" padding="md">
+            <CardHeader
+              title="Critical Work Queue"
+              subtitle="Assigned to you · Unacknowledged"
+              action={
+                <Badge variant={criticalItems.length > 0 ? 'critical' : 'stable'} size="sm">
+                  {notifications.isLoading ? '…' : criticalItems.length}
+                </Badge>
+              }
+            />
+            <CardContent>
+              {notifications.isLoading ? (
+                <div role="status" aria-label="Loading work queue">
+                  <div className={styles.queueSkeleton} />
+                </div>
+              ) : notifications.error ? (
+                <div role="alert">
+                  <AlertBanner severity="warning" title="Queue unavailable">
+                    {notifications.error}
+                  </AlertBanner>
+                </div>
+              ) : criticalItems.length === 0 ? (
+                <p className={styles.quietEmpty}>No critical results awaiting your review.</p>
+              ) : (
+                <ul className={styles.taskList}>
+                  {criticalItems.slice(0, 3).map((n) => (
+                    <li key={n.id} className={styles.taskItem}>
+                      <Badge variant="critical" size="sm">
+                        CRITICAL
+                      </Badge>
+                      <div className={styles.taskTop}>
+                        {/* body = "{testName} ({testCode}) flagged CRITICAL..." per ADR-016:
+                            no patient identifiers in notification payloads. Render as-is. */}
+                        <span className={styles.taskTitle}>{n.title}</span>
+                        <span className={styles.taskTime}>{formatStartedAt(n.createdAt)}</span>
+                      </div>
+                      <p className={styles.taskBody}>{n.body}</p>
+                      <div className={styles.taskActions}>
+                        {n.relatedOrderId && (
+                          <RowLink
+                            href={`/diagnostics/${n.relatedOrderId}`}
+                            aria-label={`Review result for ${n.title}`}
+                          >
+                            Review result
+                          </RowLink>
+                        )}
+                        {n.relatedOrderId && <span className={styles.actionDivider} aria-hidden="true" />}
+                        <button
+                          type="button"
+                          className={styles.textButton}
+                          onClick={() => void notifications.acknowledge(n.id)}
+                          aria-label={`Acknowledge ${n.title}`}
+                        >
+                          Acknowledge
+                        </button>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </CardContent>
+            <Link href="/diagnostics" className={styles.viewAllFooter}>
+              View all critical alerts <ArrowRight size={12} aria-hidden="true" />
+            </Link>
+          </Card>
+
+          <Card elevation="xs" padding="md" className={styles.aiCard}>
+            <div className={styles.aiHeader}>
+              <div className={styles.aiIconCircle}>
+                <Sparkles size={18} aria-hidden="true" />
+              </div>
+              <div className={styles.aiTitleBlock}>
+                <Badge variant="ai-assist" size="sm">
+                  Clinical AI — governed
+                </Badge>
+                <h4 className={styles.aiTitle}>SOURCE-GROUNDED note drafting</h4>
+              </div>
+            </div>
+            <p className={styles.aiDesc}>
+              Generate an AI-drafted SOAP or progress note inside an active encounter with
+              verifiable citations and mandatory clinician review before anything is signed.
+            </p>
+            <Link href="/encounters" className={styles.aiButton}>
+              Open an encounter to begin
+              <ArrowUpRight size={14} aria-hidden="true" />
+            </Link>
+          </Card>
+
+          <Card elevation="xs" padding="md">
+            <div className={styles.snapshotHeader}>
+              <h2 className={styles.snapshotTitle}>Today&apos;s Snapshot</h2>
+              <span className={styles.snapshotVs}>vs yesterday</span>
+            </div>
+            <div className={styles.snapshotGrid}>
+              <SnapshotCell
+                label="Encounters"
+                value={
+                  activeEncounters.state === 'loading'
+                    ? '—'
+                    : activeEncounters.state === 'error'
+                      ? '—'
+                      : tableRows.length
+                }
+              />
+              <SnapshotCell
+                label="Lab Orders"
+                value={
+                  pendingDiagnostics.state === 'loading' ||
+                  pendingDiagnostics.state === 'error' ||
+                  !pendingDiagnostics.data
+                    ? '—'
+                    : pendingDiagnostics.data.ordered + pendingDiagnostics.data.collected
+                }
+              />
+              <SnapshotCell
+                label="Results Reviewed"
+                value={
+                  awaitingReview.state === 'loading' ||
+                  awaitingReview.state === 'error' ||
+                  awaitingReview.data === null
+                    ? '—'
+                    : awaitingReview.data
+                }
+              />
+              <SnapshotCell
+                label="Avg. TAT (Labs)"
+                value={
+                  labTat.state === 'loading'
+                    ? '—'
+                    : labTat.state === 'error' || !labTat.data || labTat.data.mean === null
+                      ? '—'
+                      : formatDurationMinutes(labTat.data.mean)
+                }
+                hint={
+                  labTat.state === 'ready' && labTat.data && labTat.data.mean !== null
+                    ? `across ${labTat.data.sample} results`
+                    : undefined
+                }
+              />
+            </div>
+          </Card>
+        </aside>
+
+        <Card elevation="xs" padding="none" className={styles.tableCard}>
             <div className={styles.sectionCardHeader}>
               <div className={styles.sectionHeaderTitle}>
                 <h3>Active Encounters</h3>
@@ -855,158 +1032,9 @@ export function DashboardShell() {
               </Table>
             )}
           </Card>
-        </div>
-
-        <div className={styles.rightColumn}>
-          <Card elevation="xs" padding="md">
-            <CardHeader
-              title="Critical Work Queue"
-              subtitle="Assigned to you · unacknowledged"
-              action={
-                <Badge variant={criticalItems.length > 0 ? 'critical' : 'stable'} size="sm">
-                  {notifications.isLoading ? '…' : criticalItems.length}
-                </Badge>
-              }
-            />
-            <CardContent>
-              {notifications.isLoading ? (
-                <div role="status" aria-label="Loading work queue">
-                  <div className={styles.queueSkeleton} />
-                </div>
-              ) : notifications.error ? (
-                <div role="alert">
-                  <AlertBanner severity="warning" title="Queue unavailable">
-                    {notifications.error}
-                  </AlertBanner>
-                </div>
-              ) : criticalItems.length === 0 ? (
-                <p className={styles.quietEmpty}>No critical results awaiting your review.</p>
-              ) : (
-                <ul className={styles.taskList}>
-                  {criticalItems.slice(0, 3).map((n) => (
-                    <li key={n.id} className={styles.taskItem}>
-                      <Badge variant="critical" size="sm">
-                        CRITICAL
-                      </Badge>
-                      <span className={styles.taskTitle}>{n.title}</span>
-                      <div className={styles.taskMeta}>
-                        <Clock size={12} aria-hidden="true" />
-                        <span>{formatStartedAt(n.createdAt)}</span>
-                      </div>
-                      {/* body = "{testName} ({testCode}) flagged CRITICAL and requires immediate physician review."
-                          per ADR-016: no patient data in body. Render as-is. */}
-                      <p className={styles.taskBody}>{n.body}</p>
-                      <div className={styles.taskActions}>
-                        {n.relatedOrderId && (
-                          <RowLink
-                            href={`/diagnostics/${n.relatedOrderId}`}
-                            aria-label={`Review result for ${n.title}`}
-                          >
-                            Review result
-                          </RowLink>
-                        )}
-                        <button
-                          type="button"
-                          className={styles.textButton}
-                          onClick={() => void notifications.acknowledge(n.id)}
-                          aria-label={`Acknowledge ${n.title}`}
-                        >
-                          Acknowledge
-                        </button>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </CardContent>
-            {criticalItems.length > 3 && (
-              <Link href="/diagnostics" className={styles.viewAllFooter}>
-                View all critical alerts <ArrowUpRight size={12} aria-hidden="true" />
-              </Link>
-            )}
-          </Card>
-
-          <Card elevation="xs" padding="md" className={styles.aiCard}>
-            <div className={styles.aiHeader}>
-              <div className={styles.aiIconCircle}>
-                <Sparkles size={20} aria-hidden="true" />
-              </div>
-              <div className={styles.aiTitleBlock}>
-                <Badge variant="ai-assist" size="sm">
-                  Clinical AI — governed
-                </Badge>
-                <h4 className={styles.aiTitle}>SOURCE-GROUNDED note drafting</h4>
-              </div>
-            </div>
-            <p className={styles.aiDesc}>
-              Generate an AI-drafted SOAP or progress note inside an active encounter with
-              verifiable citations, system-computed documentation gaps, and mandatory clinician
-              review before anything is signed.
-            </p>
-            <Link href="/encounters" className={styles.aiButton}>
-              Open an encounter to begin
-              <ArrowUpRight size={14} aria-hidden="true" />
-            </Link>
-          </Card>
-        </div>
-      </div>
-
-      {/* 6. Today's Snapshot strip */}
-      <section aria-label="Today's snapshot" className={styles.snapshotStrip} style={stagger(5)}>
-        <div className={styles.snapshotHeader}>
-          <h2 className={styles.snapshotTitle}>Today&apos;s Snapshot</h2>
-          <span className={styles.snapshotVs}>vs yesterday</span>
-        </div>
-        <div className={styles.snapshotGrid}>
-          <SnapshotCell
-            label="Encounters"
-            value={
-              activeEncounters.state === 'loading'
-                ? '—'
-                : activeEncounters.state === 'error'
-                  ? '—'
-                  : tableRows.length
-            }
-          />
-          <SnapshotCell
-            label="Lab Orders"
-            value={
-              pendingDiagnostics.state === 'loading' ||
-              pendingDiagnostics.state === 'error' ||
-              !pendingDiagnostics.data
-                ? '—'
-                : pendingDiagnostics.data.ordered + pendingDiagnostics.data.collected
-            }
-          />
-          <SnapshotCell
-            label="Results Reviewed"
-            value={
-              awaitingReview.state === 'loading' ||
-              awaitingReview.state === 'error' ||
-              awaitingReview.data === null
-                ? '—'
-                : awaitingReview.data
-            }
-          />
-          <SnapshotCell
-            label="Avg. TAT (Labs)"
-            value={
-              labTat.state === 'loading'
-                ? '—'
-                : labTat.state === 'error' || !labTat.data || labTat.data.mean === null
-                  ? '—'
-                  : formatDurationMinutes(labTat.data.mean)
-            }
-            hint={
-              labTat.state === 'ready' && labTat.data && labTat.data.mean !== null
-                ? `across ${labTat.data.sample} results`
-                : undefined
-            }
-          />
-        </div>
       </section>
 
-      {/* 7. Quiet empty state when no critical notifications at all */}
+      {/* 5. Quiet empty state when no critical notifications at all */}
       {!notifications.isLoading &&
         !notifications.error &&
         criticalItems.length === 0 &&

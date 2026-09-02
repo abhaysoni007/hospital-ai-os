@@ -28,10 +28,9 @@ describe('M16B DonutChart contract', () => {
     expect(tsx).toMatch(/--border-subtle/);
   });
 
-  it('renders a legend whose items show label, value, and percent', () => {
+  it('renders a legend whose items show label and a value-with-percent line', () => {
     expect(tsx).toMatch(/legendLabel/);
     expect(tsx).toMatch(/legendValue/);
-    expect(tsx).toMatch(/legendPercent/);
     expect(tsx).toMatch(/Math\.round\(seg\.fraction\s*\*\s*100\)/);
   });
 

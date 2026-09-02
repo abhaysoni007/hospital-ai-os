@@ -31,6 +31,7 @@
 .legend {
   display: flex;
   flex-wrap: wrap;
+  justify-content: center;
   gap: var(--space-4);
   font-size: var(--font-size-sm);
   color: var(--text-secondary);

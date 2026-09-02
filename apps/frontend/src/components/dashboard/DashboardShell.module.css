@@ -60,15 +60,15 @@
 /* Hover lift on cards — subtle, pointer-only, motion-gated. */
 @media (hover: hover) and (pointer: fine) {
   .dashboardContainer .metricRow > *,
-  .dashboardContainer .chartsRow > *,
-  .dashboardContainer .splitLayout > * {
+  .dashboardContainer .analyticsGrid > *,
+  .dashboardContainer .sideRail > * {
     transition: transform var(--duration-base) var(--ease-standard),
       box-shadow var(--duration-base) var(--ease-standard);
   }
 
   .dashboardContainer .metricRow > *:hover,
-  .dashboardContainer .chartsRow > *:hover,
-  .dashboardContainer .splitLayout > *:hover {
+  .dashboardContainer .analyticsGrid > *:hover,
+  .dashboardContainer .sideRail > *:hover {
     transform: translateY(-2px);
     box-shadow: var(--shadow-md);
   }
@@ -82,8 +82,8 @@
     animation: none;
   }
   .dashboardContainer .metricRow > *,
-  .dashboardContainer .chartsRow > *,
-  .dashboardContainer .splitLayout > * {
+  .dashboardContainer .analyticsGrid > *,
+  .dashboardContainer .sideRail > * {
     transition: none;
     transform: none;
   }
@@ -100,11 +100,19 @@
 }
 
 .greetingTitle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
   font-size: var(--font-size-h2);
   font-weight: 700;
   color: var(--text-primary);
   letter-spacing: -0.01em;
   line-height: var(--line-height-h2);
+}
+
+.greetingIcon {
+  font-size: 1.4rem;
+  line-height: 1;
 }
 
 .greetingSubtitle {
@@ -251,7 +259,79 @@
   }
 }
 
-/* ---------- Charts row ---------------------------------------------------- */
+/* ---------- Analytics grid ------------------------------------------------
+   Row 1: Encounter Volume | Encounter Status | side rail
+   Row 2: Active Encounters table (spans cols 1-2) | side rail continues  */
+.analyticsGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 2.1fr) minmax(0, 1.2fr) minmax(280px, 1.25fr);
+  /* Row 1 sizes to its tallest card (volume vs status) and both stretch to
+     match; row 2 absorbs leftover height from the tall side rail so the
+     table card's bottom edge aligns with the rail's last card. */
+  grid-template-rows: auto 1fr;
+  grid-template-areas:
+    'volume status side'
+    'table table side';
+  gap: var(--space-4);
+  align-items: stretch;
+}
+
+.analyticsGrid > section[aria-label='Encounter analytics'] > *,
+.analyticsGrid > * {
+  min-width: 0;
+}
+
+.sideRail {
+  grid-area: side;
+  /* Grid (not flex) so the 1fr last row absorbs the exact leftover height
+     including sub-pixel remainders — flex gap rounding can leave the last
+     card 1-2px short of the adjacent table card's bottom edge. */
+  display: grid;
+  grid-template-rows: auto auto 1fr;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+/* The rail spans both grid rows: let its last card absorb the leftover
+   height so the rail's bottom edge aligns with the table card's. */
+.sideRail > :last-child {
+  min-height: 0;
+}
+
+.tableCard {
+  grid-area: table;
+}
+
+/* The volume and status cards need explicit grid placement because they are
+   Card components rendered as direct children of the grid section. */
+.analyticsGrid > :first-child {
+  grid-area: volume;
+}
+.analyticsGrid > :nth-child(2) {
+  grid-area: status;
+}
+
+@media (max-width: 1280px) {
+  .analyticsGrid {
+    grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+    grid-template-areas:
+      'volume status'
+      'table table'
+      'side side';
+  }
+}
+
+@media (max-width: 900px) {
+  .analyticsGrid {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      'volume'
+      'status'
+      'side'
+      'table';
+  }
+}
+
 .chartsRow {
   display: grid;
   grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
@@ -333,20 +413,7 @@
   }
 }
 
-/* ---------- Split layout (table + side) ----------------------------------- */
-.splitLayout {
-  display: grid;
-  grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
-  gap: var(--space-4);
-  align-items: start;
-}
-
-@media (max-width: 1024px) {
-  .splitLayout {
-    grid-template-columns: 1fr;
-  }
-}
-
+/* ---------- Split layout (table + side) — legacy, kept for other pages ---- */
 .leftColumn,
 .rightColumn {
   display: flex;
@@ -463,6 +530,27 @@
   background-color: var(--bg-surface);
 }
 
+.taskTop {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.taskTime {
+  font-size: var(--font-size-caption);
+  color: var(--text-tertiary);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.actionDivider {
+  width: 1px;
+  height: 14px;
+  background-color: var(--border-subtle);
+}
+
 .taskTitle {
   font-weight: 700;
   font-size: var(--font-size-body);
@@ -511,11 +599,11 @@
   outline-offset: 2px;
 }
 
-/* ---------- AI card ------------------------------------------------------- */
+/* ---------- AI assist card ------------------------------------------------ */
 .aiCard {
   border-color: var(--status-ai-border);
   background:
-    linear-gradient(180deg, rgba(124, 58, 237, 0.03), rgba(124, 58, 237, 0) 60%), var(--bg-surface);
+    linear-gradient(180deg, rgba(124, 58, 237, 0.04), rgba(124, 58, 237, 0) 60%), var(--bg-surface);
 }
 
 .aiHeader {
@@ -528,8 +616,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
+  width: 38px;
+  height: 38px;
   border-radius: var(--radius-md);
   background-color: var(--status-ai-bg);
   border: 1px solid var(--status-ai-border);
@@ -541,6 +629,7 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
+  min-width: 0;
 }
 
 .aiTitle {
@@ -552,7 +641,7 @@
 .aiDesc {
   margin-top: var(--space-3);
   font-size: var(--font-size-sm);
-  line-height: 1.45rem;
+  line-height: 1.45;
   color: var(--text-secondary);
 }
 
@@ -583,18 +672,7 @@
   outline-offset: 2px;
 }
 
-/* ---------- Today's snapshot strip --------------------------------------- */
-.snapshotStrip {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-  padding: var(--space-4);
-  border-radius: var(--radius-lg);
-  background-color: var(--bg-surface);
-  border: 1px solid var(--border-subtle);
-  box-shadow: var(--shadow-xs);
-}
-
+/* ---------- Today's snapshot (side rail card) ----------------------------- */
 .snapshotHeader {
   display: flex;
   align-items: baseline;
@@ -622,20 +700,9 @@
 
 .snapshotGrid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: var(--space-4);
-}
-
-@media (max-width: 768px) {
-  .snapshotGrid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (max-width: 480px) {
-  .snapshotGrid {
-    grid-template-columns: 1fr;
-  }
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+  margin-top: var(--space-3);
 }
 
 .snapshotCell {
@@ -644,6 +711,7 @@
   gap: 2px;
   padding: var(--space-2) var(--space-3);
   border-radius: var(--radius-sm);
+  background-color: var(--bg-subtle);
 }
 
 .snapshotLabel {
@@ -655,7 +723,7 @@
 }
 
 .snapshotValue {
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   font-weight: 700;
   color: var(--text-primary);
   line-height: 1.2;

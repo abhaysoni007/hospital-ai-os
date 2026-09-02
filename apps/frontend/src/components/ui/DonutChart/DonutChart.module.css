@@ -58,14 +58,17 @@
 
 .legendItem {
   display: grid;
-  grid-template-columns: 12px minmax(0, 1fr) auto auto;
-  gap: var(--space-3);
+  grid-template-columns: 12px minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  column-gap: var(--space-2);
+  row-gap: 2px;
   align-items: center;
   font-size: var(--font-size-sm);
   color: var(--text-secondary);
 }
 
 .legendDot {
+  grid-row: 1 / span 2;
   width: 10px;
   height: 10px;
   border-radius: var(--radius-full);
@@ -78,16 +81,13 @@
 }
 
 .legendValue {
+  grid-column: 2;
+  justify-self: start;
   color: var(--text-primary);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
-}
-
-.legendPercent {
-  color: var(--text-tertiary);
-  font-variant-numeric: tabular-nums;
-  min-width: 40px;
-  text-align: right;
+  white-space: nowrap;
+  font-size: var(--font-size-caption);
 }
 
 @media (max-width: 768px) {
