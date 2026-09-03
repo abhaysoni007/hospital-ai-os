@@ -62,7 +62,11 @@ export type Permission =
   | 'break_glass:review'
   // Task resource
   | 'task:read'
-  | 'task:update';
+  | 'task:update'
+  // Intelligence resource (M19.1)
+  | 'intelligence:read'
+  | 'intelligence:analyze'
+  | 'intelligence:approve';
 
 export interface AuthState {
   user: AuthUser | null;

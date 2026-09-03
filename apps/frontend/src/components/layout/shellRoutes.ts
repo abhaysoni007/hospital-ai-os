@@ -56,6 +56,12 @@ export const AUTHENTICATED_ROUTES: readonly AuthenticatedShellRoute[] = [
     label: 'Encounters',
     requiredPermission: 'encounter:read',
   },
+  {
+    href: '/intelligence',
+    section: 'Operations',
+    label: 'Intelligence',
+    requiredPermission: 'intelligence:read',
+  },
 
   // Clinical — diagnostic + clinical record surfaces
   {

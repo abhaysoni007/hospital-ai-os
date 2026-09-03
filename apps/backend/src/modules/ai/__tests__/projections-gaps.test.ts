@@ -78,6 +78,16 @@ describe('Deterministic gap detection (ADR-018 §6)', () => {
     expect(empty).not.toContain('NO_CHIEF_COMPLAINT');
   });
 
+  it('hospital_bottleneck computes gaps when encounters or orders are missing', () => {
+    const empty = computeInformationGaps('hospital_bottleneck', []);
+    expect(empty).toContain('NO_ACTIVE_ENCOUNTERS');
+    expect(empty).toContain('NO_PENDING_ORDERS');
+
+    const withEnc = computeInformationGaps('hospital_bottleneck', baseBlocks);
+    expect(withEnc).not.toContain('NO_ACTIVE_ENCOUNTERS');
+    expect(withEnc).not.toContain('NO_PENDING_ORDERS');
+  });
+
   it('rejects unknown capabilities (fail closed)', () => {
     expect(() => computeInformationGaps('autonomous_diagnosis', baseBlocks)).toThrow();
   });

@@ -1,4 +1,5 @@
 import { and, eq, gte, sql } from 'drizzle-orm';
+import { AiInteractionType } from 'shared';
 
 import { db } from '../../db';
 import { aiInteractions } from '../../db/schema/ai';
@@ -9,7 +10,7 @@ import { aiInteractions } from '../../db/schema/ai';
  * input manifest + computed gaps + block counts (never narrative).
  */
 export interface CreateInteractionValues {
-  interactionType: 'note_draft' | 'chart_search' | 'discharge_draft' | 'ocr';
+  interactionType: AiInteractionType;
   initiatedBy: string;
   patientId?: string | null;
   encounterId?: string | null;

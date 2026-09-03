@@ -31,11 +31,16 @@ export const aiInteractionTypeSchema = z.enum([
   'chart_search',
   'discharge_draft',
   'ocr',
+  'hospital_bottleneck',
 ]);
 export type AiInteractionType = z.infer<typeof aiInteractionTypeSchema>;
 
-/** Capabilities implemented by the ratified M11/M12 scope. */
-export const aiCapabilitySchema = z.enum(['note_draft', 'chart_search']);
+/** Capabilities implemented by the ratified M11/M12/M19 scope. */
+export const aiCapabilitySchema = z.enum([
+  'note_draft',
+  'chart_search',
+  'hospital_bottleneck',
+]);
 export type AiCapability = z.infer<typeof aiCapabilitySchema>;
 
 export const groundingStatusSchema = z.enum(['unverified', 'grounded', 'validation_failed']);
@@ -86,6 +91,10 @@ export const gapCodeSchema = z.enum([
   'NO_DIAGNOSTIC_RESULTS',
   'NO_MEDICATION_HISTORY',
   'NO_ALLERGY_DATA',
+  // M19 — Hospital workflow information gaps
+  'NO_ACTIVE_ENCOUNTERS',
+  'NO_PENDING_ORDERS',
+  'NO_CRITICAL_ALERTS',
 ]);
 export type GapCode = z.infer<typeof gapCodeSchema>;
 

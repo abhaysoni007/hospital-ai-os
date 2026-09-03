@@ -1,6 +1,10 @@
 import { AiCapability, ContextBlock, GapCode } from 'shared';
 import { NOTE_DRAFT_TEMPLATE_ID, buildNoteDraftPrompt } from './note-draft.v1';
 import { CHART_SEARCH_TEMPLATE_ID, buildChartSearchPrompt } from './chart-search.v1';
+import {
+  HOSPITAL_BOTTLENECK_TEMPLATE_ID,
+  buildHospitalBottleneckPrompt,
+} from './hospital-bottleneck.v1';
 
 export {
   canonicalizeUntrustedText,
@@ -13,6 +17,11 @@ export { NOTE_DRAFT_TEMPLATE_ID, buildNoteDraftPrompt } from './note-draft.v1';
 export type { NoteDraftPromptInput } from './note-draft.v1';
 export { CHART_SEARCH_TEMPLATE_ID, buildChartSearchPrompt } from './chart-search.v1';
 export type { ChartSearchPromptInput } from './chart-search.v1';
+export {
+  HOSPITAL_BOTTLENECK_TEMPLATE_ID,
+  buildHospitalBottleneckPrompt,
+} from './hospital-bottleneck.v1';
+export type { HospitalBottleneckPromptInput } from './hospital-bottleneck.v1';
 
 /**
  * Prompt template registry (PROMPT_ARCHITECTURE.md §1). Versioned templates
@@ -49,6 +58,15 @@ export const PROMPT_TEMPLATES: Record<AiCapability, PromptTemplate> = {
         blocks: input.blocks,
         gaps: input.gaps,
         question: input.instructions,
+      }),
+  },
+  hospital_bottleneck: {
+    templateId: HOSPITAL_BOTTLENECK_TEMPLATE_ID,
+    build: (input) =>
+      buildHospitalBottleneckPrompt({
+        blocks: input.blocks,
+        gaps: input.gaps,
+        instructions: input.instructions,
       }),
   },
 };

@@ -101,6 +101,7 @@ export const aiInteractionTypeEnum = pgEnum('ai_interaction_type', [
   'chart_search',
   'discharge_draft',
   'ocr',
+  'hospital_bottleneck',
 ]);
 export const groundingStatusEnum = pgEnum('grounding_status', [
   'unverified',
@@ -117,4 +118,35 @@ export const breakGlassReasonEnum = pgEnum('break_glass_reason', [
   'emergency_care',
   'patient_safety',
   'continuity_of_care',
+]);
+
+// M19 — Hospital Intelligence Enums
+export const signalTypeEnum = pgEnum('signal_type', [
+  'PENDING_DIAGNOSTIC_RESULT',
+  'CRITICAL_RESULT_UNACKNOWLEDGED',
+  'ENCOUNTER_WITHOUT_CLINICAL_RECORD',
+]);
+export const signalSeverityEnum = pgEnum('signal_severity', [
+  'CRITICAL',
+  'HIGH',
+  'MEDIUM',
+  'LOW',
+]);
+export const signalStatusEnum = pgEnum('signal_status', [
+  'detected',
+  'analyzed',
+  'actioned',
+  'dismissed',
+  'resolved',
+  'stale',
+]);
+export const recommendationStatusEnum = pgEnum('recommendation_status', [
+  'proposed',
+  'approved',
+  'executed',
+  'rejected',
+  'policy_rejected',
+  'execution_failed',
+  'insufficient_evidence',
+  'unavailable',
 ]);

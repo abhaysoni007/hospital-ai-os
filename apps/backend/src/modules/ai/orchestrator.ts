@@ -274,7 +274,9 @@ async function persistInteractionAndAudit(
   const eventType =
     args.capability === 'note_draft'
       ? AI_AUDIT_EVENTS.DRAFT_GENERATED
-      : AI_AUDIT_EVENTS.SEARCH_EXECUTED;
+      : args.capability === 'hospital_bottleneck'
+        ? AI_AUDIT_EVENTS.BOTTLENECK_ANALYZED
+        : AI_AUDIT_EVENTS.SEARCH_EXECUTED;
 
   const interactionId = await aiInteractionRepository.create({
     interactionType: args.capability,

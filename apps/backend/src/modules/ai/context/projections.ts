@@ -89,7 +89,14 @@ export function computeInformationGaps(
   const cap = aiCapabilitySchema.parse(capability);
   const gaps: GapCode[] = [];
 
-  if (cap === 'note_draft') {
+  if (cap === 'hospital_bottleneck') {
+    if (!blocks.some((b) => b.blockType === 'encounter_metadata')) {
+      gaps.push('NO_ACTIVE_ENCOUNTERS');
+    }
+    if (!blocks.some((b) => b.blockType === 'diagnostic_order')) {
+      gaps.push('NO_PENDING_ORDERS');
+    }
+  } else if (cap === 'note_draft') {
     const enc = blocks.find((b) => b.blockType === 'encounter_metadata');
     if (!enc || enc.blockType !== 'encounter_metadata' || !enc.chiefComplaint) {
       gaps.push('NO_CHIEF_COMPLAINT');

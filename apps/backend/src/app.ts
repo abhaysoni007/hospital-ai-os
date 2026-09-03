@@ -27,6 +27,7 @@ import {
 import { authorizationProbeRoutes } from './modules/authorization-probe/probe.routes';
 import { breakGlassRouter } from './modules/break-glass/break-glass.routes';
 import { intelligenceRoutes } from './modules/clinical-intelligence/intelligence.routes';
+import { hospitalIntelligenceRoutes } from './modules/hospital-intelligence/hospital-intelligence.routes';
 import { config } from './config';
 
 export const app = express();
@@ -63,6 +64,7 @@ app.use('/api/v1/tasks', taskRoutes);
 app.use('/api/v1/staff', staffIdentityRoutes);
 app.use('/api/v1/break-glass', breakGlassRouter);
 app.use('/api/v1/intelligence', intelligenceRoutes);
+app.use('/api/v1/hospital-intelligence', hospitalIntelligenceRoutes);
 // M5 test infrastructure only — no business logic, no patient data.
 // M12.1: mounted ONLY outside production (test/development environments).
 if (config.NODE_ENV !== 'production') {

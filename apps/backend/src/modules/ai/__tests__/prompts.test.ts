@@ -86,4 +86,24 @@ describe('Versioned prompt templates (PROMPT_ARCHITECTURE §1/§2)', () => {
     expect(p.userPrompt.length).toBeLessThan(6000);
     expect(p.templateId).toBe(CHART_SEARCH_TEMPLATE_ID);
   });
+
+  it('hospital_bottleneck@1 renders healthcare safety boundaries and template ID', async () => {
+    const { getPromptTemplate } = await import('../prompts');
+    const template = getPromptTemplate('hospital_bottleneck');
+    expect(template.templateId).toBe('hospital_bottleneck@1');
+
+    const rendered = template.build({
+      blocks: baseBlocks,
+      gaps: ['NO_ACTIVE_ENCOUNTERS'],
+      instructions: 'Review pending STAT lab orders',
+    });
+
+    expect(rendered.templateId).toBe('hospital_bottleneck@1');
+    expect(rendered.systemInstruction).toContain('OPERATIONAL SCOPE ONLY');
+    expect(rendered.systemInstruction).toContain('NO PRESCRIBING');
+    expect(rendered.systemInstruction).toContain('NO DISCHARGE DECISIONS');
+    expect(rendered.systemInstruction).toContain('NO AUTONOMOUS ACTIONS');
+    expect(rendered.userPrompt).toContain('[CLINICAL_CONTEXT_START]');
+    expect(rendered.userPrompt).toContain('SYSTEM-COMPUTED INFORMATION GAPS: NO_ACTIVE_ENCOUNTERS');
+  });
 });

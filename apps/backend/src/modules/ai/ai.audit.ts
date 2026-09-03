@@ -12,6 +12,7 @@ export const AI_AUDIT_EVENTS = {
   DRAFT_ACCEPTED: 'AI_DRAFT_ACCEPTED',
   DRAFT_REJECTED: 'AI_DRAFT_REJECTED',
   DRAFT_EDITED: 'AI_DRAFT_EDITED', // M12.1 P0-4: pending→edited is state-changing and must be audited
+  BOTTLENECK_ANALYZED: 'AI_BOTTLENECK_ANALYZED',
 } as const;
 
 export interface AiAuditActor {

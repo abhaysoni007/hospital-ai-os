@@ -71,6 +71,13 @@
       "when": 1788029106000,
       "tag": "0009_m18_clinical_integrity",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1788800000000,
+      "tag": "0010_hospital_intelligence",
+      "breakpoints": true
     }
   ]
 }

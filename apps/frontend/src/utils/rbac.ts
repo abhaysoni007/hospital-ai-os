@@ -34,6 +34,9 @@ export const ROLE_PERMISSIONS: Record<StaffRole, readonly Permission[]> = {
     'break_glass:activate',
     'task:read',
     'task:update',
+    'intelligence:read',
+    'intelligence:analyze',
+    'intelligence:approve',
   ],
   nurse: [
     'patient:read',
@@ -47,6 +50,7 @@ export const ROLE_PERMISSIONS: Record<StaffRole, readonly Permission[]> = {
     'break_glass:activate',
     'task:read',
     'task:update',
+    'intelligence:read',
   ],
   pharmacist: [
     'patient:read',
@@ -86,6 +90,9 @@ export const ROLE_PERMISSIONS: Record<StaffRole, readonly Permission[]> = {
     'appointment:read',
     'encounter:read',
     'task:read',
+    'intelligence:read',
+    'intelligence:analyze',
+    'intelligence:approve',
   ],
   security_admin: ['audit_event:read', 'break_glass:review', 'task:read'],
 };

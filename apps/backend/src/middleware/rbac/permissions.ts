@@ -79,7 +79,11 @@ export type Permission =
   | 'break_glass:review'
   // Task resource
   | 'task:read'
-  | 'task:update';
+  | 'task:update'
+  // Intelligence resource (M19.1)
+  | 'intelligence:read'
+  | 'intelligence:analyze'
+  | 'intelligence:approve';
 
 /** All valid permissions as a readonly set for runtime validation */
 export const VALID_PERMISSIONS: ReadonlySet<Permission> = new Set<Permission>([
@@ -112,6 +116,9 @@ export const VALID_PERMISSIONS: ReadonlySet<Permission> = new Set<Permission>([
   'break_glass:review',
   'task:read',
   'task:update',
+  'intelligence:read',
+  'intelligence:analyze',
+  'intelligence:approve',
 ]);
 
 // ---------------------------------------------------------------------------
@@ -142,6 +149,9 @@ export const ROLE_PERMISSIONS: Readonly<Record<StaffRole, ReadonlySet<Permission
     'break_glass:activate',
     'task:read',
     'task:update',
+    'intelligence:read',
+    'intelligence:analyze',
+    'intelligence:approve',
   ]),
 
   nurse: new Set<Permission>([
@@ -156,6 +166,7 @@ export const ROLE_PERMISSIONS: Readonly<Record<StaffRole, ReadonlySet<Permission
     'break_glass:activate',
     'task:read',
     'task:update',
+    'intelligence:read',
   ]),
 
   pharmacist: new Set<Permission>([
@@ -199,6 +210,9 @@ export const ROLE_PERMISSIONS: Readonly<Record<StaffRole, ReadonlySet<Permission
     'appointment:read',
     'encounter:read',
     'task:read',
+    'intelligence:read',
+    'intelligence:analyze',
+    'intelligence:approve',
   ]),
 
   security_admin: new Set<Permission>(['audit_event:read', 'break_glass:review', 'task:read']),

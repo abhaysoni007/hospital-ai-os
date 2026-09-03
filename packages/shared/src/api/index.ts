@@ -12,3 +12,4 @@ export * from './ai.schemas';
 export * from './notification.schemas';
 export * from './task.schemas';
 export * from './intelligence.schemas';
+export * from './intelligence-signal.schemas';
