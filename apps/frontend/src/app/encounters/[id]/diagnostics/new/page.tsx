@@ -16,6 +16,7 @@ import {
   type EncounterDetailResponse,
   type OrderPriority,
 } from 'shared';
+import { parseApiError } from '../../../../../utils/error-parser';
 import styles from './new-diagnostic-order.module.css';
 
 const TEST_CATALOG = [
@@ -42,6 +43,7 @@ export default function NewDiagnosticOrderPage() {
   const [testName, setTestName] = useState('');
   const [priority, setPriority] = useState<OrderPriority>('routine');
   const [indication, setIndication] = useState('');
+  const [clientRequestId] = useState(() => crypto.randomUUID());
   const [saving, setSaving] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
@@ -82,6 +84,7 @@ export default function NewDiagnosticOrderPage() {
       testCode: testCode.trim(),
       testName: testName.trim(),
       priority,
+      clientRequestId,
       ...(indication.trim() ? { clinicalIndication: indication.trim() } : {}),
     };
     const parsed = createDiagnosticOrderSchema.safeParse(payload);
@@ -99,12 +102,15 @@ export default function NewDiagnosticOrderPage() {
       await diagnosticsService.createOrder(encounterId!, parsed.data as never);
       router.push(`/encounters/${encounterId}`);
     } catch (err) {
-      const apiErr = err as Error & { statusCode?: number };
+      const parsedError = parseApiError(err);
       setError(
-        apiErr.statusCode === 403
-          ? 'You are not authorized to place diagnostic orders.'
-          : apiErr.message || 'Failed to place the order.',
+        parsedError.requestId
+          ? `${parsedError.message} (Incident ID: ${parsedError.requestId})`
+          : parsedError.message,
       );
+      if (Object.keys(parsedError.fieldErrors).length > 0) {
+        setFieldErrors(parsedError.fieldErrors);
+      }
       setSaving(false);
     }
   };

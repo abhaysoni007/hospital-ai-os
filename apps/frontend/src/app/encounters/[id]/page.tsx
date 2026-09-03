@@ -34,6 +34,7 @@ import type {
 import styles from './encounter-detail.module.css';
 import { useAuth } from '../../../hooks/useAuth';
 import { hasPermission } from '../../../utils/rbac';
+import { parseApiError, ParsedError } from '../../../utils/error-parser';
 
 const STATUS_FLOW = [
   'registered',
@@ -60,7 +61,7 @@ export default function EncounterDetailPage() {
 
   const [encounter, setEncounter] = useState<EncounterDetailResponse | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<ParsedError | null>(null);
   const [acting, setActing] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
 
@@ -125,9 +126,7 @@ export default function EncounterDetailPage() {
       setEncounter(res.data);
     } catch (err) {
       handleScopeError(err);
-      setError(
-        'This record is no longer available. It may not exist or your role may not permit access.',
-      );
+      setError(parseApiError(err));
     } finally {
       setLoading(false);
     }
@@ -238,16 +237,18 @@ export default function EncounterDetailPage() {
       await fetchEncounter();
       await fetchRecords();
     } catch (err) {
-      const apiErr = err as Error & { code?: string; message?: string };
-      if (apiErr.code === 'UNRESOLVED_DIAGNOSTICS') {
-        setDischargeError(apiErr.message || 'Cannot discharge: Unresolved diagnostic orders.');
-      } else if (apiErr.code === 'VERSION_CONFLICT' || apiErr.code === 'INVALID_TRANSITION') {
+      const parsed = parseApiError(err);
+      if (parsed.code === 'UNRESOLVED_DIAGNOSTICS') {
+        setDischargeError(parsed.message);
+      } else if (parsed.isConflict || parsed.code === 'INVALID_TRANSITION') {
         await fetchEncounter();
-        setDischargeError(
-          'The encounter was modified by someone else. Please review the updated state and try again.',
-        );
+        setDischargeError(parsed.message);
       } else {
-        setDischargeError(apiErr.message || 'Failed to discharge patient. Please try again.');
+        setDischargeError(
+          parsed.requestId
+            ? `${parsed.message} (Incident ID: ${parsed.requestId})`
+            : parsed.message,
+        );
       }
     } finally {
       setDischarging(false);
@@ -269,7 +270,12 @@ export default function EncounterDetailPage() {
       <AppShell breadcrumbs={['Operations', 'Encounters']} requiredPermission="encounter:read">
         <div className={styles.container}>
           {breakGlassPatientId && <BreakGlassBanner patientId={breakGlassPatientId} />}
-          <ErrorState title="Encounter unavailable" message={error ?? undefined} />
+          <ErrorState
+            title={error?.title || 'Encounter unavailable'}
+            message={error?.message || 'This record is no longer available.'}
+            correlationId={error?.requestId}
+            onRetry={() => void fetchEncounter()}
+          />
         </div>
         {showBreakGlassModal && breakGlassPatientId && (
           <BreakGlassModal
@@ -438,7 +444,7 @@ export default function EncounterDetailPage() {
                     AI assistance
                   </h2>
                   <AiNoteDraftPanel
-                    encounterId={encounterId}
+                    encounterId={encounter.id}
                     recordType="soap"
                     onBound={() => {
                       void fetchRecords();

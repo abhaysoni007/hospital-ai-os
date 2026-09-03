@@ -22,7 +22,9 @@ export function AuthGuard({ children, requiredPermission, requiredRoles }: AuthG
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
-      router.replace('/login');
+      const returnParam =
+        pathname && pathname !== '/login' ? `?returnUrl=${encodeURIComponent(pathname)}` : '';
+      router.replace(`/login${returnParam}`);
     }
   }, [isLoading, isAuthenticated, router, pathname]);
 

@@ -28,6 +28,7 @@ import { PatientIdentity } from '../../components/ui/Identity/Identity';
 import { AppointmentStatusBadge } from '../../components/ui/SemanticBadges/SemanticBadges';
 import { appointmentService } from '../../services/appointment-service';
 import type { AppointmentListItem, AppointmentStatusValue } from 'shared';
+import { parseApiError, ParsedError } from '../../utils/error-parser';
 import styles from './appointments.module.css';
 import { useAuth } from '../../hooks/useAuth';
 import { hasPermission } from '../../utils/rbac';
@@ -64,7 +65,7 @@ export default function AppointmentsPage() {
   const { user } = useAuth();
   const [appointments, setAppointments] = useState<readonly AppointmentListItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<ParsedError | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [checkedInEncounterId, setCheckedInEncounterId] = useState<string | null>(null);
   const [date, setDate] = useState(todayIso());
@@ -87,8 +88,8 @@ export default function AppointmentsPage() {
         status: (status || undefined) as AppointmentStatusValue | undefined,
       });
       setAppointments(response.data);
-    } catch {
-      setError('The scheduling service did not respond. Check your connection and try again.');
+    } catch (err: unknown) {
+      setError(parseApiError(err));
     } finally {
       setLoading(false);
     }
@@ -108,13 +109,11 @@ export default function AppointmentsPage() {
       // Real server response: the encounter created by check-in.
       setCheckedInEncounterId(res.data.encounter.id);
     } catch (err) {
-      const apiError = err as Error & { code?: string; statusCode?: number };
+      const parsed = parseApiError(err);
       setActionError(
-        apiError.code === 'INVALID_TRANSITION'
-          ? 'This action is no longer available — the appointment state changed. Refresh and try again.'
-          : apiError.statusCode === 403
-            ? 'You do not have permission to check in patients.'
-            : 'Check-in failed. The appointment may already be checked in.',
+        parsed.requestId
+          ? `${parsed.message} (Incident ID: ${parsed.requestId})`
+          : parsed.message,
       );
     } finally {
       setActingId(null);
@@ -130,14 +129,12 @@ export default function AppointmentsPage() {
       setCancelTarget(null);
       await fetchAppointments();
     } catch (err) {
-      const apiError = err as Error & { code?: string; statusCode?: number };
+      const parsed = parseApiError(err);
       setCancelTarget(null);
       setActionError(
-        apiError.code === 'INVALID_TRANSITION'
-          ? 'This appointment can no longer be cancelled — its state changed.'
-          : apiError.statusCode === 403
-            ? 'You do not have permission to cancel this appointment.'
-            : 'Cancellation failed. Try again or contact the patient directly.',
+        parsed.requestId
+          ? `${parsed.message} (Incident ID: ${parsed.requestId})`
+          : parsed.message,
       );
     } finally {
       setActingId(null);
@@ -237,8 +234,9 @@ export default function AppointmentsPage() {
           <TableSkeleton rows={6} />
         ) : error ? (
           <ErrorState
-            title="Could not load appointments"
-            message={error}
+            title={error.title}
+            message={error.message}
+            correlationId={error.requestId}
             onRetry={() => void fetchAppointments()}
           />
         ) : appointments.length === 0 ? (

@@ -22,12 +22,14 @@ export interface ApiErrorPayload {
   code: string;
   message: string;
   details?: unknown;
+  requestId?: string;
 }
 
 export class ApiError extends Error {
   public readonly code: string;
   public readonly statusCode: number;
   public readonly details?: unknown;
+  public readonly requestId?: string;
 
   constructor(statusCode: number, payload: ApiErrorPayload) {
     super(payload.message || 'An unexpected error occurred');
@@ -35,6 +37,7 @@ export class ApiError extends Error {
     this.statusCode = statusCode;
     this.code = payload.code || 'UNKNOWN_ERROR';
     this.details = payload.details;
+    this.requestId = payload.requestId;
   }
 }
 
@@ -196,10 +199,19 @@ export async function apiClient<T>(endpoint: string, options: RequestOptions = {
   }
 
   if (!response.ok) {
+    const headerReqId =
+      response.headers?.get?.('x-request-id') ||
+      response.headers?.get?.('x-correlation-id') ||
+      undefined;
+
     const errorPayload: ApiErrorPayload = (data?.error as ApiErrorPayload) || {
       code: 'API_ERROR',
       message: (data?.message as string) || `Request failed with status ${response.status}`,
+      requestId: headerReqId,
     };
+    if (!errorPayload.requestId && headerReqId) {
+      errorPayload.requestId = headerReqId;
+    }
     throw new ApiError(response.status, errorPayload);
   }
 

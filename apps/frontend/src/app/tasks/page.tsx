@@ -31,6 +31,7 @@ import {
 import { taskService } from '../../services/task-service';
 import { getStaffIdentities } from '../../services/staff-service';
 import type { TaskResponse, TaskStatusEnum } from 'shared';
+import { parseApiError, ParsedError } from '../../utils/error-parser';
 import styles from './tasks.module.css';
 
 const STATUS_FILTERS: Array<{ value: string; label: string }> = [
@@ -48,7 +49,7 @@ export default function TasksPage() {
   const { user } = useAuth();
   const [tasks, setTasks] = useState<TaskResponse[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<ParsedError | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
 
   const [status, setStatus] = useState('');
@@ -96,8 +97,8 @@ export default function TasksPage() {
           // Cells fall back to "—"; the queue itself stays usable.
         }
       }
-    } catch {
-      setError('The task service did not respond. Check your connection and try again.');
+    } catch (err: unknown) {
+      setError(parseApiError(err));
     } finally {
       setLoading(false);
     }
@@ -137,8 +138,13 @@ export default function TasksPage() {
     try {
       await taskService.acknowledgeTask(id);
       await fetchTasks();
-    } catch {
-      setActionError('Failed to acknowledge task. It may have already been updated.');
+    } catch (err: unknown) {
+      const parsed = parseApiError(err);
+      setActionError(
+        parsed.requestId
+          ? `${parsed.message} (Incident ID: ${parsed.requestId})`
+          : parsed.message,
+      );
     } finally {
       setActionLoading(null);
     }
@@ -151,8 +157,13 @@ export default function TasksPage() {
     try {
       await taskService.completeTask(id);
       await fetchTasks();
-    } catch {
-      setActionError('Failed to complete task. It may have already been updated.');
+    } catch (err: unknown) {
+      const parsed = parseApiError(err);
+      setActionError(
+        parsed.requestId
+          ? `${parsed.message} (Incident ID: ${parsed.requestId})`
+          : parsed.message,
+      );
     } finally {
       setActionLoading(null);
     }
@@ -166,8 +177,13 @@ export default function TasksPage() {
       await taskService.reassignTask(reassignTask.id, newAssignee);
       setReassignTask(null);
       await fetchTasks();
-    } catch {
-      setActionError('Failed to reassign task. Please try again.');
+    } catch (err: unknown) {
+      const parsed = parseApiError(err);
+      setActionError(
+        parsed.requestId
+          ? `${parsed.message} (Incident ID: ${parsed.requestId})`
+          : parsed.message,
+      );
       setReassignTask(null);
     } finally {
       setActionLoading(null);
@@ -182,8 +198,13 @@ export default function TasksPage() {
       await taskService.escalateTask(escalateTask.id);
       setEscalateTask(null);
       await fetchTasks();
-    } catch {
-      setActionError('Failed to escalate task.');
+    } catch (err: unknown) {
+      const parsed = parseApiError(err);
+      setActionError(
+        parsed.requestId
+          ? `${parsed.message} (Incident ID: ${parsed.requestId})`
+          : parsed.message,
+      );
       setEscalateTask(null);
     } finally {
       setActionLoading(null);
@@ -270,8 +291,9 @@ export default function TasksPage() {
           <TableSkeleton rows={6} />
         ) : error ? (
           <ErrorState
-            title="Could not load tasks"
-            message={error}
+            title={error.title}
+            message={error.message}
+            correlationId={error.requestId}
             onRetry={() => void fetchTasks()}
           />
         ) : tasks.length === 0 ? (

@@ -17,6 +17,7 @@ import { PatientResponse } from 'shared';
 import styles from './patients.module.css';
 import { useAuth } from '../../hooks/useAuth';
 import { hasPermission } from '../../utils/rbac';
+import { parseApiError, ParsedError } from '../../utils/error-parser';
 
 /**
  * M13 — Patient directory. Truthful loading/error/empty states; rows are
@@ -27,7 +28,7 @@ export default function PatientsPage() {
   const { user } = useAuth();
   const [patients, setPatients] = useState<PatientResponse[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
+  const [error, setError] = useState<ParsedError | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [retryTick, setRetryTick] = useState(0);
 
@@ -37,7 +38,7 @@ export default function PatientsPage() {
     let cancelled = false;
     const timer = setTimeout(async () => {
       setLoading(true);
-      setError(false);
+      setError(null);
       try {
         const response = await patientService.getPatients({
           page: 1,
@@ -45,10 +46,10 @@ export default function PatientsPage() {
           query: searchQuery.trim() || undefined,
         });
         if (!cancelled) setPatients(response.data);
-      } catch {
+      } catch (err: unknown) {
         if (!cancelled) {
           setPatients([]);
-          setError(true);
+          setError(parseApiError(err));
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -68,14 +69,13 @@ export default function PatientsPage() {
       <div className={styles.container}>
         <PageHeader
           title="Patient directory"
-          description="Search the registered patient population by name, medical record number, or phone."
+          description="Browse, search, and manage registered patients across all clinical workflows."
           actions={
             canCreate ? (
               <Button
                 variant="primary"
-                size="md"
-                iconLeft={<UserPlus size={16} />}
                 onClick={() => router.push('/patients/new')}
+                iconLeft={<UserPlus size={16} />}
               >
                 Register patient
               </Button>
@@ -83,10 +83,12 @@ export default function PatientsPage() {
           }
         />
 
-        <div className={styles.searchBar}>
+        <div className={styles.filterBar}>
           <Input
-            id="patient-search"
-            placeholder="Search by name, MRN, or phone…"
+            id="patient-search-input"
+            label="Search patients by name or MRN"
+            hideLabel
+            placeholder="Search by patient name, MRN, or phone number..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             iconLeft={<Search size={16} aria-hidden="true" />}
@@ -98,8 +100,9 @@ export default function PatientsPage() {
           <TableSkeleton rows={6} />
         ) : error ? (
           <ErrorState
-            title="Could not load the patient directory"
-            message="The directory service did not respond. Check your connection and try again."
+            title={error.title}
+            message={error.message}
+            correlationId={error.requestId}
             onRetry={retry}
           />
         ) : patients.length === 0 ? (

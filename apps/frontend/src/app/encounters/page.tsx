@@ -22,6 +22,7 @@ import { PatientIdentity } from '../../components/ui/Identity/Identity';
 import { EncounterStatusBadge } from '../../components/ui/SemanticBadges/SemanticBadges';
 import { encounterService } from '../../services/encounter-service';
 import type { EncounterListItem, EncounterStatusValue } from 'shared';
+import { parseApiError, ParsedError } from '../../utils/error-parser';
 import styles from './encounters.module.css';
 
 /**
@@ -32,7 +33,7 @@ export default function EncountersPage() {
   const router = useRouter();
   const [encounters, setEncounters] = useState<EncounterListItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<ParsedError | null>(null);
   const [status, setStatus] = useState('');
 
   const fetchEncounters = useCallback(async () => {
@@ -45,8 +46,8 @@ export default function EncountersPage() {
         status: (status || undefined) as EncounterStatusValue | undefined,
       });
       setEncounters(response.data);
-    } catch {
-      setError('The encounter service did not respond. Check your connection and try again.');
+    } catch (err: unknown) {
+      setError(parseApiError(err));
     } finally {
       setLoading(false);
     }
@@ -92,8 +93,9 @@ export default function EncountersPage() {
           <TableSkeleton rows={6} />
         ) : error ? (
           <ErrorState
-            title="Could not load encounters"
-            message={error}
+            title={error.title}
+            message={error.message}
+            correlationId={error.requestId}
             onRetry={() => void fetchEncounters()}
           />
         ) : encounters.length === 0 ? (

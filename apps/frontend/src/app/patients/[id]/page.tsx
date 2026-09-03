@@ -34,6 +34,7 @@ import { CalendarPlus, Stethoscope } from 'lucide-react';
 import { Button } from '../../../components/ui/Button/Button';
 import { useAuth } from '../../../hooks/useAuth';
 import { hasPermission } from '../../../utils/rbac';
+import { parseApiError, ParsedError } from '../../../utils/error-parser';
 
 type Block<T> = { state: 'loading' | 'ready' | 'error'; data: T | null };
 
@@ -43,9 +44,9 @@ type Block<T> = { state: 'loading' | 'ready' | 'error'; data: T | null };
  * disclosure per section; PHI stays behind the same server permissions.
  */
 export default function PatientProfilePage() {
-  const params = useParams();
+  const params = useParams<{ id: string }>();
   const router = useRouter();
-  const id = params.id as string;
+  const id = params?.id as string;
   const { user } = useAuth();
 
   const canReadAppointments = hasPermission(user?.role, 'appointment:read');
@@ -54,6 +55,7 @@ export default function PatientProfilePage() {
 
   const [patient, setPatient] = useState<PatientResponse | null>(null);
   const [patientState, setPatientState] = useState<Block<null>['state']>('loading');
+  const [patientError, setPatientError] = useState<ParsedError | null>(null);
   const [patientRetryTick, setPatientRetryTick] = useState(0);
   const [showBreakGlassModal, setShowBreakGlassModal] = useState(false);
 
@@ -69,6 +71,7 @@ export default function PatientProfilePage() {
   useEffect(() => {
     let cancelled = false;
     setPatientState('loading');
+    setPatientError(null);
     patientService
       .getPatientById(id)
       .then((res) => {
@@ -77,8 +80,11 @@ export default function PatientProfilePage() {
           setPatientState('ready');
         }
       })
-      .catch(() => {
-        if (!cancelled) setPatientState('error');
+      .catch((err: unknown) => {
+        if (!cancelled) {
+          setPatientError(parseApiError(err));
+          setPatientState('error');
+        }
       });
     return () => {
       cancelled = true;
@@ -108,11 +114,13 @@ export default function PatientProfilePage() {
           setEncounters({ state: 'error', data: null });
         });
     }
-  }, [id, canReadAppointments, canReadEncounters]);
+  }, [id, canReadAppointments, canReadEncounters, user]);
 
   useEffect(() => {
-    loadRelated();
-  }, [loadRelated]);
+    if (patientState === 'ready') {
+      loadRelated();
+    }
+  }, [patientState, loadRelated]);
 
   const bookHref = `/appointments/new?patientId=${encodeURIComponent(id)}`;
   const scheduleAction = canCreateAppointments ? (
@@ -129,8 +137,20 @@ export default function PatientProfilePage() {
   if (patientState === 'loading') {
     return (
       <AppShell breadcrumbs={['Operations', 'Patients']} requiredPermission="patient:read">
-        <div className={styles.loadingWrap}>
-          <Skeleton variant="rectangular" height={220} />
+        <div className={styles.container}>
+          <div className={styles.profileHeader}>
+            <Skeleton variant="circular" width={64} height={64} />
+            <div className={styles.profileHeaderText}>
+              <Skeleton variant="text" width={240} height={28} />
+              <Skeleton variant="text" width={160} height={16} />
+            </div>
+          </div>
+          <div className={styles.sectionsGrid}>
+            <Skeleton variant="card" height={220} />
+            <Skeleton variant="card" height={220} />
+            <Skeleton variant="card" height={220} />
+            <Skeleton variant="card" height={220} />
+          </div>
         </div>
       </AppShell>
     );
@@ -140,8 +160,12 @@ export default function PatientProfilePage() {
     return (
       <AppShell breadcrumbs={['Operations', 'Patients']} requiredPermission="patient:read">
         <ErrorState
-          title="This record is no longer available"
-          message="The patient may not exist, or your role does not permit access. Return to the directory and search again."
+          title={patientError?.title || 'This record is no longer available'}
+          message={
+            patientError?.message ||
+            'The patient may not exist, or your role does not permit access. Return to the directory and search again.'
+          }
+          correlationId={patientError?.requestId}
           onRetry={() => setPatientRetryTick((tick) => tick + 1)}
         />
       </AppShell>

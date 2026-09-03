@@ -581,6 +581,15 @@ describe('M8 Appointment Module (booking / token / cancel / check-in)', () => {
     const date = futureDate(1000 + Math.floor(Math.random() * 1000)); // unique per run
     const time = '07:30';
 
+    await db
+      .delete(appointmentTokenCounters)
+      .where(
+        and(
+          eq(appointmentTokenCounters.doctorId, physicianId),
+          eq(appointmentTokenCounters.scheduledDate, date),
+        ),
+      );
+
     const results = await Promise.allSettled(
       Array.from({ length: 20 }, () =>
         appointmentService.bookAppointment(

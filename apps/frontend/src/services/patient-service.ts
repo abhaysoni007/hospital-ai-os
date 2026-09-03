@@ -1,5 +1,10 @@
 import { apiClient } from './api-client';
-import { RegisterPatientRequest, GetPatientsQuery, PatientResponse } from 'shared';
+import {
+  RegisterPatientRequest,
+  UpdatePatientRequest,
+  GetPatientsQuery,
+  PatientResponse,
+} from 'shared';
 
 export interface PaginatedResponse<T> {
   data: T[];
@@ -18,6 +23,19 @@ export const patientService = {
   async registerPatient(payload: RegisterPatientRequest): Promise<{ data: PatientResponse }> {
     return apiClient('/patients', {
       method: 'POST',
+      body: payload,
+    });
+  },
+
+  /**
+   * Update an existing patient (with optimistic concurrency check via expectedVersion)
+   */
+  async updatePatient(
+    id: string,
+    payload: UpdatePatientRequest,
+  ): Promise<{ data: PatientResponse }> {
+    return apiClient(`/patients/${id}`, {
+      method: 'PATCH',
       body: payload,
     });
   },
@@ -52,3 +70,4 @@ export const patientService = {
     });
   },
 };
+

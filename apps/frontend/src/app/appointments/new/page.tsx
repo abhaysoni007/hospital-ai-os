@@ -42,7 +42,7 @@ export default function NewAppointmentPage() {
 function BookingFlow() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const preselectedPatientId = searchParams.get('patientId');
+  const preselectedPatientId = searchParams?.get('patientId') ?? null;
 
   const [step, setStep] = useState<'details' | 'review'>('details');
   const [loading, setLoading] = useState(false);

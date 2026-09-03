@@ -10,6 +10,7 @@ import { PageHeader } from '../../../components/ui/PageHeader/PageHeader';
 import { AlertBanner } from '../../../components/ui/Alert/AlertBanner';
 import { patientService } from '../../../services/patient-service';
 import { registerPatientSchema } from 'shared';
+import { parseApiError } from '../../../utils/error-parser';
 import styles from './new-patient.module.css';
 
 const EMPTY_FORM = {
@@ -79,12 +80,15 @@ export default function NewPatientPage() {
       });
       router.push(`/patients/${response.data.id}`);
     } catch (err) {
-      const apiError = err as Error & { statusCode?: number };
+      const parsed = parseApiError(err);
       setError(
-        apiError.statusCode === 403
-          ? 'Your role does not permit registering patients.'
-          : apiError.message || 'Registration failed. Please review the form and try again.',
+        parsed.requestId
+          ? `${parsed.message} (Incident ID: ${parsed.requestId})`
+          : parsed.message,
       );
+      if (Object.keys(parsed.fieldErrors).length > 0) {
+        setFieldErrors(parsed.fieldErrors);
+      }
       setLoading(false);
     }
   };
