@@ -109,7 +109,7 @@ describe('M12.1 P0-4 — AI interaction action audit integrity', () => {
     const res = await request(app)
       .patch(`/api/v1/ai/interactions/${id}/action`)
       .set('Authorization', `Bearer ${physicianToken()}`)
-      .set('x-correlation-id', correlationId)
+      .set('x-request-id', correlationId)
       .send({ action: 'edited' });
 
     expect(res.status).toBe(200);
@@ -135,7 +135,7 @@ describe('M12.1 P0-4 — AI interaction action audit integrity', () => {
     const res = await request(app)
       .patch(`/api/v1/ai/interactions/${id}/action`)
       .set('Authorization', `Bearer ${physicianToken()}`)
-      .set('x-correlation-id', correlationId)
+      .set('x-request-id', correlationId)
       .send({ action: 'rejected', reasonCategory: 'OTHER', reasonNote: secretNote });
 
     expect(res.status).toBe(200);

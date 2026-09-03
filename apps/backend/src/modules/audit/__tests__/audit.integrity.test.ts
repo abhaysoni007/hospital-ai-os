@@ -162,13 +162,16 @@ describe('M7 Audit integrity (hash chain, append-only, tamper evidence)', () => 
 
   it('tamper evidence: flipping one payload byte breaks hash verification (recomputation detects it)', async () => {
     const rows = await fetchChainRows(baseSequence);
-    const first = rows[0];
+    const first = rows.find((r) => r.eventType === 'TEST_AUDIT_CONCURRENT') ?? rows[0];
     const legitHash = createHash('sha256')
       .update(first.previousHash + canonicalPayload(first))
       .digest('hex');
     expect(legitHash).toBe(first.recordHash);
 
-    const tamperedPayload = canonicalPayload(first).replace('TEST', 'TAMP');
+    const payload = canonicalPayload(first);
+    const tamperedPayload = payload.includes('TEST')
+      ? payload.replace('TEST', 'TAMP')
+      : payload + '_tampered';
     const tamperedHash = createHash('sha256')
       .update(first.previousHash + tamperedPayload)
       .digest('hex');

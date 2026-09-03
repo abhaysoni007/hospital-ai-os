@@ -5,13 +5,13 @@
  * real PostgreSQL dev demo database (no mocks) and rely on seeded staff
  * (active.test@hospital.os or equivalent) for the actor.
  */
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { eq, and, desc } from 'drizzle-orm';
+import { describe, it, expect, beforeAll } from 'vitest';
+import { eq, and, ne, desc } from 'drizzle-orm';
 import { createHash } from 'crypto';
 import { db } from '../db';
 import { auditEvents } from '../db/schema/audit';
 import { patients as patientsTable } from '../db/schema';
-import { encounters, staff as staffTable } from '../db/schema';
+import { appointments as appointmentsTable, encounters, staff as staffTable } from '../db/schema';
 import { tasks as tasksTable } from '../db/schema/tasks';
 import { encounterService } from '../modules/encounter/encounter.service';
 import { patientService } from '../modules/patient/patient.service';
@@ -26,41 +26,55 @@ import {
 } from '../modules/encounter/encounter.state-machine';
 import { randomUUID } from 'crypto';
 
-interface SeedHandles {
-  physician: { id: string; departmentId: string };
-  receptionist: { id: string; departmentId: string };
-  otherDeptPhysician: { id: string; departmentId: string };
-  otherDeptReceptionist: { id: string; departmentId: string };
-  labTech: { id: string; departmentId: string };
-  nurse: { id: string; departmentId: string };
-  patientId: string;
-  otherDeptPatientId: string;
+interface StaffHandle {
+  id: string;
+  departmentId: string;
 }
+
+interface SeedHandles {
+  /** Owns the encounters and diagnostic orders under test. */
+  physician: StaffHandle;
+  /** Registers patients and books appointments. */
+  receptionist: StaffHandle;
+  /** Receptionist in a *different* department — the negative case for scope parity. */
+  otherDeptReceptionist: StaffHandle;
+  patientId: string;
+}
+
+/**
+ * Per-run suffix. `registerPatient` rejects an exact firstName+lastName+DOB
+ * match as a duplicate, so fixed literals would make every test after the
+ * first run fail with DUPLICATE_PATIENT. The suffix keeps the suite re-runnable
+ * against a long-lived demo database.
+ */
+const RUN = randomUUID().slice(0, 8);
 
 const seeds: SeedHandles = {
   physician: { id: '', departmentId: '' },
   receptionist: { id: '', departmentId: '' },
-  otherDeptPhysician: { id: '', departmentId: '' },
   otherDeptReceptionist: { id: '', departmentId: '' },
-  labTech: { id: '', departmentId: '' },
-  nurse: { id: '', departmentId: '' },
   patientId: '',
-  otherDeptPatientId: '',
 };
 
-async function findStaff(
-  role: string,
-  deptId: string,
-): Promise<{ id: string; departmentId: string } | undefined> {
-  const row = await db.query.staff.findFirst({
-    where: and(
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      eq(staffTable.role as any, role),
-      eq(staffTable.departmentId, deptId),
-    ),
-  });
-  if (!row) return undefined;
-  return { id: row.id, departmentId: row.departmentId };
+/**
+ * Resolve every active staff member of a role, ordered by department, so the
+ * fixture does not depend on which departments happen to come back first from
+ * an unordered `departments` scan.
+ */
+async function findStaffByRole(role: string): Promise<StaffHandle[]> {
+  const rows = await db
+    .select({ id: staffTable.id, departmentId: staffTable.departmentId })
+    .from(staffTable)
+    .where(
+      and(
+        // Drizzle types the enum column narrowly; the role list lives in the DB enum.
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        eq(staffTable.role as any, role),
+        eq(staffTable.status, 'active'),
+      ),
+    )
+    .orderBy(staffTable.departmentId);
+  return rows;
 }
 
 async function findOrCreatePatient(
@@ -88,42 +102,39 @@ async function findOrCreatePatient(
 }
 
 beforeAll(async () => {
-  const depts = await db.query.departments.findMany({ limit: 2 });
-  if (depts.length < 2) {
-    throw new Error('M18 tests require at least 2 seeded departments; run db:seed-demo first.');
+  const receptionists = await findStaffByRole('receptionist');
+  if (receptionists.length < 2) {
+    throw new Error(
+      'M18 tests require receptionists in at least 2 departments; run pnpm seed:demo first.',
+    );
   }
-  const [a, b] = depts;
-  const p = (await findStaff('physician', a.id)) ?? (await findStaff('physician', b.id));
-  if (!p) throw new Error('M18 tests require at least one physician in the seed.');
-  seeds.physician = p;
-  const r =
-    (await findStaff('receptionist', a.id)) ?? (await findStaff('receptionist', b.id));
-  if (!r) throw new Error('M18 tests require at least one receptionist in the seed.');
-  seeds.receptionist = r;
-  const odp = await findStaff('physician', b.id);
-  if (!odp) throw new Error('M18 tests require a physician in the second seeded department.');
-  seeds.otherDeptPhysician = odp;
-  const odr = await findStaff('receptionist', b.id);
-  if (!odr) throw new Error('M18 tests require a receptionist in the second seeded department.');
-  seeds.otherDeptReceptionist = odr;
-  const lt = await findStaff('lab_technician', a.id);
-  if (!lt) throw new Error('M18 tests require a lab_technician in the first seeded department.');
-  seeds.labTech = lt;
-  const nu = await findStaff('nurse', a.id);
-  if (!nu) throw new Error('M18 tests require a nurse in the first seeded department.');
-  seeds.nurse = nu;
+  seeds.receptionist = receptionists[0];
+  // Department-scope parity needs a receptionist whose department differs from
+  // the one that owns the appointment.
+  const otherDept = receptionists.find(
+    (r) => r.departmentId !== seeds.receptionist.departmentId,
+  );
+  if (!otherDept) {
+    throw new Error('M18 tests require receptionists in 2 distinct departments.');
+  }
+  seeds.otherDeptReceptionist = otherDept;
+
+  // The physician must sit in the receptionist's department: the appointment is
+  // booked into the physician's department, and the parity assertion only means
+  // something if the *other* receptionist is genuinely outside it.
+  const physicians = await findStaffByRole('physician');
+  const physician = physicians.find((p) => p.departmentId === seeds.receptionist.departmentId);
+  if (!physician) {
+    throw new Error(
+      `M18 tests require a physician in department ${seeds.receptionist.departmentId}.`,
+    );
+  }
+  seeds.physician = physician;
+
   seeds.patientId = await findOrCreatePatient(
     { firstName: 'M18A', lastName: 'Patient', dob: '1990-01-01', phone: '+10000000001' },
     seeds.receptionist.id,
   );
-  seeds.otherDeptPatientId = await findOrCreatePatient(
-    { firstName: 'M18B', lastName: 'Patient', dob: '1990-01-01', phone: '+10000000002' },
-    seeds.otherDeptReceptionist.id,
-  );
-});
-
-afterAll(async () => {
-  // No global teardown — each test cleans its own rows where it matters.
 });
 
 describe('M18 — auditability', () => {
@@ -213,7 +224,7 @@ describe('M18 — optimistic concurrency', () => {
     const patient = await patientService.registerPatient(
       {
         firstName: 'M18',
-        lastName: 'Optimistic',
+        lastName: `Optimistic-${RUN}`,
         dateOfBirth: '1991-01-01',
         gender: 'undisclosed',
         phonePrimary: `+1${Math.floor(Math.random() * 1e10)}`,
@@ -239,7 +250,7 @@ describe('M18 — optimistic concurrency', () => {
     const patient = await patientService.registerPatient(
       {
         firstName: 'M18',
-        lastName: 'FreshVersion',
+        lastName: `FreshVersion-${RUN}`,
         dateOfBirth: '1992-01-01',
         gender: 'undisclosed',
         phonePrimary: `+1${Math.floor(Math.random() * 1e10)}`,
@@ -267,7 +278,7 @@ describe('M18 — identity-verify status guard', () => {
       const patient = await patientService.registerPatient(
         {
           firstName: 'M18',
-          lastName: 'Identity',
+          lastName: `Identity-${RUN}`,
           dateOfBirth: '1993-01-01',
           gender: 'undisclosed',
           phonePrimary: `+1${Math.floor(Math.random() * 1e10)}`,
@@ -278,7 +289,7 @@ describe('M18 — identity-verify status guard', () => {
       );
       return await patientService.addIdentity(
         patient.id,
-        { documentType: 'aadhaar', documentNumber: 'M18-IDENT-1' } as never,
+        { documentType: 'aadhaar', documentNumber: `M18-IDENT-${RUN}` } as never,
         seeds.receptionist.id,
         randomUUID(),
         { role: 'receptionist', departmentId: seeds.receptionist.departmentId },
@@ -308,26 +319,45 @@ describe('M18 — identity-verify status guard', () => {
   });
 });
 
+/**
+ * Pick a slot that is still free for this doctor on this date. Booking rejects a
+ * duplicate (doctor, date, time) with SLOT_UNAVAILABLE, so a hard-coded time
+ * would only work on the first run against a persistent database.
+ */
+async function findFreeSlot(doctorId: string, date: string): Promise<string> {
+  const taken = new Set(
+    (
+      await db
+        .select({ time: appointmentsTable.scheduledTime })
+        .from(appointmentsTable)
+        .where(
+          and(
+            eq(appointmentsTable.doctorId, doctorId),
+            eq(appointmentsTable.scheduledDate, date),
+            ne(appointmentsTable.status, 'cancelled'),
+          ),
+        )
+    ).map((r) => r.time.slice(0, 5)),
+  );
+  for (let hour = 8; hour < 20; hour++) {
+    for (let minute = 0; minute < 60; minute += 5) {
+      const slot = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+      if (!taken.has(slot)) return slot;
+    }
+  }
+  throw new Error(`No free slot for doctor ${doctorId} on ${date}.`);
+}
+
 describe('M18 — appointment cancel department parity', () => {
   it('receptionist in another department cannot cancel an appointment outside their scope', async () => {
-    const created = await encounterService.createEncounter(
-      {
-        patientId: seeds.patientId,
-        doctorId: seeds.physician.id,
-        departmentId: seeds.physician.departmentId,
-        encounterType: 'opd',
-      } as never,
-      seeds.physician.id,
-      randomUUID(),
-      { role: 'physician', departmentId: seeds.physician.departmentId },
-    );
+    const scheduledDate = new Date().toISOString().slice(0, 10);
     const booked = await appointmentService.bookAppointment(
       {
         patientId: seeds.patientId,
         doctorId: seeds.physician.id,
         departmentId: seeds.physician.departmentId,
-        scheduledDate: new Date().toISOString().slice(0, 10),
-        scheduledTime: '08:00',
+        scheduledDate,
+        scheduledTime: await findFreeSlot(seeds.physician.id, scheduledDate),
       } as never,
       seeds.receptionist.id,
       randomUUID(),
@@ -343,9 +373,6 @@ describe('M18 — appointment cancel department parity', () => {
         { role: 'receptionist', departmentId: seeds.otherDeptReceptionist.departmentId },
       ),
     ).rejects.toThrow(AuthorizationError);
-
-    // Sanity: encounter from above is unused here, suppress unused var.
-    void created;
   });
 });
 

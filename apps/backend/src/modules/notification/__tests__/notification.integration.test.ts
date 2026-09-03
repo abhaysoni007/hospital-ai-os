@@ -282,7 +282,7 @@ describe('M12.2 Notification read/workflow (critical-result loop)', () => {
     const ack = await request(app)
       .patch(`/api/v1/notifications/${notificationA}/acknowledge`)
       .set('Authorization', `Bearer ${tokenFor(physicianA, 'physician', deptId)}`)
-      .set('x-correlation-id', correlationId);
+      .set('x-request-id', correlationId);
     expect(ack.status).toBe(200);
     expect(ack.body.data.status).toBe('acknowledged');
     expect(ack.body.data.acknowledgedAt).toBeTruthy();
