@@ -206,10 +206,20 @@ export type HospitalIntelligenceAnalysisResponse = z.infer<
 export const approveRecommendationRequestSchema = z
   .object({
     idempotencyKey: z.string().trim().min(1).max(255),
+    executeImmediately: z.boolean().default(true).optional(),
   })
   .strict();
 export type ApproveRecommendationRequest = z.infer<
   typeof approveRecommendationRequestSchema
+>;
+
+export const executeRecommendationRequestSchema = z
+  .object({
+    idempotencyKey: z.string().trim().min(1).max(255),
+  })
+  .strict();
+export type ExecuteRecommendationRequest = z.infer<
+  typeof executeRecommendationRequestSchema
 >;
 
 export const rejectRecommendationRequestSchema = z
@@ -220,3 +230,30 @@ export const rejectRecommendationRequestSchema = z
 export type RejectRecommendationRequest = z.infer<
   typeof rejectRecommendationRequestSchema
 >;
+
+export const governedActionResultSchema = z
+  .object({
+    recommendationId: uuidSchema,
+    signalId: uuidSchema,
+    actionType: recommendationActionTypeSchema,
+    policyStatus: recommendationStatusSchema,
+    executableStatus: recommendationStatusSchema,
+    executedBy: uuidSchema,
+    executedAt: z.string().datetime(),
+    idempotent: z.boolean(),
+    serviceInvoked: z.string(),
+    details: z.record(z.string(), z.unknown()),
+  })
+  .strict();
+export type GovernedActionResult = z.infer<typeof governedActionResultSchema>;
+
+export const policyValidationResultSchema = z
+  .object({
+    allowed: z.boolean(),
+    reasonCode: z.string(),
+    reason: z.string(),
+    requiredPermission: z.string(),
+    resourceScope: z.string(),
+  })
+  .strict();
+export type PolicyValidationResult = z.infer<typeof policyValidationResultSchema>;

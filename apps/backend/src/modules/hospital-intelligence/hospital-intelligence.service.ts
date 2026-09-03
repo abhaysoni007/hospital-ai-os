@@ -7,7 +7,15 @@ import {
   EvidenceRef,
   Recommendation,
   AiExplanation,
+  GovernedActionResult,
+  isValidId,
 } from 'shared';
+import {
+  AuthorizationError,
+  ConflictError,
+  NotFoundError,
+  ValidationError,
+} from 'shared/src/errors/AppError';
 import { randomUUID } from 'crypto';
 import { eq, and, sql, desc } from 'drizzle-orm';
 import { db } from '../../db';
@@ -28,9 +36,17 @@ import {
   DetectorScope,
 } from './hospital-intelligence.detector';
 import { buildContextBlocksForSignal } from './hospital-intelligence.context';
+import {
+  HospitalIntelligencePolicyEngine,
+  hospitalIntelligencePolicyEngine,
+} from './hospital-intelligence.policy';
+import {
+  HospitalIntelligenceExecutor,
+  hospitalIntelligenceExecutor,
+} from './hospital-intelligence.executor';
 
 /**
- * M19.2 — Hospital Intelligence Service
+ * M19.2/M19.3 — Hospital Intelligence Service
  * SOURCE OF TRUTH: docs/architecture/M19_INTELLIGENCE_ARCHITECTURE.md §6, §7, §8, §14
  *
  * Core Principle: Deterministic detection first!
@@ -42,7 +58,21 @@ export class HospitalIntelligenceService {
   constructor(
     private readonly audit: AuditService = auditService,
     private readonly ai: AIOrchestrator = defaultAiOrchestrator,
+    private readonly policy: HospitalIntelligencePolicyEngine = hospitalIntelligencePolicyEngine,
+    private readonly executor: HospitalIntelligenceExecutor = hospitalIntelligenceExecutor,
   ) {}
+
+  private async resolveValidStaffId(staffId: string): Promise<string | null> {
+    if (!staffId || !isValidId(staffId)) return null;
+    try {
+      const [row] = (await db.execute(sql`
+        SELECT id FROM staff WHERE id = ${staffId} LIMIT 1;
+      `)) as unknown as Array<{ id: string }>;
+      return row?.id ?? null;
+    } catch {
+      return null;
+    }
+  }
 
   /**
    * Runs end-to-end bottleneck analysis:
@@ -289,27 +319,380 @@ export class HospitalIntelligenceService {
   }
 
   /**
-   * Approves a recommendation for execution under human authorization.
-   * M19.1/M19.2 skeleton: human approval is recorded; execution lands in M19.3.
+   * Approves a recommendation under human authorization.
+   * Runs deterministic policy validation, executes atomic transaction with row-level locking,
+   * enforces idempotency, audits RECOMMENDATION_APPROVED, and optionally executes immediately.
    */
   async approveRecommendation(
     recommendationId: string,
     idempotencyKey: string,
     actor: IntelligenceAuditActor,
     correlationId: string,
-  ): Promise<{ status: 'approved' | 'executed'; recommendationId: string }> {
-    await this.audit.logEvent(
-      buildHospitalIntelligenceAuditEvent({
-        eventType: HOSPITAL_INTELLIGENCE_AUDIT_EVENTS.RECOMMENDATION_APPROVED,
-        actor,
-        targetType: 'INTELLIGENCE_RECOMMENDATION',
-        targetId: recommendationId,
-        actionDetail: { idempotencyKey, stage: 'M19.2_APPROVAL_RECORDED' },
-      }),
-      correlationId,
-    );
+    options?: {
+      executeImmediately?: boolean;
+      targetAssigneeId?: string;
+      isBreakGlassActive?: boolean;
+    },
+  ): Promise<GovernedActionResult> {
+    // 1. Evaluate deterministic policy
+    const policy = await this.policy.evaluatePolicy(actor, recommendationId, 'approve', {
+      isBreakGlassActive: options?.isBreakGlassActive,
+      targetAssigneeId: options?.targetAssigneeId,
+      idempotencyKey,
+    });
 
-    return { status: 'approved', recommendationId };
+    if (!policy.allowed) {
+      await this.audit.logEvent(
+        buildHospitalIntelligenceAuditEvent({
+          eventType: HOSPITAL_INTELLIGENCE_AUDIT_EVENTS.RECOMMENDATION_POLICY_REJECTED,
+          actor,
+          targetType: 'INTELLIGENCE_RECOMMENDATION',
+          targetId: recommendationId,
+          actionDetail: {
+            reasonCode: policy.reasonCode,
+            reason: policy.reason,
+            phase: 'approve',
+          },
+        }),
+        correlationId,
+      );
+
+      if (
+        policy.reasonCode === 'UNAUTHORIZED_ROLE' ||
+        policy.reasonCode === 'CROSS_DEPARTMENT_ACCESS_DENIED' ||
+        policy.reasonCode === 'BREAK_GLASS_PROHIBITED'
+      ) {
+        throw new AuthorizationError(policy.reason, { code: policy.reasonCode });
+      }
+      if (
+        policy.reasonCode === 'RECOMMENDATION_NOT_FOUND' ||
+        policy.reasonCode === 'SIGNAL_NOT_FOUND'
+      ) {
+        throw new NotFoundError(policy.reason, { code: policy.reasonCode });
+      }
+      if (
+        policy.reasonCode === 'ALREADY_EXECUTED' ||
+        policy.reasonCode === 'ALREADY_REJECTED' ||
+        policy.reasonCode === 'INVALID_STATUS_TRANSITION'
+      ) {
+        throw new ConflictError(policy.reason, { code: policy.reasonCode });
+      }
+      throw new ValidationError(policy.reason, { code: policy.reasonCode });
+    }
+
+    const validStaffId = (await this.resolveValidStaffId(actor.staffId)) || null;
+
+    // 2. Transaction with row-level locking for concurrency and idempotency safety
+    return await db.transaction(async (tx) => {
+      const [rec] = await tx
+        .select()
+        .from(intelligenceApprovedActions)
+        .where(eq(intelligenceApprovedActions.id, recommendationId))
+        .for('update');
+
+      if (!rec) {
+        throw new NotFoundError(`Recommendation '${recommendationId}' not found.`, {
+          code: 'RECOMMENDATION_NOT_FOUND',
+        });
+      }
+
+      // Idempotency: if already executed with the same key, return previous result
+      if (rec.policyStatus === 'executed') {
+        if (rec.idempotencyKey === idempotencyKey) {
+          const cachedResult = (rec.executionResult as Record<string, unknown>) || {};
+          return {
+            recommendationId: rec.id,
+            signalId: rec.signalId,
+            actionType: rec.actionType as any,
+            policyStatus: 'executed',
+            executableStatus: 'executed',
+            executedBy: rec.approvedBy || actor.staffId,
+            executedAt: (rec.updatedAt || new Date()).toISOString(),
+            idempotent: true,
+            serviceInvoked: (cachedResult.serviceInvoked as string) || 'ExistingService',
+            details: (cachedResult.details as Record<string, unknown>) || {},
+          };
+        }
+        throw new ConflictError(
+          'Recommendation has already been executed under a different idempotency key.',
+          { code: 'RECOMMENDATION_ALREADY_ACTED' },
+        );
+      }
+
+      if (rec.policyStatus === 'rejected') {
+        throw new ConflictError('Recommendation has already been rejected.', {
+          code: 'ALREADY_REJECTED',
+        });
+      }
+
+      const now = new Date();
+
+      // Persist approval
+      await tx
+        .update(intelligenceApprovedActions)
+        .set({
+          policyStatus: 'approved',
+          approvedBy: validStaffId,
+          approvedAt: now,
+          idempotencyKey,
+          updatedAt: now,
+        })
+        .where(eq(intelligenceApprovedActions.id, recommendationId));
+
+      await this.audit.logEvent(
+        buildHospitalIntelligenceAuditEvent({
+          eventType: HOSPITAL_INTELLIGENCE_AUDIT_EVENTS.RECOMMENDATION_APPROVED,
+          actor,
+          targetType: 'INTELLIGENCE_RECOMMENDATION',
+          targetId: recommendationId,
+          patientId: policy.context?.signal.patientId,
+          actionDetail: {
+            idempotencyKey,
+            actionType: rec.actionType,
+            signalId: rec.signalId,
+          },
+        }),
+        correlationId,
+        tx,
+      );
+
+      // If immediate execution is not requested, return the approved state
+      if (options?.executeImmediately === false) {
+        return {
+          recommendationId: rec.id,
+          signalId: rec.signalId,
+          actionType: rec.actionType as any,
+          policyStatus: 'approved',
+          executableStatus: 'approved',
+          executedBy: actor.staffId,
+          executedAt: now.toISOString(),
+          idempotent: false,
+          serviceInvoked: 'None',
+          details: { stage: 'approved_pending_execution' },
+        };
+      }
+
+      // Execute through existing authorized service
+      const execResult = await this.executor.execute({
+        recommendation: rec,
+        signal: policy.context!.signal,
+        actor,
+        correlationId,
+        tx,
+        targetAssigneeId: options?.targetAssigneeId,
+      });
+
+      // Update to executed
+      await tx
+        .update(intelligenceApprovedActions)
+        .set({
+          policyStatus: 'executed',
+          executableStatus: 'executed',
+          idempotencyKey,
+          executionResult: execResult,
+          updatedAt: now,
+        })
+        .where(eq(intelligenceApprovedActions.id, recommendationId));
+
+      // Update parent signal to actioned
+      await tx
+        .update(hospitalIntelligenceSignals)
+        .set({
+          status: 'actioned',
+          resolvedAt: now,
+          updatedAt: now,
+        })
+        .where(eq(hospitalIntelligenceSignals.id, rec.signalId));
+
+      // Audit action execution
+      await this.audit.logEvent(
+        buildHospitalIntelligenceAuditEvent({
+          eventType: HOSPITAL_INTELLIGENCE_AUDIT_EVENTS.ACTION_EXECUTED,
+          actor,
+          targetType: 'INTELLIGENCE_RECOMMENDATION',
+          targetId: recommendationId,
+          patientId: policy.context?.signal.patientId,
+          actionDetail: {
+            idempotencyKey,
+            actionType: rec.actionType,
+            signalId: rec.signalId,
+            serviceInvoked: execResult.serviceInvoked,
+          },
+        }),
+        correlationId,
+        tx,
+      );
+
+      return {
+        recommendationId: rec.id,
+        signalId: rec.signalId,
+        actionType: rec.actionType as any,
+        policyStatus: 'executed',
+        executableStatus: 'executed',
+        executedBy: actor.staffId,
+        executedAt: now.toISOString(),
+        idempotent: false,
+        serviceInvoked: execResult.serviceInvoked,
+        details: execResult.details,
+      };
+    });
+  }
+
+  /**
+   * Executes an already approved recommendation.
+   * Used for the two-phase approval/execution flow.
+   */
+  async executeRecommendation(
+    recommendationId: string,
+    idempotencyKey: string,
+    actor: IntelligenceAuditActor,
+    correlationId: string,
+    options?: {
+      targetAssigneeId?: string;
+      isBreakGlassActive?: boolean;
+    },
+  ): Promise<GovernedActionResult> {
+    const policy = await this.policy.evaluatePolicy(actor, recommendationId, 'execute', {
+      isBreakGlassActive: options?.isBreakGlassActive,
+      targetAssigneeId: options?.targetAssigneeId,
+      idempotencyKey,
+    });
+
+    if (!policy.allowed) {
+      await this.audit.logEvent(
+        buildHospitalIntelligenceAuditEvent({
+          eventType: HOSPITAL_INTELLIGENCE_AUDIT_EVENTS.RECOMMENDATION_POLICY_REJECTED,
+          actor,
+          targetType: 'INTELLIGENCE_RECOMMENDATION',
+          targetId: recommendationId,
+          actionDetail: {
+            reasonCode: policy.reasonCode,
+            reason: policy.reason,
+            phase: 'execute',
+          },
+        }),
+        correlationId,
+      );
+
+      if (
+        policy.reasonCode === 'UNAUTHORIZED_ROLE' ||
+        policy.reasonCode === 'CROSS_DEPARTMENT_ACCESS_DENIED' ||
+        policy.reasonCode === 'BREAK_GLASS_PROHIBITED'
+      ) {
+        throw new AuthorizationError(policy.reason, { code: policy.reasonCode });
+      }
+      if (
+        policy.reasonCode === 'RECOMMENDATION_NOT_FOUND' ||
+        policy.reasonCode === 'SIGNAL_NOT_FOUND'
+      ) {
+        throw new NotFoundError(policy.reason, { code: policy.reasonCode });
+      }
+      if (
+        policy.reasonCode === 'ALREADY_EXECUTED' ||
+        policy.reasonCode === 'ALREADY_REJECTED' ||
+        policy.reasonCode === 'INVALID_STATUS_TRANSITION'
+      ) {
+        throw new ConflictError(policy.reason, { code: policy.reasonCode });
+      }
+      throw new ValidationError(policy.reason, { code: policy.reasonCode });
+    }
+
+    return await db.transaction(async (tx) => {
+      const [rec] = await tx
+        .select()
+        .from(intelligenceApprovedActions)
+        .where(eq(intelligenceApprovedActions.id, recommendationId))
+        .for('update');
+
+      if (!rec) {
+        throw new NotFoundError(`Recommendation '${recommendationId}' not found.`, {
+          code: 'RECOMMENDATION_NOT_FOUND',
+        });
+      }
+
+      if (rec.policyStatus === 'executed') {
+        if (rec.idempotencyKey === idempotencyKey) {
+          const cachedResult = (rec.executionResult as Record<string, unknown>) || {};
+          return {
+            recommendationId: rec.id,
+            signalId: rec.signalId,
+            actionType: rec.actionType as any,
+            policyStatus: 'executed',
+            executableStatus: 'executed',
+            executedBy: rec.approvedBy || actor.staffId,
+            executedAt: (rec.updatedAt || new Date()).toISOString(),
+            idempotent: true,
+            serviceInvoked: (cachedResult.serviceInvoked as string) || 'ExistingService',
+            details: (cachedResult.details as Record<string, unknown>) || {},
+          };
+        }
+        throw new ConflictError(
+          'Recommendation has already been executed under a different idempotency key.',
+          { code: 'RECOMMENDATION_ALREADY_ACTED' },
+        );
+      }
+
+      const now = new Date();
+      const execResult = await this.executor.execute({
+        recommendation: rec,
+        signal: policy.context!.signal,
+        actor,
+        correlationId,
+        tx,
+        targetAssigneeId: options?.targetAssigneeId,
+      });
+
+      await tx
+        .update(intelligenceApprovedActions)
+        .set({
+          policyStatus: 'executed',
+          executableStatus: 'executed',
+          idempotencyKey,
+          executionResult: execResult,
+          updatedAt: now,
+        })
+        .where(eq(intelligenceApprovedActions.id, recommendationId));
+
+      await tx
+        .update(hospitalIntelligenceSignals)
+        .set({
+          status: 'actioned',
+          resolvedAt: now,
+          updatedAt: now,
+        })
+        .where(eq(hospitalIntelligenceSignals.id, rec.signalId));
+
+      await this.audit.logEvent(
+        buildHospitalIntelligenceAuditEvent({
+          eventType: HOSPITAL_INTELLIGENCE_AUDIT_EVENTS.ACTION_EXECUTED,
+          actor,
+          targetType: 'INTELLIGENCE_RECOMMENDATION',
+          targetId: recommendationId,
+          patientId: policy.context?.signal.patientId,
+          actionDetail: {
+            idempotencyKey,
+            actionType: rec.actionType,
+            signalId: rec.signalId,
+            serviceInvoked: execResult.serviceInvoked,
+          },
+        }),
+        correlationId,
+        tx,
+      );
+
+      return {
+        recommendationId: rec.id,
+        signalId: rec.signalId,
+        actionType: rec.actionType as any,
+        policyStatus: 'executed',
+        executableStatus: 'executed',
+        executedBy: actor.staffId,
+        executedAt: now.toISOString(),
+        idempotent: false,
+        serviceInvoked: execResult.serviceInvoked,
+        details: execResult.details,
+      };
+    });
   }
 
   /**
@@ -320,19 +703,110 @@ export class HospitalIntelligenceService {
     reason: string,
     actor: IntelligenceAuditActor,
     correlationId: string,
-  ): Promise<{ status: 'rejected'; recommendationId: string }> {
-    await this.audit.logEvent(
-      buildHospitalIntelligenceAuditEvent({
-        eventType: HOSPITAL_INTELLIGENCE_AUDIT_EVENTS.RECOMMENDATION_REJECTED,
-        actor,
-        targetType: 'INTELLIGENCE_RECOMMENDATION',
-        targetId: recommendationId,
-        actionDetail: { reason },
-      }),
-      correlationId,
-    );
+  ): Promise<{ status: 'rejected'; recommendationId: string; rejectionReason?: string }> {
+    const policy = await this.policy.evaluatePolicy(actor, recommendationId, 'reject');
 
-    return { status: 'rejected', recommendationId };
+    if (!policy.allowed) {
+      await this.audit.logEvent(
+        buildHospitalIntelligenceAuditEvent({
+          eventType: HOSPITAL_INTELLIGENCE_AUDIT_EVENTS.RECOMMENDATION_POLICY_REJECTED,
+          actor,
+          targetType: 'INTELLIGENCE_RECOMMENDATION',
+          targetId: recommendationId,
+          actionDetail: {
+            reasonCode: policy.reasonCode,
+            reason: policy.reason,
+            phase: 'reject',
+          },
+        }),
+        correlationId,
+      );
+
+      if (
+        policy.reasonCode === 'UNAUTHORIZED_ROLE' ||
+        policy.reasonCode === 'CROSS_DEPARTMENT_ACCESS_DENIED' ||
+        policy.reasonCode === 'BREAK_GLASS_PROHIBITED'
+      ) {
+        throw new AuthorizationError(policy.reason, { code: policy.reasonCode });
+      }
+      if (
+        policy.reasonCode === 'RECOMMENDATION_NOT_FOUND' ||
+        policy.reasonCode === 'SIGNAL_NOT_FOUND'
+      ) {
+        throw new NotFoundError(policy.reason, { code: policy.reasonCode });
+      }
+      if (
+        policy.reasonCode === 'ALREADY_EXECUTED' ||
+        policy.reasonCode === 'ALREADY_REJECTED' ||
+        policy.reasonCode === 'INVALID_STATUS_TRANSITION'
+      ) {
+        throw new ConflictError(policy.reason, { code: policy.reasonCode });
+      }
+      throw new ValidationError(policy.reason, { code: policy.reasonCode });
+    }
+
+    const validStaffId = (await this.resolveValidStaffId(actor.staffId)) || null;
+
+    return await db.transaction(async (tx) => {
+      const [rec] = await tx
+        .select()
+        .from(intelligenceApprovedActions)
+        .where(eq(intelligenceApprovedActions.id, recommendationId))
+        .for('update');
+
+      if (!rec) {
+        throw new NotFoundError(`Recommendation '${recommendationId}' not found.`, {
+          code: 'RECOMMENDATION_NOT_FOUND',
+        });
+      }
+
+      if (rec.policyStatus === 'rejected') {
+        return { status: 'rejected', recommendationId, rejectionReason: rec.rejectionReason || reason };
+      }
+
+      if (rec.policyStatus === 'executed') {
+        throw new ConflictError('Executed recommendations cannot be rejected.', {
+          code: 'ALREADY_EXECUTED',
+        });
+      }
+
+      const now = new Date();
+
+      await tx
+        .update(intelligenceApprovedActions)
+        .set({
+          policyStatus: 'rejected',
+          rejectedBy: validStaffId,
+          rejectedAt: now,
+          rejectionReason: reason,
+          updatedAt: now,
+        })
+        .where(eq(intelligenceApprovedActions.id, recommendationId));
+
+      await tx
+        .update(hospitalIntelligenceSignals)
+        .set({
+          status: 'dismissed',
+          resolvedAt: now,
+          updatedAt: now,
+        })
+        .where(eq(hospitalIntelligenceSignals.id, rec.signalId));
+
+      await this.audit.logEvent(
+        buildHospitalIntelligenceAuditEvent({
+          eventType: HOSPITAL_INTELLIGENCE_AUDIT_EVENTS.RECOMMENDATION_REJECTED,
+          actor,
+          targetType: 'INTELLIGENCE_RECOMMENDATION',
+          targetId: recommendationId,
+          patientId: policy.context?.signal.patientId,
+          actionDetail: { reason, signalId: rec.signalId },
+        }),
+        correlationId,
+        tx,
+      );
+
+      return { status: 'rejected', recommendationId, rejectionReason: reason };
+    });
   }
 
   /**

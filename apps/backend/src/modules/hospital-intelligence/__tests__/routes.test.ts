@@ -8,6 +8,7 @@ import { config } from '../../../config';
 import type { StaffRole } from '../../../middleware/rbac/permissions';
 import { auditService } from '../../audit/audit.service';
 import { aiOrchestrator } from '../../ai/ai.container';
+import { hospitalIntelligenceService } from '../hospital-intelligence.service';
 
 // Mock audit logEvent to isolate route testing from DB locks
 vi.spyOn(auditService, 'logEvent').mockResolvedValue();
@@ -131,12 +132,57 @@ describe('M19 Hospital Intelligence Route Authorization', () => {
     });
 
     it('returns 200 when physician approves with valid idempotencyKey', async () => {
+      vi.spyOn(hospitalIntelligenceService, 'approveRecommendation').mockResolvedValueOnce({
+        recommendationId: '3f2504e0-4f89-11d3-9a0c-0305e82c3301',
+        signalId: '3f2504e0-4f89-11d3-9a0c-0305e82c3302',
+        actionType: 'NOTIFY_ATTENDING_PHYSICIAN',
+        policyStatus: 'executed',
+        executableStatus: 'executed',
+        executedBy: '3f2504e0-4f89-11d3-9a0c-0305e82c3303',
+        executedAt: new Date().toISOString(),
+        idempotent: false,
+        serviceInvoked: 'NotificationService',
+        details: {},
+      });
+
       const res = await request(app)
         .post('/api/v1/hospital-intelligence/recommendations/3f2504e0-4f89-11d3-9a0c-0305e82c3301/approve')
         .set('Authorization', `Bearer ${physicianToken}`)
         .send({ idempotencyKey: 'idem-test-1' });
       expect(res.status).toBe(200);
-      expect(res.body.data.status).toBe('approved');
+      expect(res.body.data.policyStatus).toBe('executed');
+    });
+  });
+
+  describe('POST /api/v1/hospital-intelligence/recommendations/:id/execute', () => {
+    it('returns 403 when nurse calls execute (lacks intelligence:approve)', async () => {
+      const res = await request(app)
+        .post('/api/v1/hospital-intelligence/recommendations/3f2504e0-4f89-11d3-9a0c-0305e82c3301/execute')
+        .set('Authorization', `Bearer ${nurseToken}`)
+        .send({ idempotencyKey: 'idem-test-exec-1' });
+      expect(res.status).toBe(403);
+    });
+
+    it('returns 200 when physician calls execute', async () => {
+      vi.spyOn(hospitalIntelligenceService, 'executeRecommendation').mockResolvedValueOnce({
+        recommendationId: '3f2504e0-4f89-11d3-9a0c-0305e82c3301',
+        signalId: '3f2504e0-4f89-11d3-9a0c-0305e82c3302',
+        actionType: 'NOTIFY_ATTENDING_PHYSICIAN',
+        policyStatus: 'executed',
+        executableStatus: 'executed',
+        executedBy: '3f2504e0-4f89-11d3-9a0c-0305e82c3303',
+        executedAt: new Date().toISOString(),
+        idempotent: false,
+        serviceInvoked: 'NotificationService',
+        details: {},
+      });
+
+      const res = await request(app)
+        .post('/api/v1/hospital-intelligence/recommendations/3f2504e0-4f89-11d3-9a0c-0305e82c3301/execute')
+        .set('Authorization', `Bearer ${physicianToken}`)
+        .send({ idempotencyKey: 'idem-test-exec-1' });
+      expect(res.status).toBe(200);
+      expect(res.body.data.policyStatus).toBe('executed');
     });
   });
 
@@ -150,6 +196,11 @@ describe('M19 Hospital Intelligence Route Authorization', () => {
     });
 
     it('returns 200 when physician rejects', async () => {
+      vi.spyOn(hospitalIntelligenceService, 'rejectRecommendation').mockResolvedValueOnce({
+        status: 'rejected',
+        recommendationId: '3f2504e0-4f89-11d3-9a0c-0305e82c3301',
+      });
+
       const res = await request(app)
         .post('/api/v1/hospital-intelligence/recommendations/3f2504e0-4f89-11d3-9a0c-0305e82c3301/reject')
         .set('Authorization', `Bearer ${physicianToken}`)

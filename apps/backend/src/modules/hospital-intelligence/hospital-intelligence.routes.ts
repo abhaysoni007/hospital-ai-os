@@ -40,6 +40,12 @@ hospitalIntelligenceRoutes.post(
 );
 
 hospitalIntelligenceRoutes.post(
+  '/recommendations/:id/execute',
+  requirePermission('intelligence:approve'),
+  hospitalIntelligenceController.executeRecommendation.bind(hospitalIntelligenceController),
+);
+
+hospitalIntelligenceRoutes.post(
   '/recommendations/:id/reject',
   requirePermission('intelligence:approve'),
   hospitalIntelligenceController.rejectRecommendation.bind(hospitalIntelligenceController),

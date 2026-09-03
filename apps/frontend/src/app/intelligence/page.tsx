@@ -28,6 +28,10 @@ export default function IntelligencePage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [analysis, setAnalysis] = useState<HospitalIntelligenceAnalysisResponse | null>(null);
+  const [actionLoading, setActionLoading] = useState<Record<string, boolean>>({});
+  const [actionStates, setActionStates] = useState<
+    Record<string, { status: string; serviceInvoked?: string; details?: Record<string, unknown>; error?: string }>
+  >({});
 
   const handleRunAnalysis = async () => {
     setLoading(true);
@@ -40,6 +44,49 @@ export default function IntelligencePage() {
       setError(msg);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleApproveAction = async (recommendationId: string) => {
+    setActionLoading((prev) => ({ ...prev, [recommendationId]: true }));
+    try {
+      const idempotencyKey = crypto.randomUUID();
+      const result = await intelligenceService.approveRecommendation(recommendationId, idempotencyKey, true);
+      setActionStates((prev) => ({
+        ...prev,
+        [recommendationId]: {
+          status: result.policyStatus,
+          serviceInvoked: result.serviceInvoked,
+          details: result.details,
+        },
+      }));
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to approve action';
+      setActionStates((prev) => ({
+        ...prev,
+        [recommendationId]: { status: 'error', error: msg },
+      }));
+    } finally {
+      setActionLoading((prev) => ({ ...prev, [recommendationId]: false }));
+    }
+  };
+
+  const handleRejectAction = async (recommendationId: string) => {
+    setActionLoading((prev) => ({ ...prev, [recommendationId]: true }));
+    try {
+      const result = await intelligenceService.rejectRecommendation(recommendationId, 'Dismissed by clinician review');
+      setActionStates((prev) => ({
+        ...prev,
+        [recommendationId]: { status: 'rejected', details: { reason: result.rejectionReason } },
+      }));
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to reject action';
+      setActionStates((prev) => ({
+        ...prev,
+        [recommendationId]: { status: 'error', error: msg },
+      }));
+    } finally {
+      setActionLoading((prev) => ({ ...prev, [recommendationId]: false }));
     }
   };
 
@@ -228,36 +275,92 @@ export default function IntelligencePage() {
                   </div>
                 )}
 
-                {/* Proposed Recommendation (Non-executable in M19.2) */}
-                {signal.recommendation && (
-                  <div className="p-4 bg-muted/60 border border-border rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <FileText className="h-4 w-4 text-primary" />
-                        <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                          Proposed Action:
-                        </span>
-                        <span className="text-xs font-bold text-foreground">
-                          {signal.recommendation.actionType}
-                        </span>
-                        <span className="text-[10px] bg-amber-500/20 text-amber-500 px-1.5 py-0.5 rounded font-mono">
-                          STATUS: {signal.recommendation.policyStatus.toUpperCase()}
-                        </span>
+                {/* M19.3 Governed Recommendation & Human Execution */}
+                {signal.recommendation && (() => {
+                  const recId = signal.recommendation.recommendationId;
+                  const currentActionState = actionStates[recId];
+                  const isLoadingAction = Boolean(actionLoading[recId]);
+                  const effectiveStatus = currentActionState?.status || signal.recommendation.policyStatus;
+
+                  return (
+                    <div className="p-4 bg-muted/60 border border-border rounded-lg space-y-3">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <FileText className="h-4 w-4 text-primary" />
+                            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                              Governed Action:
+                            </span>
+                            <span className="text-xs font-bold text-foreground">
+                              {signal.recommendation.actionType}
+                            </span>
+                            <span
+                              className={`text-[10px] px-1.5 py-0.5 rounded font-mono ${
+                                effectiveStatus === 'executed'
+                                  ? 'bg-emerald-500/20 text-emerald-500'
+                                  : effectiveStatus === 'rejected'
+                                  ? 'bg-rose-500/20 text-rose-500'
+                                  : 'bg-amber-500/20 text-amber-500'
+                              }`}
+                            >
+                              STATUS: {effectiveStatus.toUpperCase()}
+                            </span>
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            {signal.recommendation.rationale}
+                          </p>
+                        </div>
+
+                        {/* Governed Action Buttons */}
+                        <div className="shrink-0 flex items-center gap-2">
+                          {effectiveStatus === 'proposed' && (
+                            <>
+                              <Button
+                                variant="primary"
+                                size="sm"
+                                disabled={isLoadingAction}
+                                onClick={() => handleApproveAction(recId)}
+                              >
+                                {isLoadingAction ? <Spinner size="sm" /> : 'Approve & Execute'}
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                disabled={isLoadingAction}
+                                onClick={() => handleRejectAction(recId)}
+                              >
+                                Reject
+                              </Button>
+                            </>
+                          )}
+                          {effectiveStatus === 'executed' && (
+                            <div className="text-xs text-emerald-500 font-medium flex items-center gap-1">
+                              <CheckCircle2 className="h-4 w-4" />
+                              <span>Executed via {currentActionState?.serviceInvoked || 'Existing Service'}</span>
+                            </div>
+                          )}
+                          {effectiveStatus === 'rejected' && (
+                            <div className="text-xs text-rose-500 font-medium">
+                              Dismissed by Human
+                            </div>
+                          )}
+                        </div>
                       </div>
-                      <p className="text-xs text-muted-foreground">
-                        {signal.recommendation.rationale}
-                      </p>
-                      <p className="text-[10px] text-muted-foreground italic">
-                        * Human authorization required before execution. Action execution enabled in M19.3.
-                      </p>
+
+                      {/* Error or Execution Details */}
+                      {currentActionState?.error && (
+                        <div className="text-xs text-rose-500 bg-rose-500/10 p-2 rounded border border-rose-500/20">
+                          Policy / Execution Error: {currentActionState.error}
+                        </div>
+                      )}
+                      {currentActionState?.details && effectiveStatus === 'executed' && (
+                        <div className="text-[11px] font-mono text-muted-foreground bg-muted p-2 rounded">
+                          Result: {JSON.stringify(currentActionState.details)}
+                        </div>
+                      )}
                     </div>
-                    <div className="shrink-0">
-                      <Button variant="secondary" size="sm" disabled>
-                        Awaiting Approval (M19.3)
-                      </Button>
-                    </div>
-                  </div>
-                )}
+                  );
+                })()}
               </Card>
             ))}
           </div>

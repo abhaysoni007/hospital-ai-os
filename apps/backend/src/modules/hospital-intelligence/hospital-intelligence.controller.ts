@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import {
   analyzeHospitalIntelligenceRequestSchema,
   approveRecommendationRequestSchema,
+  executeRecommendationRequestSchema,
   rejectRecommendationRequestSchema,
 } from 'shared';
 import { hospitalIntelligenceService } from './hospital-intelligence.service';
@@ -84,6 +85,33 @@ export class HospitalIntelligenceController {
       const correlationId = (req as unknown as { correlationId?: string }).correlationId ?? crypto.randomUUID();
 
       const result = await hospitalIntelligenceService.approveRecommendation(
+        recommendationId,
+        parsedBody.idempotencyKey,
+        actor,
+        correlationId,
+        {
+          executeImmediately: parsedBody.executeImmediately,
+        },
+      );
+
+      res.status(200).json({ data: result });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async executeRecommendation(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const parsedBody = executeRecommendationRequestSchema.parse(req.body ?? {});
+      const actor = {
+        staffId: req.user!.staffId,
+        role: req.user!.role,
+        departmentId: req.user!.departmentId,
+      };
+      const recommendationId = req.params.id;
+      const correlationId = (req as unknown as { correlationId?: string }).correlationId ?? crypto.randomUUID();
+
+      const result = await hospitalIntelligenceService.executeRecommendation(
         recommendationId,
         parsedBody.idempotencyKey,
         actor,

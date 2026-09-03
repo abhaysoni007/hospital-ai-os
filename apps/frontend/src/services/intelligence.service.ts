@@ -6,6 +6,7 @@ import {
   TimelineMetadata,
   HospitalIntelligenceAnalysisResponse,
   DetectedSignal,
+  GovernedActionResult,
 } from 'shared';
 
 export interface ChartBriefResponse {
@@ -49,6 +50,37 @@ export const intelligenceService = {
     return apiClient<DetectedSignal[]>(
       '/hospital-intelligence/signals',
       { method: 'GET' },
+    );
+  },
+
+  approveRecommendation: async (
+    recommendationId: string,
+    idempotencyKey: string,
+    executeImmediately: boolean = true,
+  ): Promise<GovernedActionResult> => {
+    return apiClient<GovernedActionResult>(
+      `/hospital-intelligence/recommendations/${recommendationId}/approve`,
+      { method: 'POST', body: { idempotencyKey, executeImmediately } },
+    );
+  },
+
+  executeRecommendation: async (
+    recommendationId: string,
+    idempotencyKey: string,
+  ): Promise<GovernedActionResult> => {
+    return apiClient<GovernedActionResult>(
+      `/hospital-intelligence/recommendations/${recommendationId}/execute`,
+      { method: 'POST', body: { idempotencyKey } },
+    );
+  },
+
+  rejectRecommendation: async (
+    recommendationId: string,
+    rejectionReason?: string,
+  ): Promise<{ status: string; recommendationId: string; rejectionReason?: string }> => {
+    return apiClient<{ status: string; recommendationId: string; rejectionReason?: string }>(
+      `/hospital-intelligence/recommendations/${recommendationId}/reject`,
+      { method: 'POST', body: { rejectionReason } },
     );
   },
 };
