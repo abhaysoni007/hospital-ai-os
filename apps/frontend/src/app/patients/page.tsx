@@ -36,7 +36,10 @@ export default function PatientsPage() {
 
   useEffect(() => {
     let cancelled = false;
-    const timer = setTimeout(async () => {
+    const isImmediate = searchQuery.trim() === '';
+    const delay = isImmediate ? 0 : 300;
+
+    const executeFetch = async () => {
       setLoading(true);
       setError(null);
       try {
@@ -54,7 +57,18 @@ export default function PatientsPage() {
       } finally {
         if (!cancelled) setLoading(false);
       }
-    }, 300);
+    };
+
+    if (delay === 0) {
+      void executeFetch();
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    const timer = setTimeout(() => {
+      void executeFetch();
+    }, delay);
 
     return () => {
       cancelled = true;

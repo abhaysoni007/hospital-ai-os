@@ -37,6 +37,18 @@
   border-radius: 0 var(--radius-xs) var(--radius-xs) 0;
 }
 
+.pending {
+  background-color: var(--color-primary-50);
+  color: var(--color-primary-600);
+  opacity: 0.85;
+}
+
+[data-theme='dark'] .pending {
+  background-color: rgba(37, 99, 235, 0.15);
+  color: var(--color-primary-300);
+  opacity: 0.85;
+}
+
 .collapsed {
   justify-content: center;
   padding: var(--space-2);

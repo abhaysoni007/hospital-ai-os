@@ -56,6 +56,24 @@ export function AppSidebar({
   const isCollapsed = collapsedProp ?? internalCollapsed;
   const pathname = usePathname();
   const { user } = useAuth();
+  const [pendingHref, setPendingHref] = useState<string | null>(null);
+
+  useEffect(() => {
+    setPendingHref(null);
+  }, [pathname]);
+
+  useEffect(() => {
+    if (!pendingHref) return;
+    const timer = setTimeout(() => setPendingHref(null), 8000);
+    return () => clearTimeout(timer);
+  }, [pendingHref]);
+
+  const handleItemClick = (href: string) => {
+    if (href !== pathname) {
+      setPendingHref(href);
+    }
+    onMobileClose?.();
+  };
 
   // M16B — focus management for the mobile drawer.
   // When the drawer opens, remember the element that had focus (usually
@@ -133,8 +151,9 @@ export function AppSidebar({
               href={item.href}
               icon={getIcon(item.iconName)}
               isActive={isNavItemActive(pathname, item.href)}
+              isPending={pendingHref === item.href}
               isCollapsed={isCollapsed}
-              onClick={onMobileClose}
+              onClick={() => handleItemClick(item.href)}
             />
           ))}
         </div>

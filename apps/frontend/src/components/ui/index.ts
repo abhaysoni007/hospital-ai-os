@@ -29,3 +29,4 @@ export * from './ThemeToggle/ThemeToggle';
 export * from './Sparkline/Sparkline';
 export * from './LineChart/LineChart';
 export * from './DonutChart/DonutChart';
+export * from './NavigationProgressBar/NavigationProgressBar';

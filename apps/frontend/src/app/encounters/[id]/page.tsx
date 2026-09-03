@@ -255,59 +255,38 @@ export default function EncounterDetailPage() {
     }
   };
 
-  if (loading) {
-    return (
-      <AppShell breadcrumbs={['Operations', 'Encounters']} requiredPermission="encounter:read">
-        <div className={styles.container}>
-          <Skeleton variant="rectangular" height={280} />
-        </div>
-      </AppShell>
-    );
-  }
-
-  if (error || !encounter) {
-    return (
-      <AppShell breadcrumbs={['Operations', 'Encounters']} requiredPermission="encounter:read">
-        <div className={styles.container}>
-          {breakGlassPatientId && <BreakGlassBanner patientId={breakGlassPatientId} />}
-          <ErrorState
-            title={error?.title || 'Encounter unavailable'}
-            message={error?.message || 'This record is no longer available.'}
-            correlationId={error?.requestId}
-            onRetry={() => void fetchEncounter()}
-          />
-        </div>
-        {showBreakGlassModal && breakGlassPatientId && (
-          <BreakGlassModal
-            patientId={breakGlassPatientId}
-            encounterId={encounterId}
-            onSuccess={() => {
-              setShowBreakGlassModal(false);
-              void fetchEncounter();
-              if (canReadClinical) void fetchRecords();
-              if (canReadDx) void fetchOrders();
-            }}
-            onCancel={() => setShowBreakGlassModal(false)}
-          />
-        )}
-      </AppShell>
-    );
-  }
-
-  const statusIndex = STATUS_FLOW.indexOf(encounter.status as (typeof STATUS_FLOW)[number]);
-  const patientName = `${encounter.patient.firstName} ${encounter.patient.lastName}`;
+  const patientName = encounter
+    ? `${encounter.patient.firstName} ${encounter.patient.lastName}`
+    : undefined;
+  const breadcrumbs = patientName
+    ? ['Operations', 'Encounters', patientName]
+    : ['Operations', 'Encounters'];
+  const statusIndex = encounter
+    ? STATUS_FLOW.indexOf(encounter.status as (typeof STATUS_FLOW)[number])
+    : -1;
 
   return (
-    <AppShell
-      breadcrumbs={['Operations', 'Encounters', patientName]}
-      requiredPermission="encounter:read"
-    >
+    <AppShell breadcrumbs={breadcrumbs} requiredPermission="encounter:read">
       <div className={styles.container}>
-        {breakGlassPatientId ? (
-          <BreakGlassBanner patientId={breakGlassPatientId} />
-        ) : encounter?.patientId ? (
-          <BreakGlassBanner patientId={encounter.patientId} />
-        ) : null}
+        {loading ? (
+          <Skeleton variant="rectangular" height={280} />
+        ) : error || !encounter ? (
+          <>
+            {breakGlassPatientId && <BreakGlassBanner patientId={breakGlassPatientId} />}
+            <ErrorState
+              title={error?.title || 'Encounter unavailable'}
+              message={error?.message || 'This record is no longer available.'}
+              correlationId={error?.requestId}
+              onRetry={() => void fetchEncounter()}
+            />
+          </>
+        ) : (
+          <>
+            {breakGlassPatientId ? (
+              <BreakGlassBanner patientId={breakGlassPatientId} />
+            ) : encounter?.patientId ? (
+              <BreakGlassBanner patientId={encounter.patientId} />
+            ) : null}
 
         {/* Identity band */}
         <PageHeader
@@ -660,6 +639,8 @@ export default function EncounterDetailPage() {
           <Lock size={12} aria-hidden="true" /> Signed documentation becomes part of the permanent,
           immutable clinical record.
         </p>
+          </>
+        )}
       </div>
 
       {isDischargeModalOpen && (

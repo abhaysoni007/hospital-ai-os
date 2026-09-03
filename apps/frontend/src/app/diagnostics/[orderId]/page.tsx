@@ -31,20 +31,20 @@ import { DiagnosticTrend } from '../../../components/intelligence/DiagnosticTren
 
 export default function DiagnosticOrderDetailPage() {
   return (
-    <Suspense
-      fallback={
-        <AppShell
-          breadcrumbs={['Operations', 'Diagnostics']}
-          requiredPermission="diagnostic_order:read"
-        >
+    <AppShell
+      breadcrumbs={['Operations', 'Diagnostics']}
+      requiredPermission="diagnostic_order:read"
+    >
+      <Suspense
+        fallback={
           <div className={styles.container}>
             <Skeleton variant="rectangular" height={280} />
           </div>
-        </AppShell>
-      }
-    >
-      <OrderDetailContent />
-    </Suspense>
+        }
+      >
+        <OrderDetailContent />
+      </Suspense>
+    </AppShell>
   );
 }
 
@@ -200,36 +200,6 @@ function OrderDetailContent() {
     }
   };
 
-  if (loading) {
-    return (
-      <AppShell
-        breadcrumbs={['Operations', 'Diagnostics']}
-        requiredPermission="diagnostic_order:read"
-      >
-        <div className={styles.container}>
-          <Skeleton variant="rectangular" height={280} />
-        </div>
-      </AppShell>
-    );
-  }
-
-  if (error || !order) {
-    return (
-      <AppShell
-        breadcrumbs={['Operations', 'Diagnostics']}
-        requiredPermission="diagnostic_order:read"
-      >
-        <div className={styles.container}>
-          <ErrorState
-            title="This order is no longer available"
-            message={error?.message ?? 'It may not exist or your role may not permit access.'}
-            onRetry={fetchData}
-          />
-        </div>
-      </AppShell>
-    );
-  }
-
   const critical = result?.isCritical === true || (result?.status as string) === 'critical_flagged';
   const verified = result?.status === 'verified';
   const isEnterer = !!result && user?.id === result.enteredBy;
@@ -245,14 +215,20 @@ function OrderDetailContent() {
   } | null;
 
   return (
-    <AppShell
-      breadcrumbs={['Operations', 'Diagnostics', order.testCode]}
-      requiredPermission="diagnostic_order:read"
-    >
-      <div className={styles.container}>
-        <PatientContextHeader
-          patient={patient}
-          loading={Boolean(order && !patient && !patientError)}
+    <div className={styles.container}>
+        {loading ? (
+          <Skeleton variant="rectangular" height={280} />
+        ) : error || !order ? (
+          <ErrorState
+            title="This order is no longer available"
+            message={error?.message ?? 'It may not exist or your role may not permit access.'}
+            onRetry={fetchData}
+          />
+        ) : (
+          <>
+            <PatientContextHeader
+              patient={patient}
+              loading={Boolean(order && !patient && !patientError)}
           error={patientError}
           onRetry={reloadPatient}
         />
@@ -561,7 +537,8 @@ function OrderDetailContent() {
             )}
           </Card>
         )}
+          </>
+        )}
       </div>
-    </AppShell>
   );
 }

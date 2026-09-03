@@ -134,51 +134,42 @@ export default function PatientProfilePage() {
     </Button>
   ) : undefined;
 
-  if (patientState === 'loading') {
-    return (
-      <AppShell breadcrumbs={['Operations', 'Patients']} requiredPermission="patient:read">
-        <div className={styles.container}>
-          <div className={styles.profileHeader}>
-            <Skeleton variant="circular" width={64} height={64} />
-            <div className={styles.profileHeaderText}>
-              <Skeleton variant="text" width={240} height={28} />
-              <Skeleton variant="text" width={160} height={16} />
-            </div>
-          </div>
-          <div className={styles.sectionsGrid}>
-            <Skeleton variant="card" height={220} />
-            <Skeleton variant="card" height={220} />
-            <Skeleton variant="card" height={220} />
-            <Skeleton variant="card" height={220} />
-          </div>
-        </div>
-      </AppShell>
-    );
-  }
-
-  if (patientState === 'error' || !patient) {
-    return (
-      <AppShell breadcrumbs={['Operations', 'Patients']} requiredPermission="patient:read">
-        <ErrorState
-          title={patientError?.title || 'This record is no longer available'}
-          message={
-            patientError?.message ||
-            'The patient may not exist, or your role does not permit access. Return to the directory and search again.'
-          }
-          correlationId={patientError?.requestId}
-          onRetry={() => setPatientRetryTick((tick) => tick + 1)}
-        />
-      </AppShell>
-    );
-  }
+  const breadcrumbs = patient?.mrn
+    ? ['Operations', 'Patients', patient.mrn]
+    : ['Operations', 'Patients'];
 
   return (
-    <AppShell
-      breadcrumbs={['Operations', 'Patients', patient.mrn]}
-      requiredPermission="patient:read"
-    >
+    <AppShell breadcrumbs={breadcrumbs} requiredPermission="patient:read">
       <div className={styles.container}>
-        <BreakGlassBanner patientId={id} />
+        {patientState === 'loading' ? (
+          <>
+            <div className={styles.profileHeader}>
+              <Skeleton variant="circular" width={64} height={64} />
+              <div className={styles.profileHeaderText}>
+                <Skeleton variant="text" width={240} height={28} />
+                <Skeleton variant="text" width={160} height={16} />
+              </div>
+            </div>
+            <div className={styles.sectionsGrid}>
+              <Skeleton variant="card" height={220} />
+              <Skeleton variant="card" height={220} />
+              <Skeleton variant="card" height={220} />
+              <Skeleton variant="card" height={220} />
+            </div>
+          </>
+        ) : patientState === 'error' || !patient ? (
+          <ErrorState
+            title={patientError?.title || 'This record is no longer available'}
+            message={
+              patientError?.message ||
+              'The patient may not exist, or your role does not permit access. Return to the directory and search again.'
+            }
+            correlationId={patientError?.requestId}
+            onRetry={() => setPatientRetryTick((tick) => tick + 1)}
+          />
+        ) : (
+          <>
+            <BreakGlassBanner patientId={id} />
         <PageHeader
           title={`${patient.firstName} ${patient.lastName}`}
           description={`Medical record number ${patient.mrn}`}
@@ -384,6 +375,8 @@ export default function PatientProfilePage() {
             </Card>
           )}
         </div>
+          </>
+        )}
       </div>
 
       {showBreakGlassModal && (

@@ -45,6 +45,7 @@ export interface RequestOptions extends Omit<RequestInit, 'body'> {
   /** Structured request payload. apiClient OWNS serialization (M12.1 P0-1). */
   body?: unknown;
   skipAuth?: boolean;
+  skipDedup?: boolean;
   /** Internal: set when a request has already been retried after refresh (M12.2 Part C). */
   _retried?: boolean;
 }
@@ -112,10 +113,23 @@ function notifySessionExpired(): void {
   }
 }
 
-/** Test seam: reset module-level auth/recovery state between tests. */
+// ---------------------------------------------------------------------------
+// M18 Part 2.1 — In-flight GET promise deduplication
+// Keyed by method:url:skipAuth. Only holds promises while actively in flight;
+// purged immediately upon settle (resolve or reject). Never caches clinical data.
+// ---------------------------------------------------------------------------
+const inFlightGetRequests = new Map<string, Promise<unknown>>();
+
+/** Test seam: inspect in-flight GET requests count. */
+export function __getInFlightGetRequestsCountForTests(): number {
+  return inFlightGetRequests.size;
+}
+
+/** Test seam: reset module-level auth/recovery and dedup state between tests. */
 export function __resetAuthClientStateForTests(): void {
   inMemoryAccessToken = null;
   refreshInFlight = null;
+  inFlightGetRequests.clear();
 }
 
 /** Test seam: observe whether a refresh is currently in flight. */
@@ -124,7 +138,20 @@ export function __isRefreshInFlightForTests(): boolean {
 }
 
 export async function apiClient<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
-  const { body, skipAuth = false, headers = {}, _retried, ...customConfig } = options;
+  const { body, skipAuth = false, skipDedup = false, headers = {}, _retried, ...customConfig } = options;
+
+  const method = (customConfig.method || 'GET').toUpperCase();
+  const url = endpoint.startsWith('http') ? endpoint : `${API_BASE_URL}${endpoint}`;
+
+  // In-flight GET deduplication:
+  // If an identical eligible GET request is already in flight, share its promise.
+  // Retried requests (_retried) must never join an in-flight promise.
+  const isEligibleGet = method === 'GET' && body === undefined && !skipDedup && !_retried;
+  const dedupKey = isEligibleGet ? `GET:${url}:${skipAuth}` : null;
+
+  if (dedupKey && inFlightGetRequests.has(dedupKey)) {
+    return inFlightGetRequests.get(dedupKey) as Promise<T>;
+  }
 
   // M12.1 P0-1 serialization contract: callers provide STRUCTURED objects;
   // apiClient performs the one and only JSON.stringify. A pre-stringified
@@ -135,85 +162,95 @@ export async function apiClient<T>(endpoint: string, options: RequestOptions = {
     );
   }
 
-  const requestHeaders: Record<string, string> = {
-    'Content-Type': 'application/json',
-    Accept: 'application/json',
-    ...(headers as Record<string, string>),
-  };
+  const execute = async (): Promise<T> => {
+    const requestHeaders: Record<string, string> = {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+      ...(headers as Record<string, string>),
+    };
 
-  if (!skipAuth && inMemoryAccessToken) {
-    requestHeaders['Authorization'] = `Bearer ${inMemoryAccessToken}`;
-  }
-
-  const config: RequestInit = {
-    ...customConfig,
-    headers: requestHeaders,
-    credentials: 'include', // Ensures HTTP-only refresh cookies are sent
-  };
-
-  if (body !== undefined) {
-    config.body = JSON.stringify(body);
-  }
-
-  const url = endpoint.startsWith('http') ? endpoint : `${API_BASE_URL}${endpoint}`;
-
-  let response: Response;
-  try {
-    response = await fetch(url, config);
-  } catch {
-    throw new ApiError(0, {
-      code: 'NETWORK_ERROR',
-      message: 'Unable to connect to Hospital AI OS server. Please check your network.',
-    });
-  }
-
-  if (response.status === 204) {
-    return {} as T;
-  }
-
-  // M12.2 Part C: centralized 401 recovery — refresh once, retry once.
-  // A 401 after a successful refresh means the session is dead (revoked or
-  // deactivated): end it instead of surfacing raw errors. Either way the
-  // session-expired notification fires EXACTLY ONCE per expiration event.
-  if (response.status === 401 && !skipAuth) {
-    const refreshed = _retried ? false : await tryRefreshOnce();
-    if (refreshed) {
-      return apiClient<T>(endpoint, { ...options, _retried: true });
+    if (!skipAuth && inMemoryAccessToken) {
+      requestHeaders['Authorization'] = `Bearer ${inMemoryAccessToken}`;
     }
-    setAccessToken(null);
-    notifySessionExpired();
-    // fall through to the standard non-OK handling below
-  }
 
-  let data: Record<string, unknown> | null = null;
-  try {
-    data = (await response.json()) as Record<string, unknown>;
-  } catch {
-    if (!response.ok) {
-      throw new ApiError(response.status, {
-        code: 'SERVER_ERROR',
-        message: `HTTP error ${response.status}: Server returned an unreadable response.`,
+    const config: RequestInit = {
+      ...customConfig,
+      headers: requestHeaders,
+      credentials: 'include', // Ensures HTTP-only refresh cookies are sent
+    };
+
+    if (body !== undefined) {
+      config.body = JSON.stringify(body);
+    }
+
+    let response: Response;
+    try {
+      response = await fetch(url, config);
+    } catch {
+      throw new ApiError(0, {
+        code: 'NETWORK_ERROR',
+        message: 'Unable to connect to Hospital AI OS server. Please check your network.',
       });
     }
-    return {} as T;
-  }
 
-  if (!response.ok) {
-    const headerReqId =
-      response.headers?.get?.('x-request-id') ||
-      response.headers?.get?.('x-correlation-id') ||
-      undefined;
-
-    const errorPayload: ApiErrorPayload = (data?.error as ApiErrorPayload) || {
-      code: 'API_ERROR',
-      message: (data?.message as string) || `Request failed with status ${response.status}`,
-      requestId: headerReqId,
-    };
-    if (!errorPayload.requestId && headerReqId) {
-      errorPayload.requestId = headerReqId;
+    if (response.status === 204) {
+      return {} as T;
     }
-    throw new ApiError(response.status, errorPayload);
+
+    // M12.2 Part C: centralized 401 recovery — refresh once, retry once.
+    if (response.status === 401 && !skipAuth) {
+      if (dedupKey) inFlightGetRequests.delete(dedupKey);
+      const refreshed = _retried ? false : await tryRefreshOnce();
+      if (refreshed) {
+        return apiClient<T>(endpoint, { ...options, _retried: true });
+      }
+      setAccessToken(null);
+      notifySessionExpired();
+      // fall through to the standard non-OK handling below
+    }
+
+    let data: Record<string, unknown> | null = null;
+    try {
+      data = (await response.json()) as Record<string, unknown>;
+    } catch {
+      if (!response.ok) {
+        throw new ApiError(response.status, {
+          code: 'SERVER_ERROR',
+          message: `HTTP error ${response.status}: Server returned an unreadable response.`,
+        });
+      }
+      return {} as T;
+    }
+
+    if (!response.ok) {
+      const headerReqId =
+        response.headers?.get?.('x-request-id') ||
+        response.headers?.get?.('x-correlation-id') ||
+        undefined;
+
+      const errorPayload: ApiErrorPayload = (data?.error as ApiErrorPayload) || {
+        code: 'API_ERROR',
+        message: (data?.message as string) || `Request failed with status ${response.status}`,
+        requestId: headerReqId,
+      };
+      if (!errorPayload.requestId && headerReqId) {
+        errorPayload.requestId = headerReqId;
+      }
+      throw new ApiError(response.status, errorPayload);
+    }
+
+    return data as T;
+  };
+
+  const reqPromise = execute();
+
+  if (dedupKey) {
+    inFlightGetRequests.set(dedupKey, reqPromise);
+    const cleanup = () => {
+      inFlightGetRequests.delete(dedupKey);
+    };
+    reqPromise.then(cleanup, cleanup);
   }
 
-  return data as T;
+  return reqPromise;
 }

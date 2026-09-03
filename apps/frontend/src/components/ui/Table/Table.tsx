@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Link from 'next/link';
 import styles from './Table.module.css';
 
 /**
@@ -118,10 +119,21 @@ export function NumericTD({
 export function RowLink({
   children,
   className = '',
+  href = '#',
   ...props
 }: React.AnchorHTMLAttributes<HTMLAnchorElement>) {
+  const isInternal = typeof href === 'string' && href.startsWith('/') && !href.startsWith('//');
+
+  if (isInternal) {
+    return (
+      <Link href={href} className={`${styles.rowLink} ${className}`} {...props}>
+        {children}
+      </Link>
+    );
+  }
+
   return (
-    <a className={`${styles.rowLink} ${className}`} {...props}>
+    <a href={href} className={`${styles.rowLink} ${className}`} {...props}>
       {children}
     </a>
   );

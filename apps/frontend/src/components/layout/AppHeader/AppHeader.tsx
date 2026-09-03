@@ -18,6 +18,7 @@ import { NotificationPanel } from '../NotificationPanel/NotificationPanel';
 import { BreakGlassStatusIndicator } from '../BreakGlassStatusIndicator';
 import { useNotifications } from '../../../hooks/useNotifications';
 import { ThemeToggle } from '../../ui/ThemeToggle/ThemeToggle';
+import { NavigationProgressBar } from '../../ui/NavigationProgressBar/NavigationProgressBar';
 import styles from './AppHeader.module.css';
 
 export interface AppHeaderProps {
@@ -70,6 +71,7 @@ export function AppHeader({
 
   return (
     <>
+      <NavigationProgressBar />
       <header className={styles.header}>
         <div className={styles.leftSection}>
           {onToggleMobileSidebar && (

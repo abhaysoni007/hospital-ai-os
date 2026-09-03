@@ -1,0 +1,59 @@
+.progressContainer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  z-index: 99999;
+  pointer-events: none;
+  overflow: hidden;
+  opacity: 0;
+  transition: opacity var(--duration-fast, 120ms) ease;
+}
+
+.visible {
+  opacity: 1;
+}
+
+.progressBar {
+  height: 100%;
+  background: var(--color-primary-600, #1d4ed8);
+  box-shadow: 0 0 8px rgba(37, 99, 235, 0.5);
+  width: 0%;
+  transition: width var(--duration-base, 180ms) var(--ease-standard, cubic-bezier(0.4, 0, 0.2, 1));
+}
+
+.animating {
+  animation: progressPulse 1.8s infinite ease-in-out;
+  width: 75%;
+}
+
+.finished {
+  width: 100%;
+  transition: width var(--duration-fast, 120ms) ease;
+}
+
+@keyframes progressPulse {
+  0% {
+    width: 15%;
+    opacity: 0.8;
+  }
+  50% {
+    width: 65%;
+    opacity: 1;
+  }
+  100% {
+    width: 85%;
+    opacity: 0.9;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animating {
+    animation: none;
+    width: 70%;
+  }
+  .progressBar {
+    transition: none;
+  }
+}

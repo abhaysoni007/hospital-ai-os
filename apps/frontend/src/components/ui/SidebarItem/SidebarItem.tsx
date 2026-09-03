@@ -9,6 +9,7 @@ export interface SidebarItemProps {
   label: string;
   href: string;
   isActive?: boolean;
+  isPending?: boolean;
   isCollapsed?: boolean;
   badge?: string | number;
   onClick?: () => void;
@@ -19,6 +20,7 @@ export function SidebarItem({
   label,
   href,
   isActive = false,
+  isPending = false,
   isCollapsed = false,
   badge,
   onClick,
@@ -30,10 +32,12 @@ export function SidebarItem({
       className={`
         ${styles.item}
         ${isActive ? styles.active : ''}
+        ${isPending && !isActive ? styles.pending : ''}
         ${isCollapsed ? styles.collapsed : ''}
       `}
       title={isCollapsed ? label : undefined}
       aria-current={isActive ? 'page' : undefined}
+      aria-busy={isPending ? 'true' : undefined}
       // M16B — when collapsed, the visible label is hidden so the link
       // would otherwise be icon-only with no accessible name. The label
       // is exposed to screen readers via an SR-only span. The `title`
