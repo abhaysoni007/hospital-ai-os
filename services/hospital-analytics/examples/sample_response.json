@@ -1,0 +1,53 @@
+{
+  "analysis_id": "550e8400-e29b-41d4-a716-446655440000",
+  "correlation_id": "c9bf9e57-1685-4c89-bafb-ff5af830be8a",
+  "timestamp": "2026-09-04T01:10:00.000000+00:00",
+  "risk_score": 0.4463,
+  "risk_level": "MEDIUM",
+  "confidence": 0.88,
+  "factors": [
+    {
+      "name": "unacknowledged_critical_results",
+      "contribution": 0.1562,
+      "observed_value": 1,
+      "description": "1 critical diagnostic alerts awaiting clinical acknowledgment"
+    },
+    {
+      "name": "stalled_orders_over_sla",
+      "contribution": 0.1465,
+      "observed_value": 3,
+      "description": "3 diagnostic orders exceeding turnaround SLA"
+    },
+    {
+      "name": "encounters_without_clinical_record",
+      "contribution": 0.1046,
+      "observed_value": 4,
+      "description": "4 encounters without timely clinical documentation"
+    },
+    {
+      "name": "signal_age_escalation",
+      "contribution": 0.0488,
+      "observed_value": 240.0,
+      "description": "Maximum pending signal age of 240.0 minutes"
+    },
+    {
+      "name": "active_encounters_load",
+      "contribution": 0.0469,
+      "observed_value": 24,
+      "description": "24 active encounters contributing to department volume"
+    }
+  ],
+  "analysis_type": "operational_bottleneck",
+  "model_info": {
+    "engine": "hybrid_deterministic_linear",
+    "ml_enabled": true,
+    "algorithm_version": "v1.0.0-experimental",
+    "training_provenance": "SYNTHETIC-DATASET-V1"
+  },
+  "limitations": [
+    "Operational analytics only; NOT clinically validated.",
+    "Must NOT be used for patient diagnosis, treatment, or clinical triage.",
+    "Non-clinical operational workflow bottleneck monitoring only.",
+    "Weights and scores are experimental heuristics based on synthetic operational baselines."
+  ]
+}
