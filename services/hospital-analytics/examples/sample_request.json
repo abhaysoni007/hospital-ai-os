@@ -1,0 +1,34 @@
+{
+  "analysis_id": "550e8400-e29b-41d4-a716-446655440000",
+  "correlation_id": "c9bf9e57-1685-4c89-bafb-ff5af830be8a",
+  "scope": "department",
+  "department_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "signals": [
+    {
+      "signal_id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
+      "signal_type": "PENDING_DIAGNOSTIC_RESULT",
+      "severity": "HIGH",
+      "age_minutes": 240.0,
+      "metadata": {
+        "priority": "STAT"
+      }
+    },
+    {
+      "signal_id": "e301f2ff-7d65-4c12-a1f7-e812859f1962",
+      "signal_type": "CRITICAL_RESULT_UNACKNOWLEDGED",
+      "severity": "CRITICAL",
+      "age_minutes": 45.0,
+      "metadata": {
+        "alert_type": "PANIC_VALUE"
+      }
+    }
+  ],
+  "operational_features": {
+    "active_encounters": 24,
+    "pending_diagnostic_orders": 8,
+    "unacknowledged_critical_results": 1,
+    "encounters_without_clinical_record": 4,
+    "stalled_orders_over_sla": 3,
+    "average_pending_age_minutes": 135.5
+  }
+}

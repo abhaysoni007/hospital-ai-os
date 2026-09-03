@@ -1,0 +1,310 @@
+{
+  "dataset_metadata": {
+    "name": "hospital_operational_bottlenecks_synthetic_v1",
+    "disclaimer": "SYNTHETIC — NOT CLINICAL DATA. Generated algorithmically for testing operational risk scoring models.",
+    "is_clinical": false,
+    "sample_count": 20
+  },
+  "samples": [
+    {
+      "id": "synth-001",
+      "scenario": "Severe bottleneck - Multiple critical panic results and SLA delays",
+      "features": {
+        "unacknowledged_critical_results": 3,
+        "stalled_orders_over_sla": 7,
+        "encounters_without_clinical_record": 8,
+        "active_encounters": 42,
+        "pending_diagnostic_orders": 24,
+        "average_pending_age_minutes": 210.5,
+        "critical_signals_count": 2,
+        "high_signals_count": 3
+      },
+      "bottleneck_label": 1
+    },
+    {
+      "id": "synth-002",
+      "scenario": "Optimal throughput - Low queue counts and all SLAs met",
+      "features": {
+        "unacknowledged_critical_results": 0,
+        "stalled_orders_over_sla": 0,
+        "encounters_without_clinical_record": 1,
+        "active_encounters": 8,
+        "pending_diagnostic_orders": 3,
+        "average_pending_age_minutes": 35.0,
+        "critical_signals_count": 0,
+        "high_signals_count": 0
+      },
+      "bottleneck_label": 0
+    },
+    {
+      "id": "synth-003",
+      "scenario": "Documentation lag - High encounter count with missing progress notes",
+      "features": {
+        "unacknowledged_critical_results": 0,
+        "stalled_orders_over_sla": 2,
+        "encounters_without_clinical_record": 9,
+        "active_encounters": 28,
+        "pending_diagnostic_orders": 6,
+        "average_pending_age_minutes": 95.0,
+        "critical_signals_count": 0,
+        "high_signals_count": 1
+      },
+      "bottleneck_label": 1
+    },
+    {
+      "id": "synth-004",
+      "scenario": "Diagnostic backlog - Delayed lab processing with routine volume",
+      "features": {
+        "unacknowledged_critical_results": 1,
+        "stalled_orders_over_sla": 5,
+        "encounters_without_clinical_record": 2,
+        "active_encounters": 19,
+        "pending_diagnostic_orders": 16,
+        "average_pending_age_minutes": 180.0,
+        "critical_signals_count": 1,
+        "high_signals_count": 2
+      },
+      "bottleneck_label": 1
+    },
+    {
+      "id": "synth-005",
+      "scenario": "Normal evening shift - Moderate encounters and active processing",
+      "features": {
+        "unacknowledged_critical_results": 0,
+        "stalled_orders_over_sla": 1,
+        "encounters_without_clinical_record": 2,
+        "active_encounters": 14,
+        "pending_diagnostic_orders": 5,
+        "average_pending_age_minutes": 55.0,
+        "critical_signals_count": 0,
+        "high_signals_count": 0
+      },
+      "bottleneck_label": 0
+    },
+    {
+      "id": "synth-006",
+      "scenario": "Critical alert spike - 2 panic alerts requiring urgent doctor notification",
+      "features": {
+        "unacknowledged_critical_results": 2,
+        "stalled_orders_over_sla": 3,
+        "encounters_without_clinical_record": 3,
+        "active_encounters": 25,
+        "pending_diagnostic_orders": 12,
+        "average_pending_age_minutes": 140.0,
+        "critical_signals_count": 2,
+        "high_signals_count": 1
+      },
+      "bottleneck_label": 1
+    },
+    {
+      "id": "synth-007",
+      "scenario": "Quiet department - Minimal orders and zero alerts",
+      "features": {
+        "unacknowledged_critical_results": 0,
+        "stalled_orders_over_sla": 0,
+        "encounters_without_clinical_record": 0,
+        "active_encounters": 5,
+        "pending_diagnostic_orders": 2,
+        "average_pending_age_minutes": 25.0,
+        "critical_signals_count": 0,
+        "high_signals_count": 0
+      },
+      "bottleneck_label": 0
+    },
+    {
+      "id": "synth-008",
+      "scenario": "SLA breach surge - 8 diagnostic orders pending beyond SLA",
+      "features": {
+        "unacknowledged_critical_results": 0,
+        "stalled_orders_over_sla": 8,
+        "encounters_without_clinical_record": 4,
+        "active_encounters": 32,
+        "pending_diagnostic_orders": 22,
+        "average_pending_age_minutes": 260.0,
+        "critical_signals_count": 0,
+        "high_signals_count": 4
+      },
+      "bottleneck_label": 1
+    },
+    {
+      "id": "synth-009",
+      "scenario": "Routine morning clinic - Active encounters moving smoothly",
+      "features": {
+        "unacknowledged_critical_results": 0,
+        "stalled_orders_over_sla": 0,
+        "encounters_without_clinical_record": 1,
+        "active_encounters": 16,
+        "pending_diagnostic_orders": 4,
+        "average_pending_age_minutes": 45.0,
+        "critical_signals_count": 0,
+        "high_signals_count": 0
+      },
+      "bottleneck_label": 0
+    },
+    {
+      "id": "synth-010",
+      "scenario": "Saturation threshold - High volume across all metrics",
+      "features": {
+        "unacknowledged_critical_results": 2,
+        "stalled_orders_over_sla": 9,
+        "encounters_without_clinical_record": 11,
+        "active_encounters": 48,
+        "pending_diagnostic_orders": 29,
+        "average_pending_age_minutes": 310.0,
+        "critical_signals_count": 2,
+        "high_signals_count": 5
+      },
+      "bottleneck_label": 1
+    },
+    {
+      "id": "synth-011",
+      "scenario": "Normal outpatient shift - Few pending tests",
+      "features": {
+        "unacknowledged_critical_results": 0,
+        "stalled_orders_over_sla": 0,
+        "encounters_without_clinical_record": 2,
+        "active_encounters": 11,
+        "pending_diagnostic_orders": 3,
+        "average_pending_age_minutes": 40.0,
+        "critical_signals_count": 0,
+        "high_signals_count": 0
+      },
+      "bottleneck_label": 0
+    },
+    {
+      "id": "synth-012",
+      "scenario": "End-of-day documentation backlog",
+      "features": {
+        "unacknowledged_critical_results": 0,
+        "stalled_orders_over_sla": 1,
+        "encounters_without_clinical_record": 6,
+        "active_encounters": 22,
+        "pending_diagnostic_orders": 5,
+        "average_pending_age_minutes": 70.0,
+        "critical_signals_count": 0,
+        "high_signals_count": 1
+      },
+      "bottleneck_label": 0
+    },
+    {
+      "id": "synth-013",
+      "scenario": "Single panic result with otherwise normal flow",
+      "features": {
+        "unacknowledged_critical_results": 1,
+        "stalled_orders_over_sla": 1,
+        "encounters_without_clinical_record": 1,
+        "active_encounters": 12,
+        "pending_diagnostic_orders": 4,
+        "average_pending_age_minutes": 50.0,
+        "critical_signals_count": 1,
+        "high_signals_count": 0
+      },
+      "bottleneck_label": 1
+    },
+    {
+      "id": "synth-014",
+      "scenario": "Laboratory equipment delay causing order queue growth",
+      "features": {
+        "unacknowledged_critical_results": 0,
+        "stalled_orders_over_sla": 6,
+        "encounters_without_clinical_record": 3,
+        "active_encounters": 20,
+        "pending_diagnostic_orders": 18,
+        "average_pending_age_minutes": 220.0,
+        "critical_signals_count": 0,
+        "high_signals_count": 3
+      },
+      "bottleneck_label": 1
+    },
+    {
+      "id": "synth-015",
+      "scenario": "Healthy throughput",
+      "features": {
+        "unacknowledged_critical_results": 0,
+        "stalled_orders_over_sla": 0,
+        "encounters_without_clinical_record": 0,
+        "active_encounters": 7,
+        "pending_diagnostic_orders": 1,
+        "average_pending_age_minutes": 20.0,
+        "critical_signals_count": 0,
+        "high_signals_count": 0
+      },
+      "bottleneck_label": 0
+    },
+    {
+      "id": "synth-016",
+      "scenario": "Moderate department loading",
+      "features": {
+        "unacknowledged_critical_results": 0,
+        "stalled_orders_over_sla": 1,
+        "encounters_without_clinical_record": 2,
+        "active_encounters": 15,
+        "pending_diagnostic_orders": 6,
+        "average_pending_age_minutes": 60.0,
+        "critical_signals_count": 0,
+        "high_signals_count": 0
+      },
+      "bottleneck_label": 0
+    },
+    {
+      "id": "synth-017",
+      "scenario": "Emergency department surge with multiple bottlenecks",
+      "features": {
+        "unacknowledged_critical_results": 2,
+        "stalled_orders_over_sla": 6,
+        "encounters_without_clinical_record": 7,
+        "active_encounters": 38,
+        "pending_diagnostic_orders": 20,
+        "average_pending_age_minutes": 195.0,
+        "critical_signals_count": 2,
+        "high_signals_count": 2
+      },
+      "bottleneck_label": 1
+    },
+    {
+      "id": "synth-018",
+      "scenario": "Night shift quiet period",
+      "features": {
+        "unacknowledged_critical_results": 0,
+        "stalled_orders_over_sla": 0,
+        "encounters_without_clinical_record": 1,
+        "active_encounters": 4,
+        "pending_diagnostic_orders": 1,
+        "average_pending_age_minutes": 15.0,
+        "critical_signals_count": 0,
+        "high_signals_count": 0
+      },
+      "bottleneck_label": 0
+    },
+    {
+      "id": "synth-019",
+      "scenario": "Moderate order delay with no critical items",
+      "features": {
+        "unacknowledged_critical_results": 0,
+        "stalled_orders_over_sla": 2,
+        "encounters_without_clinical_record": 3,
+        "active_encounters": 17,
+        "pending_diagnostic_orders": 8,
+        "average_pending_age_minutes": 85.0,
+        "critical_signals_count": 0,
+        "high_signals_count": 1
+      },
+      "bottleneck_label": 0
+    },
+    {
+      "id": "synth-020",
+      "scenario": "Critical backlog - 3 unacknowledged panic values and 10 stalled orders",
+      "features": {
+        "unacknowledged_critical_results": 3,
+        "stalled_orders_over_sla": 10,
+        "encounters_without_clinical_record": 12,
+        "active_encounters": 45,
+        "pending_diagnostic_orders": 30,
+        "average_pending_age_minutes": 320.0,
+        "critical_signals_count": 3,
+        "high_signals_count": 4
+      },
+      "bottleneck_label": 1
+    }
+  ]
+}
