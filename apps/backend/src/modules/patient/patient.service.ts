@@ -204,6 +204,9 @@ export class PatientService {
 
   /**
    * Updates patient demographics. Runs in one transaction with the PATIENT_UPDATED audit event.
+   * Optimistic concurrency: when the client supplies `expectedVersion`, the write is
+   * guarded by a version predicate — a stale version fails with VERSION_CONFLICT
+   * instead of silently overwriting newer demographics (M18).
    */
   async updatePatient(
     id: string,
@@ -212,15 +215,17 @@ export class PatientService {
     correlationId: string,
     authContext: { role: string; departmentId: string },
   ) {
+    const { expectedVersion, ...fields } = payload;
+
     return await db.transaction(async (tx) => {
       const existing = await tx.query.patients.findFirst({ where: eq(patients.id, id) });
       if (!existing) {
         throw new NotFoundError('Patient not found', { code: 'PATIENT_NOT_FOUND' });
       }
 
-      if (payload.phonePrimary && payload.phonePrimary !== existing.phonePrimary) {
+      if (fields.phonePrimary && fields.phonePrimary !== existing.phonePrimary) {
         const duplicate = await tx.query.patients.findFirst({
-          where: eq(patients.phonePrimary, payload.phonePrimary),
+          where: eq(patients.phonePrimary, fields.phonePrimary),
         });
         if (duplicate) {
           throw new ConflictError('A patient with this phone number already exists.', {
@@ -229,11 +234,22 @@ export class PatientService {
         }
       }
 
+      const guarded =
+        expectedVersion !== undefined
+          ? and(eq(patients.id, id), eq(patients.version, expectedVersion))
+          : eq(patients.id, id);
+
       const [updated] = await tx
         .update(patients)
-        .set(payload)
-        .where(eq(patients.id, id))
+        .set({ ...fields, version: existing.version + 1, updatedAt: new Date() })
+        .where(guarded)
         .returning();
+
+      if (!updated) {
+        throw new ConflictError('Patient was modified concurrently.', {
+          code: 'VERSION_CONFLICT',
+        });
+      }
 
       await auditService.logEvent(
         {
@@ -244,7 +260,11 @@ export class PatientService {
           targetType: 'PATIENT',
           targetId: id,
           patientId: id,
-          actionDetail: { updatedFields: Object.keys(payload) },
+          actionDetail: {
+            updatedFields: Object.keys(fields),
+            previousVersion: existing.version,
+            newVersion: existing.version + 1,
+          },
         },
         correlationId,
         tx,
@@ -330,11 +350,22 @@ export class PatientService {
         );
       }
 
+      // Status predicate is the authoritative guard: a concurrent verify/reject
+      // commits first, this UPDATE matches zero rows and fails deterministically
+      // instead of flipping a resolved document.
       const [updated] = await tx
         .update(identities)
         .set({ verificationStatus: decision, verifiedBy: verifierId })
-        .where(eq(identities.id, identityId))
+        .where(
+          and(eq(identities.id, identityId), eq(identities.verificationStatus, 'pending')),
+        )
         .returning();
+
+      if (!updated) {
+        throw new ConflictError('Identity document has already been resolved.', {
+          code: 'IDENTITY_ALREADY_RESOLVED',
+        });
+      }
 
       await auditService.logEvent(
         {

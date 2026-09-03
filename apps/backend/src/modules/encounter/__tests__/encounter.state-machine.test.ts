@@ -5,10 +5,14 @@ import {
   ENCOUNTER_TRANSITIONS,
 } from '../encounter.state-machine';
 
-describe('M8 Encounter State Machine — Slice 1 (registered → active only)', () => {
+describe('M18 Encounter State Machine (registered → active → discharged)', () => {
   describe('allowed transitions', () => {
     it('registered → active PASSES', () => {
       expect(canTransition('registered', 'active')).toBe(true);
+    });
+
+    it('active → discharged PASSES (M13 discharge)', () => {
+      expect(canTransition('active', 'discharged')).toBe(true);
     });
   });
 
@@ -21,7 +25,9 @@ describe('M8 Encounter State Machine — Slice 1 (registered → active only)', 
     }
 
     it.each(all)('%s → %s', (from, to) => {
-      if (from === 'registered' && to === 'active') {
+      const allowed =
+        (from === 'registered' && to === 'active') || (from === 'active' && to === 'discharged');
+      if (allowed) {
         expect(canTransition(from as never, to as never)).toBe(true);
       } else {
         expect(canTransition(from as never, to as never)).toBe(false);
@@ -40,7 +46,7 @@ describe('M8 Encounter State Machine — Slice 1 (registered → active only)', 
       expect(canTransition('active', 'closed')).toBe(false);
     });
 
-    it('active → discharge_initiated FAILS in slice 1 (M13 territory)', () => {
+    it('active → discharge_initiated FAILS (reserved enum value, no transition path)', () => {
       expect(canTransition('active', 'discharge_initiated')).toBe(false);
     });
 

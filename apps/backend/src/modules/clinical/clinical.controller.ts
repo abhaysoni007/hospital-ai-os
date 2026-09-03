@@ -16,7 +16,7 @@ function requireUser(req: Request) {
 }
 
 function correlation(req: Request): string {
-  return (req.headers['x-correlation-id'] as string) || crypto.randomUUID();
+  return req.correlationId || (req.headers['x-correlation-id'] as string) || crypto.randomUUID();
 }
 
 /** Path params are validated to be UUIDs — no clinical data ever in URLs/queries. */

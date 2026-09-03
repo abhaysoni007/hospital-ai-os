@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import { randomUUID } from 'crypto';
 import { patientService } from './patient.service';
 import {
   registerPatientSchema,
@@ -8,6 +9,10 @@ import {
   verifyIdentitySchema,
 } from 'shared';
 import { AuthenticationError } from 'shared/src/errors/AppError';
+
+function correlation(req: Request): string {
+  return req.correlationId || (req.headers['x-correlation-id'] as string) || randomUUID();
+}
 
 export class PatientController {
   async registerPatient(req: Request, res: Response, next: NextFunction) {
@@ -19,7 +24,7 @@ export class PatientController {
         throw new AuthenticationError('Unauthorized');
       }
 
-      const correlationId = (req.headers['x-correlation-id'] as string) || crypto.randomUUID();
+      const correlationId = correlation(req);
 
       const newPatient = await patientService.registerPatient(
         payload,
@@ -54,7 +59,7 @@ export class PatientController {
     try {
       const { id } = req.params;
       const user = req.user;
-      const correlationId = (req.headers['x-correlation-id'] as string) || crypto.randomUUID();
+      const correlationId = correlation(req);
 
       const patient = await patientService.getPatientById(
         id,
@@ -81,7 +86,7 @@ export class PatientController {
         throw new AuthenticationError('Unauthorized');
       }
 
-      const correlationId = (req.headers['x-correlation-id'] as string) || crypto.randomUUID();
+      const correlationId = correlation(req);
 
       const updated = await patientService.updatePatient(id, payload, user.staffId, correlationId, {
         role: user.role,
@@ -106,7 +111,7 @@ export class PatientController {
         throw new AuthenticationError('Unauthorized');
       }
 
-      const correlationId = (req.headers['x-correlation-id'] as string) || crypto.randomUUID();
+      const correlationId = correlation(req);
 
       const identity = await patientService.addIdentity(id, payload, user.staffId, correlationId, {
         role: user.role,
@@ -131,7 +136,7 @@ export class PatientController {
         throw new AuthenticationError('Unauthorized');
       }
 
-      const correlationId = (req.headers['x-correlation-id'] as string) || crypto.randomUUID();
+      const correlationId = correlation(req);
 
       const identity = await patientService.verifyIdentity(
         id,

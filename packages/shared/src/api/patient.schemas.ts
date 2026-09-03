@@ -22,6 +22,12 @@ export type RegisterPatientRequest = z.infer<typeof registerPatientSchema>;
 
 export const updatePatientSchema = registerPatientSchema.partial().extend({
   status: patientStatusSchema.optional(),
+  /**
+   * M18 optimistic concurrency: the version the client read. When supplied,
+   * the update only applies if the stored version still matches; a stale
+   * version fails with VERSION_CONFLICT instead of overwriting newer data.
+   */
+  expectedVersion: z.number().int().positive().optional(),
 });
 
 export type UpdatePatientRequest = z.infer<typeof updatePatientSchema>;
@@ -41,6 +47,7 @@ export const patientResponseSchema = z.object({
   addressState: z.string().nullable().optional(),
   addressPostalCode: z.string().nullable().optional(),
   status: patientStatusSchema,
+  version: z.number().int().positive(),
   createdBy: z.string().uuid(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),

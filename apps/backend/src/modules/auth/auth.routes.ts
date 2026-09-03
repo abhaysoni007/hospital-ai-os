@@ -12,7 +12,7 @@ const loginLimiter = rateLimit({
   skipSuccessfulRequests: true,
   message: {
     error: {
-      code: 'RATE_LIMITED',
+      code: 'RATE_LIMIT_ERROR',
       message: 'Too many failed login attempts, please try again later',
     },
   },

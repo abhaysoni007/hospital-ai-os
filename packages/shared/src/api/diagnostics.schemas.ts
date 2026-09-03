@@ -38,6 +38,12 @@ export const createDiagnosticOrderSchema = z.object({
   testName: z.string().trim().min(1).max(200),
   priority: orderPrioritySchema.default('routine'),
   clinicalIndication: z.string().trim().max(2000).optional(),
+  /**
+   * M18: optional client-supplied idempotency key. The same (encounterId, key)
+   * pair returns the originally created order instead of producing a duplicate.
+   * Scoped per encounter so a key reused on a different encounter is permitted.
+   */
+  clientRequestId: z.string().trim().min(1).max(100).optional(),
 });
 
 /** Input type: `priority` optional (default applied by the schema at the boundary). */

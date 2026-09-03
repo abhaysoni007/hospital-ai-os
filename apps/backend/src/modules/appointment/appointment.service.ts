@@ -259,6 +259,14 @@ export class AppointmentService {
       if (!appointment) {
         throw new NotFoundError('Appointment not found', { code: 'APPOINTMENT_NOT_FOUND' });
       }
+      // Department scope mirrors check-in: non-admins cancel within their own
+      // department only, regardless of the route-level permission.
+      if (
+        authContext.role !== 'hospital_admin' &&
+        appointment.departmentId !== authContext.departmentId
+      ) {
+        throw new AuthorizationError('Appointment is outside your department.');
+      }
       if (appointment.status !== 'booked') {
         throw new ConflictError(
           `Only booked appointments can be cancelled (current status: ${appointment.status}).`,

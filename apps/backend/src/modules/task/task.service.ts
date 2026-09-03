@@ -356,11 +356,24 @@ export class TaskService {
         });
       }
 
+      // Status predicate mirrors the pre-check: a completion racing this
+      // escalation commits first and the guarded UPDATE matches zero rows.
       const updated = await tx
         .update(tasks)
         .set({ priority: 'critical', updatedAt: new Date() })
-        .where(eq(tasks.id, id))
+        .where(
+          and(
+            eq(tasks.id, id),
+            inArray(tasks.status, ['created', 'assigned', 'in_progress', 'awaiting_approval']),
+          ),
+        )
         .returning();
+
+      if (updated.length === 0) {
+        throw new ConflictError('Completed or cancelled tasks cannot be escalated.', {
+          code: 'INVALID_TRANSITION',
+        });
+      }
 
       await auditService.logEvent(
         {

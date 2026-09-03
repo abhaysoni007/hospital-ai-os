@@ -52,7 +52,10 @@ function requireUser(req: Request) {
 }
 
 function correlation(req: Request): string {
-  return (req.headers['x-correlation-id'] as string) || crypto.randomUUID();
+  // Prefer the middleware-validated value (x-request-id → UUID). Fall back to
+  // the legacy x-correlation-id header for clients that still send it, then
+  // to a fresh UUID so audit events always carry a non-empty id.
+  return req.correlationId || (req.headers['x-correlation-id'] as string) || crypto.randomUUID();
 }
 
 export class AiController {

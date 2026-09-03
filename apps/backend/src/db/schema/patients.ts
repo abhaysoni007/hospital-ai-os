@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, date, timestamp, index } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, date, timestamp, index, integer } from 'drizzle-orm/pg-core';
 import { genderEnum, patientStatusEnum } from './enums';
 import { staff } from './staff';
 import { sql } from 'drizzle-orm';
@@ -20,6 +20,8 @@ export const patients = pgTable(
     addressState: varchar('address_state', { length: 100 }),
     addressPostalCode: varchar('address_postal_code', { length: 20 }),
     status: patientStatusEnum('status').default('active').notNull(),
+    // M18: optimistic-concurrency counter for demographic updates.
+    version: integer('version').default(1).notNull(),
     createdBy: uuid('created_by')
       .notNull()
       .references(() => staff.id),

@@ -9,6 +9,7 @@ declare global {
   namespace Express {
     interface Request {
       user?: AuthenticatedPrincipal;
+      correlationId?: string;
     }
   }
 }

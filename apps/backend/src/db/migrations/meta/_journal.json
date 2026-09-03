@@ -64,6 +64,13 @@
       "when": 1787942700702,
       "tag": "0008_clammy_fat_cobra",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1788029106000,
+      "tag": "0009_m18_clinical_integrity",
+      "breakpoints": true
     }
   ]
 }

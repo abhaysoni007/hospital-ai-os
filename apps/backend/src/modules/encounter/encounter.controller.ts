@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import { randomUUID } from 'crypto';
 import { encounterService } from './encounter.service';
 import {
   createEncounterSchema,
@@ -8,6 +9,10 @@ import {
 } from 'shared';
 import { AuthenticationError } from 'shared/src/errors/AppError';
 
+function correlation(req: Request): string {
+  return req.correlationId || (req.headers['x-correlation-id'] as string) || randomUUID();
+}
+
 export class EncounterController {
   async createEncounter(req: Request, res: Response, next: NextFunction) {
     try {
@@ -15,7 +20,7 @@ export class EncounterController {
       const user = req.user;
       if (!user) throw new AuthenticationError('Unauthorized');
 
-      const correlationId = (req.headers['x-correlation-id'] as string) || crypto.randomUUID();
+      const correlationId = correlation(req);
 
       const encounter = await encounterService.createEncounter(
         payload,
@@ -71,7 +76,7 @@ export class EncounterController {
       const user = req.user;
       if (!user) throw new AuthenticationError('Unauthorized');
 
-      const correlationId = (req.headers['x-correlation-id'] as string) || crypto.randomUUID();
+      const correlationId = correlation(req);
 
       const encounter = await encounterService.activateEncounter(
         id,
@@ -94,7 +99,7 @@ export class EncounterController {
       const user = req.user;
       if (!user) throw new AuthenticationError('Unauthorized');
 
-      const correlationId = (req.headers['x-correlation-id'] as string) || crypto.randomUUID();
+      const correlationId = correlation(req);
 
       const encounter = await encounterService.dischargeEncounter(
         id,

@@ -373,7 +373,7 @@ describe('Authentication API Integration', () => {
       });
 
       expect(res.status).toBe(429);
-      expect(res.body.error.code).toBe('RATE_LIMITED');
+      expect(res.body.error.code).toBe('RATE_LIMIT_ERROR');
     });
   });
 

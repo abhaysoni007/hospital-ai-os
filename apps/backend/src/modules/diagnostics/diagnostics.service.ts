@@ -66,6 +66,11 @@ export class DiagnosticsService {
    * Places a lab order on an ACTIVE encounter.
    * Physician must be the assigned doctor; patient/department inherited
    * server-side from the encounter (ADR-016 Decision 8).
+   *
+   * Idempotency (M18): when the request carries `clientRequestId`, the same
+   * (encounterId, key) pair returns the originally created order instead of
+   * producing a duplicate. The DB unique index is the authoritative backstop
+   * under races; the pre-check is a fast-path that avoids the failed insert.
    */
   async createOrder(
     encounterId: string,
@@ -94,6 +99,22 @@ export class DiagnosticsService {
       );
     }
 
+    // Idempotency fast-path: if the client supplied a key, look up an existing
+    // order with the same key on this encounter. A hit returns the original
+    // order without creating a duplicate; the partial unique index remains the
+    // authoritative backstop under concurrent submission.
+    if (payload.clientRequestId) {
+      const existing = await db.query.diagnosticOrders.findFirst({
+        where: and(
+          eq(diagnosticOrders.encounterId, encounterId),
+          eq(diagnosticOrders.clientRequestId, payload.clientRequestId),
+        ),
+      });
+      if (existing) {
+        return toOrderResponse(existing);
+      }
+    }
+
     return await db.transaction(async (tx) => {
       const [order] = await tx
         .insert(diagnosticOrders)
@@ -105,6 +126,7 @@ export class DiagnosticsService {
           testName: payload.testName,
           priority: payload.priority,
           clinicalIndication: payload.clinicalIndication,
+          clientRequestId: payload.clientRequestId,
           status: 'ordered',
         })
         .returning();
@@ -631,6 +653,8 @@ export class DiagnosticsService {
         .returning();
 
       // Derived transition: verification completes the order (ADR-016 Decision 3).
+      // Status predicate is required — a concurrent cancel racing this verify
+      // would otherwise flip a cancelled order to completed silently.
       await tx
         .update(diagnosticOrders)
         .set({ status: 'completed', updatedAt: now })

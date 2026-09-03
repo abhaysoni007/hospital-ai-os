@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import { randomUUID } from 'crypto';
 import { appointmentService } from './appointment.service';
 import {
   createAppointmentSchema,
@@ -7,6 +8,10 @@ import {
 } from 'shared';
 import { AuthenticationError } from 'shared/src/errors/AppError';
 
+function correlation(req: Request): string {
+  return req.correlationId || (req.headers['x-correlation-id'] as string) || randomUUID();
+}
+
 export class AppointmentController {
   async bookAppointment(req: Request, res: Response, next: NextFunction) {
     try {
@@ -14,7 +19,7 @@ export class AppointmentController {
       const user = req.user;
       if (!user) throw new AuthenticationError('Unauthorized');
 
-      const correlationId = (req.headers['x-correlation-id'] as string) || crypto.randomUUID();
+      const correlationId = correlation(req);
 
       const appointment = await appointmentService.bookAppointment(
         payload,
@@ -53,7 +58,7 @@ export class AppointmentController {
       const user = req.user;
       if (!user) throw new AuthenticationError('Unauthorized');
 
-      const correlationId = (req.headers['x-correlation-id'] as string) || crypto.randomUUID();
+      const correlationId = correlation(req);
 
       const appointment = await appointmentService.cancelAppointment(
         id,
@@ -75,7 +80,7 @@ export class AppointmentController {
       const user = req.user;
       if (!user) throw new AuthenticationError('Unauthorized');
 
-      const correlationId = (req.headers['x-correlation-id'] as string) || crypto.randomUUID();
+      const correlationId = correlation(req);
 
       const result = await appointmentService.checkInAppointment(id, user.staffId, correlationId, {
         role: user.role,

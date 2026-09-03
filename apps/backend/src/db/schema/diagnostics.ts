@@ -34,6 +34,10 @@ export const diagnosticOrders = pgTable(
     clinicalIndication: text('clinical_indication'),
     priority: orderPriorityEnum('priority').default('routine').notNull(),
     status: diagnosticOrderStatusEnum('status').default('ordered').notNull(),
+    // M18: idempotency key. Partial UNIQUE (encounter_id, client_request_id)
+    // WHERE client_request_id IS NOT NULL — same key reused on the same
+    // encounter returns the original order instead of duplicating it.
+    clientRequestId: varchar('client_request_id', { length: 100 }),
     // ADR-016 Decision 4 — collection provenance (migration 0004)
     collectedAt: timestamp('collected_at', { withTimezone: true }),
     collectedBy: uuid('collected_by').references(() => staff.id),
@@ -46,6 +50,10 @@ export const diagnosticOrders = pgTable(
     statusIdx: index('idx_diagnostic_orders_status').on(table.status),
     priorityIdx: index('idx_diagnostic_orders_priority').on(table.priority),
     createdIdx: index('idx_diagnostic_orders_created').on(table.createdAt),
+    // Partial idempotency index: only enforced when the client supplies a key.
+    idempotencyIdx: index('idx_diagnostic_orders_idempotency')
+      .on(table.encounterId, table.clientRequestId)
+      .where(sql`client_request_id IS NOT NULL`),
   }),
 );
 

@@ -4,6 +4,27 @@ import { auditEvents } from '../../db/schema/audit';
 import { desc, sql } from 'drizzle-orm';
 import { CreateAuditEventRequest } from 'shared';
 
+/**
+ * Canonicalize a value the way Postgres jsonb stores it, so the recorded hash
+ * is reproducible from the stored row. jsonb does NOT preserve object key
+ * order: it sorts keys by length first, then bytewise. Without this, any
+ * actionDetail whose keys were not already in jsonb order produced a hash that
+ * no verifier could recompute from the database.
+ */
+function jsonbCanonical(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map(jsonbCanonical);
+  }
+  if (value !== null && typeof value === 'object') {
+    const entries = Object.entries(value as Record<string, unknown>).sort(([a], [b]) => {
+      if (a.length !== b.length) return a.length - b.length;
+      return a < b ? -1 : a > b ? 1 : 0;
+    });
+    return Object.fromEntries(entries.map(([k, v]) => [k, jsonbCanonical(v)]));
+  }
+  return value;
+}
+
 export class AuditService {
   /**
    * Appends a new event to the immutable audit log with cryptographic hash-chaining.
@@ -38,7 +59,7 @@ export class AuditService {
         targetType: payload.targetType || null,
         targetId: payload.targetId || null,
         patientId: payload.patientId || null,
-        actionDetail: payload.actionDetail || null,
+        actionDetail: jsonbCanonical(payload.actionDetail) || null,
         justification: payload.justification || null,
         ipAddress: payload.ipAddress || null,
         correlationId,

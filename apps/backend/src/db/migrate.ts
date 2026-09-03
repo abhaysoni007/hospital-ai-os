@@ -30,7 +30,10 @@ async function runMigrations() {
     console.log('Migrations applied successfully.');
     process.exit(0);
   } catch (error) {
-    console.error('Migration failed:', error);
+    // Log only the error name/message — never the raw driver object, which
+    // can echo the connection string or DDL fragments that contain credentials.
+    const e = error as { name?: string; message?: string };
+    console.error(`Migration failed: ${e.name ?? 'Error'}: ${e.message ?? 'unknown'}`);
     process.exit(1);
   } finally {
     await sql.end();
