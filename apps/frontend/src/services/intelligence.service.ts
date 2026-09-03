@@ -1,5 +1,12 @@
 import { apiClient } from './api-client';
-import { ClinicalTimelineResponse, ChartAnswerOutput, DiagnosticTrendResponse, TimelineMetadata } from 'shared';
+import {
+  ClinicalTimelineResponse,
+  ChartAnswerOutput,
+  DiagnosticTrendResponse,
+  TimelineMetadata,
+  HospitalIntelligenceAnalysisResponse,
+  DetectedSignal,
+} from 'shared';
 
 export interface ChartBriefResponse {
   metadata: TimelineMetadata;
@@ -26,6 +33,22 @@ export const intelligenceService = {
     return apiClient<DiagnosticTrendResponse>(
       `/intelligence/diagnostic-trend/${patientId}/${testCode}`,
       { method: 'GET' }
+    );
+  },
+
+  analyzeOperations: async (
+    scope: 'department' | 'hospital_admin' = 'department',
+  ): Promise<HospitalIntelligenceAnalysisResponse> => {
+    return apiClient<HospitalIntelligenceAnalysisResponse>(
+      '/hospital-intelligence/analyze',
+      { method: 'POST', body: { scope } },
+    );
+  },
+
+  getHospitalSignals: async (): Promise<DetectedSignal[]> => {
+    return apiClient<DetectedSignal[]>(
+      '/hospital-intelligence/signals',
+      { method: 'GET' },
     );
   },
 };

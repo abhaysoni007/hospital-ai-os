@@ -7,9 +7,28 @@ import { resolveKeyPath } from '../../auth/auth.service';
 import { config } from '../../../config';
 import type { StaffRole } from '../../../middleware/rbac/permissions';
 import { auditService } from '../../audit/audit.service';
+import { aiOrchestrator } from '../../ai/ai.container';
 
 // Mock audit logEvent to isolate route testing from DB locks
 vi.spyOn(auditService, 'logEvent').mockResolvedValue();
+
+// Mock AI orchestrator to prevent network timeouts during integration tests
+vi.spyOn(aiOrchestrator, 'invokeStructured').mockResolvedValue({
+  status: 'grounded',
+  parsed: {
+    summary: 'Operational bottleneck detected in hospital workflow.',
+    clinicalImpact: 'May delay care delivery.',
+    citations: [],
+    disclaimers: ['Clinical governance review required.'],
+    informationGaps: [],
+    recommendation: {
+      actionType: 'NOTIFY_ATTENDING_PHYSICIAN',
+      rationale: 'Alert attending physician of operational delay.',
+    },
+  },
+  failures: [],
+  interactionId: '3f2504e0-4f89-11d3-9a0c-0305e82c3301',
+} as any);
 
 function makeToken(role: StaffRole | string): string {
   const keyPath = resolveKeyPath(config.JWT_PRIVATE_KEY_PATH);

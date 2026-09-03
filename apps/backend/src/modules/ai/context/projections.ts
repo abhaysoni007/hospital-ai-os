@@ -52,8 +52,16 @@ export function buildInputManifest(
           capturedAt: capturedAt.toISOString(),
         });
         break;
-      // patient_demographics / encounter_metadata are descriptive context,
-      // not citable sources (no durable record id to cite).
+      case 'encounter_metadata':
+        if (b.sourceId) {
+          manifest.push({
+            sourceType: 'ENCOUNTER',
+            sourceId: b.sourceId,
+            capturedAt: capturedAt.toISOString(),
+          });
+        }
+        break;
+      // patient_demographics is descriptive context, not a citable record.
       default:
         break;
     }

@@ -109,7 +109,7 @@ export class HospitalIntelligenceController {
 
       const result = await hospitalIntelligenceService.rejectRecommendation(
         recommendationId,
-        parsedBody.rejectionReason,
+        parsedBody.rejectionReason ?? 'No reason provided',
         actor,
         correlationId,
       );

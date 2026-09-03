@@ -50,11 +50,13 @@ export const aiUserActionSchema = z.enum(['pending', 'accepted', 'rejected', 'ed
 // Citations & input manifest
 // ---------------------------------------------------------------------------
 
-/** Approved citation source classes (ADR-018 §5 manifest vocabulary). */
+/** Approved citation source classes (ADR-018 §5 manifest vocabulary, M19 intelligence). */
 export const citationSourceTypeSchema = z.enum([
   'CLINICAL_RECORD',
   'DIAGNOSTIC_ORDER',
   'DIAGNOSTIC_RESULT',
+  'ENCOUNTER',
+  'NOTIFICATION',
 ]);
 export type CitationSourceType = z.infer<typeof citationSourceTypeSchema>;
 
@@ -115,6 +117,7 @@ export const patientDemographicsBlockSchema = z
 export const encounterMetadataBlockSchema = z
   .object({
     blockType: z.literal('encounter_metadata'),
+    sourceId: uuidSchema.optional(),
     encounterType: encounterTypeSchema,
     status: encounterStatusSchema,
     startedAt: z.string().datetime().nullable(),

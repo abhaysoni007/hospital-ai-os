@@ -128,6 +128,30 @@ export const aiExplanationSchema = z
   .strict();
 export type AiExplanation = z.infer<typeof aiExplanationSchema>;
 
+export const hospitalBottleneckRecommendationProposalSchema = z
+  .object({
+    actionType: recommendationActionTypeSchema,
+    rationale: z.string().trim().min(1).max(2000),
+    uncertaintyNote: z.string().trim().max(500).optional(),
+    limitationsNote: z.string().trim().max(500).optional(),
+  })
+  .strict();
+export type HospitalBottleneckRecommendationProposal = z.infer<
+  typeof hospitalBottleneckRecommendationProposalSchema
+>;
+
+export const hospitalBottleneckOutputSchema = z
+  .object({
+    summary: z.string().trim().min(1).max(2000),
+    clinicalImpact: z.string().trim().max(2000).optional(),
+    citations: z.array(citationSchema).min(1),
+    disclaimers: z.array(z.string().trim().min(1).max(300)).min(1),
+    informationGaps: z.array(gapCodeSchema),
+    recommendation: hospitalBottleneckRecommendationProposalSchema,
+  })
+  .strict();
+export type HospitalBottleneckOutput = z.infer<typeof hospitalBottleneckOutputSchema>;
+
 // ---------------------------------------------------------------------------
 // Detected Signal contract
 // ---------------------------------------------------------------------------
@@ -159,6 +183,7 @@ export type DetectedSignal = z.infer<typeof detectedSignalSchema>;
 export const analyzeHospitalIntelligenceRequestSchema = z
   .object({
     scope: z.enum(['department', 'hospital_admin']).default('department'),
+    limit: z.number().int().min(1).max(50).default(10).optional(),
   })
   .strict();
 export type AnalyzeHospitalIntelligenceRequest = z.infer<
