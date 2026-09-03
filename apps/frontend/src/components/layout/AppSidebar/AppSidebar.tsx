@@ -13,6 +13,7 @@ import {
   HeartPulse,
   X,
   CheckSquare,
+  Brain,
 } from 'lucide-react';
 import { useAuth } from '../../../hooks/useAuth';
 import { getNavItemsForRole, NavItemConfig } from '../../../utils/rbac';
@@ -41,6 +42,8 @@ const getIcon = (iconName: string) => {
       return <Activity size={18} />;
     case 'CheckSquare':
       return <CheckSquare size={18} />;
+    case 'Brain':
+      return <Brain size={18} />;
     default:
       return <LayoutDashboard size={18} />;
   }

@@ -148,6 +148,14 @@ export const ALL_NAV_ITEMS: readonly NavItemConfig[] = [
     section: 'operations',
     requiredPermission: 'encounter:read',
   },
+  {
+    id: 'intelligence',
+    label: 'Intelligence',
+    href: '/intelligence',
+    iconName: 'Brain',
+    section: 'operations',
+    requiredPermission: 'intelligence:read',
+  },
 
   // Clinical Section
   {

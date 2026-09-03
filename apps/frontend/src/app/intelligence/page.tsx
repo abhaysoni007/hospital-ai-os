@@ -1,59 +1,185 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { AppShell } from '../../components/layout/AppShell/AppShell';
-import {
-  Button,
-  Card,
-  Badge,
-  Spinner,
-  EmptyState,
-  AlertBanner,
-} from '../../components/ui';
-import { Activity, AlertTriangle, CheckCircle2, Play, FileText } from 'lucide-react';
+import { useAuth } from '../../hooks/useAuth';
+import { hasPermission } from '../../utils/rbac';
 import { intelligenceService } from '../../services/intelligence.service';
 import {
   DetectedSignal,
   HospitalIntelligenceAnalysisResponse,
-  SignalSeverity,
+  Recommendation,
+  RecommendationStatus,
 } from 'shared';
+import { IntelligenceHeader } from './components/IntelligenceHeader';
+import { OperationalSummaryBar } from './components/OperationalSummaryBar';
+import { SignalStream } from './components/SignalStream';
+import { SignalDetailPane } from './components/SignalDetailPane';
+import { ApproveActionModal } from './components/ApproveActionModal';
+import { RejectActionModal } from './components/RejectActionModal';
+import {
+  IdleState,
+  LoadingState,
+  ZeroSignalsState,
+  ErrorBanner,
+} from './components/IntelligenceStates';
+import { SignalFilterCategory } from './components/intelligence.types';
+import styles from './intelligence.module.css';
 
 /**
- * M19.2 — Minimal Functional Verification Surface for Hospital Intelligence.
- * Allows clinicians/administrators to run bottleneck analysis, inspect deterministically
- * detected signals, review grounded evidence, and inspect bounded AI recommendations.
- * Full operational analytics dashboard arrives in M19.4.
+ * M19.4 — Hospital Intelligence Center
+ * Flagship operational console for bottleneck detection, evidence grounding,
+ * and human-authorized action governance.
+ *
+ * Core architectural principle:
+ * AI recommends. Policy validates. Human authorizes. Existing authorized services execute. Audit records everything.
  */
-export default function IntelligencePage() {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+export default function IntelligenceCenterPage() {
+  const { user } = useAuth();
+
+  // Permissions
+  const canTriggerAnalysis = hasPermission(user?.role, 'intelligence:analyze');
+  const canApprove = hasPermission(user?.role, 'intelligence:approve');
+  const canSelectAdminScope = user?.role === 'hospital_admin';
+
+  // Analysis State
+  const [scope, setScope] = useState<'department' | 'hospital_admin'>(
+    canSelectAdminScope ? 'hospital_admin' : 'department',
+  );
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analysisError, setAnalysisError] = useState<string | null>(null);
   const [analysis, setAnalysis] = useState<HospitalIntelligenceAnalysisResponse | null>(null);
 
+  // Filter & Selection State
+  const [activeFilter, setActiveFilter] = useState<SignalFilterCategory>('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedSignalId, setSelectedSignalId] = useState<string | null>(null);
+  const [mobileShowDetail, setMobileShowDetail] = useState(false);
+
+  // Local Action Lifecycle Overrides
+  const [recommendationOverrides, setRecommendationOverrides] = useState<
+    Record<string, { status: RecommendationStatus; rejectionReason?: string }>
+  >({});
+
+  // Action Modals State
+  const [approveModal, setApproveModal] = useState<{
+    isOpen: boolean;
+    signal: DetectedSignal | null;
+    rec: Recommendation | null;
+  }>({ isOpen: false, signal: null, rec: null });
+
+  const [rejectModal, setRejectModal] = useState<{
+    isOpen: boolean;
+    signal: DetectedSignal | null;
+    rec: Recommendation | null;
+  }>({ isOpen: false, signal: null, rec: null });
+
+  const [isSubmittingAction, setIsSubmittingAction] = useState(false);
+
+  // Auto-select initial signal on successful analysis run
+  useEffect(() => {
+    if (analysis && analysis.signals.length > 0 && !selectedSignalId) {
+      // Pick highest severity first (e.g. CRITICAL)
+      const criticalSignal = analysis.signals.find((s) => s.severity === 'CRITICAL');
+      const firstSignal = criticalSignal ?? analysis.signals[0];
+      if (firstSignal) {
+        setSelectedSignalId(firstSignal.signalId);
+      }
+    }
+  }, [analysis, selectedSignalId]);
+
+  // Selected signal object
+  const selectedSignal = useMemo(() => {
+    if (!analysis || !selectedSignalId) return null;
+    return analysis.signals.find((s) => s.signalId === selectedSignalId) ?? null;
+  }, [analysis, selectedSignalId]);
+
+  // Handle Analysis Trigger
   const handleRunAnalysis = async () => {
-    setLoading(true);
-    setError(null);
+    if (isAnalyzing || !canTriggerAnalysis) return;
+    setIsAnalyzing(true);
+    setAnalysisError(null);
+
     try {
-      const res = await intelligenceService.analyzeOperations('department');
+      const res = await intelligenceService.analyzeOperations(scope);
       setAnalysis(res);
+      // Auto-select first/critical signal
+      if (res.signals.length > 0) {
+        const topSignal = res.signals.find((s) => s.severity === 'CRITICAL') ?? res.signals[0];
+        setSelectedSignalId(topSignal ? topSignal.signalId : null);
+      } else {
+        setSelectedSignalId(null);
+      }
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Analysis request failed';
-      setError(msg);
+      const msg =
+        err instanceof Error
+          ? err.message
+          : 'Unable to complete intelligence analysis. Please check your network or credentials.';
+      setAnalysisError(msg);
     } finally {
-      setLoading(false);
+      setIsAnalyzing(false);
     }
   };
 
-  const getSeverityVariant = (severity: SignalSeverity): 'critical' | 'urgent' | 'pending' | 'info' => {
-    switch (severity) {
-      case 'CRITICAL':
-        return 'critical';
-      case 'HIGH':
-        return 'urgent';
-      case 'MEDIUM':
-        return 'pending';
-      case 'LOW':
-      default:
-        return 'info';
+  // Handle Signal Selection
+  const handleSelectSignal = (signalId: string) => {
+    setSelectedSignalId(signalId);
+    setMobileShowDetail(true);
+  };
+
+  // Open Approval Modal
+  const handleOpenApprove = (signal: DetectedSignal, rec: Recommendation) => {
+    setApproveModal({ isOpen: true, signal, rec });
+  };
+
+  // Open Rejection Modal
+  const handleOpenReject = (signal: DetectedSignal, rec: Recommendation) => {
+    setRejectModal({ isOpen: true, signal, rec });
+  };
+
+  // Confirm Approval
+  const handleConfirmApprove = async (idempotencyKey: string) => {
+    if (!approveModal.rec) return;
+    const recId = approveModal.rec.recommendationId;
+    setIsSubmittingAction(true);
+
+    try {
+      const res = await intelligenceService.approveRecommendation(recId, idempotencyKey);
+      setRecommendationOverrides((prev) => ({
+        ...prev,
+        [recId]: { status: res.status },
+      }));
+      setApproveModal({ isOpen: false, signal: null, rec: null });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Approval failed';
+      alert(`Approval error: ${msg}`);
+      setRecommendationOverrides((prev) => ({
+        ...prev,
+        [recId]: { status: 'execution_failed' },
+      }));
+    } finally {
+      setIsSubmittingAction(false);
+    }
+  };
+
+  // Confirm Rejection
+  const handleConfirmReject = async (reason: string) => {
+    if (!rejectModal.rec) return;
+    const recId = rejectModal.rec.recommendationId;
+    setIsSubmittingAction(true);
+
+    try {
+      const res = await intelligenceService.rejectRecommendation(recId, reason);
+      setRecommendationOverrides((prev) => ({
+        ...prev,
+        [recId]: { status: res.status, rejectionReason: reason },
+      }));
+      setRejectModal({ isOpen: false, signal: null, rec: null });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Rejection failed';
+      alert(`Rejection error: ${msg}`);
+    } finally {
+      setIsSubmittingAction(false);
     }
   };
 
@@ -61,206 +187,111 @@ export default function IntelligencePage() {
     <AppShell
       breadcrumbs={['Operations', 'Intelligence']}
       requiredPermission="intelligence:read"
+      variant="wide"
     >
-      <div className="space-y-6 max-w-6xl mx-auto pb-12">
-        {/* Header and Trigger Banner */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 bg-card border border-border rounded-xl shadow-xs">
-          <div>
-            <div className="flex items-center gap-2">
-              <Activity className="h-6 w-6 text-primary" />
-              <h1 className="text-xl font-bold tracking-tight">Hospital Bottleneck Intelligence</h1>
-            </div>
-            <p className="text-sm text-muted-foreground mt-1">
-              Deterministic operational bottleneck detection paired with bounded, grounded AI explanation.
-            </p>
-          </div>
-          <div>
-            <Button
-              variant="primary"
-              onClick={handleRunAnalysis}
-              disabled={loading}
-              className="gap-2"
-              id="run-analysis-button"
-            >
-              {loading ? (
-                <>
-                  <Spinner size="sm" />
-                  <span>Analyzing Hospital State...</span>
-                </>
-              ) : (
-                <>
-                  <Play className="h-4 w-4" />
-                  <span>Run Intelligence Analysis</span>
-                </>
-              )}
-            </Button>
-          </div>
-        </div>
+      <div className={styles.container}>
+        {/* Flagship Command Header */}
+        <IntelligenceHeader
+          isAnalyzing={isAnalyzing}
+          aiStatus={analysis?.aiStatus ?? null}
+          scope={scope}
+          canSelectAdminScope={canSelectAdminScope}
+          onScopeChange={setScope}
+          onRunAnalysis={handleRunAnalysis}
+          canTriggerAnalysis={canTriggerAnalysis}
+        />
 
-        {/* Error Banner */}
-        {error && (
-          <AlertBanner severity="critical" title="Analysis Failed">
-            {error}
-          </AlertBanner>
+        {/* Operational Error Banner (if analysis failed) */}
+        {analysisError && (
+          <ErrorBanner error={analysisError} onRetry={handleRunAnalysis} />
         )}
 
-        {/* Results view */}
-        {loading && (
-          <Card className="p-12 text-center flex flex-col items-center justify-center space-y-4">
-            <Spinner size="lg" />
-            <p className="text-sm font-medium text-muted-foreground">
-              Executing deterministic detection queries across active orders, alerts, and encounters...
-            </p>
-          </Card>
-        )}
-
-        {!loading && !analysis && (
-          <EmptyState
-            icon={<Activity size={36} className="text-muted-foreground" />}
-            title="No Active Intelligence Run"
-            description="Click 'Run Intelligence Analysis' above to detect real operational bottlenecks across your department."
+        {/* Operational Summary Bar (Real Data Only) */}
+        {analysis && analysis.signals.length > 0 && !isAnalyzing && (
+          <OperationalSummaryBar
+            signals={analysis.signals}
+            activeFilter={activeFilter}
+            onFilterChange={setActiveFilter}
           />
         )}
 
-        {!loading && analysis && analysis.signals.length === 0 && (
-          <Card className="p-8 text-center space-y-3">
-            <CheckCircle2 className="h-10 w-10 text-emerald-500 mx-auto" />
-            <h3 className="text-lg font-semibold">No Workflow Bottlenecks Detected</h3>
-            <p className="text-sm text-muted-foreground max-w-md mx-auto">
-              All active diagnostic orders, laboratory alerts, and clinical encounters are progressing within defined operational SLA thresholds.
-            </p>
-          </Card>
+        {/* Dynamic State View */}
+        {isAnalyzing && <LoadingState />}
+
+        {!isAnalyzing && !analysis && (
+          <IdleState
+            onRunAnalysis={handleRunAnalysis}
+            canTriggerAnalysis={canTriggerAnalysis}
+          />
         )}
 
-        {!loading && analysis && analysis.signals.length > 0 && (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between text-sm text-muted-foreground px-1">
-              <span>
-                Found <strong className="text-foreground">{analysis.signals.length}</strong> operational bottleneck(s)
-              </span>
-              <span>
-                AI Subsystem Status:{' '}
-                <strong
-                  className={
-                    analysis.aiStatus === 'grounded'
-                      ? 'text-emerald-500'
-                      : analysis.aiStatus === 'degraded'
-                        ? 'text-amber-500'
-                        : 'text-rose-500'
-                  }
-                >
-                  {analysis.aiStatus.toUpperCase()}
-                </strong>
-              </span>
+        {!isAnalyzing && analysis && analysis.signals.length === 0 && (
+          <ZeroSignalsState onRecheck={handleRunAnalysis} />
+        )}
+
+        {!isAnalyzing && analysis && analysis.signals.length > 0 && (
+          <div className={styles.consoleGrid}>
+            {/* Master Column: Signal Stream (Hidden on small screens when viewing detail) */}
+            <div className={mobileShowDetail ? 'hidden lg:block' : 'block'}>
+              <SignalStream
+                signals={analysis.signals}
+                selectedSignalId={selectedSignalId}
+                onSelectSignal={handleSelectSignal}
+                activeFilter={activeFilter}
+                onFilterChange={setActiveFilter}
+                searchQuery={searchQuery}
+                onSearchChange={setSearchQuery}
+                recommendationOverrides={recommendationOverrides}
+              />
             </div>
 
-            {analysis.signals.map((signal: DetectedSignal) => (
-              <Card key={signal.signalId} className="p-6 space-y-4 border-l-4 border-l-primary">
-                {/* Signal Header */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border pb-3">
-                  <div className="flex items-center gap-2">
-                    <Badge variant={getSeverityVariant(signal.severity)}>
-                      {signal.severity}
-                    </Badge>
-                    <h2 className="text-base font-semibold">{signal.title}</h2>
-                  </div>
-                  <span className="text-xs text-muted-foreground font-mono">
-                    Type: {signal.signalType}
-                  </span>
+            {/* Detail Column: Deep Investigation & Governance Stage */}
+            <div className={!mobileShowDetail ? 'hidden lg:block' : 'block'}>
+              {selectedSignal ? (
+                <SignalDetailPane
+                  signal={selectedSignal}
+                  onBackToStream={() => setMobileShowDetail(false)}
+                  canApprove={canApprove}
+                  recommendationOverride={
+                    selectedSignal.recommendation
+                      ? recommendationOverrides[selectedSignal.recommendation.recommendationId]
+                      : undefined
+                  }
+                  onOpenApprove={handleOpenApprove}
+                  onOpenReject={handleOpenReject}
+                />
+              ) : (
+                <div className="p-12 text-center text-sm text-muted-foreground border border-border rounded-xl bg-card">
+                  Select a detected bottleneck signal from the stream to investigate evidence and govern actions.
                 </div>
-
-                {/* Deterministic Reason */}
-                <div className="text-sm">
-                  <span className="font-medium text-foreground">Deterministic Detection Reason: </span>
-                  <span className="text-muted-foreground font-mono text-xs">{signal.deterministicReason}</span>
-                </div>
-
-                {/* Grounded Evidence List */}
-                <div className="space-y-2 bg-muted/40 p-3 rounded-lg border border-border">
-                  <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    Grounded Evidence Records ({signal.evidenceRefs.length})
-                  </div>
-                  <ul className="space-y-1.5 text-xs">
-                    {signal.evidenceRefs.map((ref) => (
-                      <li key={ref.evidenceId} className="flex items-start gap-2">
-                        <span className="font-semibold text-foreground shrink-0">
-                          [{ref.sourceType}]
-                        </span>
-                        <span className="text-muted-foreground">{ref.relationToSignal}</span>
-                        <span
-                          className={`ml-auto font-mono text-[10px] px-1.5 py-0.5 rounded ${
-                            ref.evidenceStatus === 'present'
-                              ? 'bg-emerald-500/10 text-emerald-500'
-                              : 'bg-amber-500/10 text-amber-500'
-                          }`}
-                        >
-                          {ref.evidenceStatus}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                {/* AI Explanation Section */}
-                {signal.aiExplanation ? (
-                  <div className="space-y-3 bg-primary/5 p-4 rounded-lg border border-primary/20">
-                    <div className="flex items-center gap-2 text-xs font-semibold text-primary uppercase tracking-wider">
-                      <Activity className="h-4 w-4" />
-                      <span>Bounded AI Operational Explanation</span>
-                    </div>
-                    <p className="text-sm text-foreground">{signal.aiExplanation.summary}</p>
-                    {signal.aiExplanation.clinicalImpact && (
-                      <div className="text-xs text-muted-foreground">
-                        <strong className="text-foreground">Operational Impact: </strong>
-                        {signal.aiExplanation.clinicalImpact}
-                      </div>
-                    )}
-                    {signal.aiExplanation.disclaimers.length > 0 && (
-                      <div className="text-[11px] text-muted-foreground italic border-t border-primary/10 pt-2">
-                        Note: {signal.aiExplanation.disclaimers.join(' ')}
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div className="p-3 bg-muted rounded-lg text-xs text-muted-foreground flex items-center gap-2">
-                    <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0" />
-                    <span>AI explanation unavailable or degraded. Deterministic signal remains fully valid.</span>
-                  </div>
-                )}
-
-                {/* Proposed Recommendation (Non-executable in M19.2) */}
-                {signal.recommendation && (
-                  <div className="p-4 bg-muted/60 border border-border rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <FileText className="h-4 w-4 text-primary" />
-                        <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                          Proposed Action:
-                        </span>
-                        <span className="text-xs font-bold text-foreground">
-                          {signal.recommendation.actionType}
-                        </span>
-                        <span className="text-[10px] bg-amber-500/20 text-amber-500 px-1.5 py-0.5 rounded font-mono">
-                          STATUS: {signal.recommendation.policyStatus.toUpperCase()}
-                        </span>
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        {signal.recommendation.rationale}
-                      </p>
-                      <p className="text-[10px] text-muted-foreground italic">
-                        * Human authorization required before execution. Action execution enabled in M19.3.
-                      </p>
-                    </div>
-                    <div className="shrink-0">
-                      <Button variant="secondary" size="sm" disabled>
-                        Awaiting Approval (M19.3)
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </Card>
-            ))}
+              )}
+            </div>
           </div>
+        )}
+
+        {/* Human Authorization Modal */}
+        {approveModal.signal && approveModal.rec && (
+          <ApproveActionModal
+            isOpen={approveModal.isOpen}
+            signal={approveModal.signal}
+            recommendation={approveModal.rec}
+            actorRole={user?.role}
+            isSubmitting={isSubmittingAction}
+            onConfirm={handleConfirmApprove}
+            onCancel={() => setApproveModal({ isOpen: false, signal: null, rec: null })}
+          />
+        )}
+
+        {/* Human Rejection Modal */}
+        {rejectModal.signal && rejectModal.rec && (
+          <RejectActionModal
+            isOpen={rejectModal.isOpen}
+            signal={rejectModal.signal}
+            recommendation={rejectModal.rec}
+            isSubmitting={isSubmittingAction}
+            onConfirm={handleConfirmReject}
+            onCancel={() => setRejectModal({ isOpen: false, signal: null, rec: null })}
+          />
         )}
       </div>
     </AppShell>

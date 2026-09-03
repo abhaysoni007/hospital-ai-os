@@ -16,6 +16,7 @@ describe('M13 navigation contract', () => {
     '/patients',
     '/appointments',
     '/encounters',
+    '/intelligence',
     '/diagnostics',
     '/tasks',
   ];
@@ -58,6 +59,23 @@ describe('M13 navigation contract', () => {
 
     const pharmacistItems = getNavItemsForRole('pharmacist').map((i) => i.href);
     expect(pharmacistItems).not.toContain('/diagnostics');
+  });
+
+  it('intelligence requires intelligence:read — receptionists and pharmacists are never shown it', () => {
+    const intelligenceItem = ALL_NAV_ITEMS.find((i) => i.id === 'intelligence');
+    expect(intelligenceItem?.requiredPermission).toBe('intelligence:read');
+
+    expect(hasPermission('receptionist', 'intelligence:read')).toBe(false);
+    expect(hasPermission('pharmacist', 'intelligence:read')).toBe(false);
+    expect(hasPermission('physician', 'intelligence:read')).toBe(true);
+    expect(hasPermission('nurse', 'intelligence:read')).toBe(true);
+    expect(hasPermission('hospital_admin', 'intelligence:read')).toBe(true);
+
+    const receptionistItems = getNavItemsForRole('receptionist').map((i) => i.href);
+    expect(receptionistItems).not.toContain('/intelligence');
+
+    const physicianItems = getNavItemsForRole('physician').map((i) => i.href);
+    expect(physicianItems).toContain('/intelligence');
   });
 
   it('receptionists see scheduling surfaces but not clinical AI or lab internals', () => {
