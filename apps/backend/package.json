@@ -14,7 +14,8 @@
     "db:seed-demo-reset": "tsx src/db/seed-demo-reset.ts",
     "test": "vitest run",
     "eval:medgemma": "tsx src/eval/medgemma-eval.ts",
-    "eval:benchmark": "tsx src/eval/local-model-benchmark.ts"
+    "eval:benchmark": "tsx src/eval/local-model-benchmark.ts",
+    "eval:intelligence": "tsx src/eval/intelligence-evaluation.ts"
   },
   "dependencies": {
     "@google/generative-ai": "0.24.1",

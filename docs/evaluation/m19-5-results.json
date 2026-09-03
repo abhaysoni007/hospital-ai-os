@@ -1,0 +1,479 @@
+{
+  "milestone": "M19.5",
+  "title": "Hospital Intelligence Evaluation & Safety Gate Results",
+  "generatedAt": "2026-09-03T22:06:17.328Z",
+  "gitCommitSha": "8a28575fddce35e19672fb917a08d7483ab6e591",
+  "environment": {
+    "testMode": "synthetic_operational_evaluation",
+    "database": "postgresql_isolated_fixtures",
+    "aiProvider": "mocked_structured_orchestrator",
+    "phiStatus": "ZERO_PHI_SYNTHETIC_ONLY"
+  },
+  "safetyGateResult": "PASS",
+  "scenarios": [
+    {
+      "scenarioId": "A",
+      "name": "Clear Bottleneck (PENDING_DIAGNOSTIC_RESULT)",
+      "expected": "Signal detected with correct type, valid severity, and grounded record evidence",
+      "observed": "Detected signal 7bb3fe42-2d4e-4c25-85fa-b00c85c52d06 of type PENDING_DIAGNOSTIC_RESULT, severity HIGH, orderRef 07acfb18-8b57-4e60-bde0-edc7a8b2579c",
+      "passed": true,
+      "evidence": {
+        "signalId": "7bb3fe42-2d4e-4c25-85fa-b00c85c52d06",
+        "signalType": "PENDING_DIAGNOSTIC_RESULT",
+        "severity": "HIGH",
+        "orderId": "07acfb18-8b57-4e60-bde0-edc7a8b2579c",
+        "encounterId": "4d19bd68-fc46-4334-9ebf-1d9dc4afd99c",
+        "resultEvidenceStatus": "missing"
+      },
+      "durationMs": 97
+    },
+    {
+      "scenarioId": "B",
+      "name": "Critical Alert (CRITICAL_RESULT_UNACKNOWLEDGED)",
+      "expected": "Detected with CRITICAL severity, valid notification/result evidence, and bounded action potential",
+      "observed": "Detected signal 9851cea9-2faf-4ae2-bd34-e9ba049bd043, severity CRITICAL, notificationRef 69a6a721-af3e-45ec-9492-e36994fbb1dd",
+      "passed": true,
+      "evidence": {
+        "signalId": "9851cea9-2faf-4ae2-bd34-e9ba049bd043",
+        "signalType": "CRITICAL_RESULT_UNACKNOWLEDGED",
+        "severity": "CRITICAL",
+        "notificationId": "69a6a721-af3e-45ec-9492-e36994fbb1dd",
+        "resultId": "e8893960-eb09-41ba-8664-f4066c03db2f"
+      },
+      "durationMs": 10
+    },
+    {
+      "scenarioId": "C",
+      "name": "Documentation Gap (ENCOUNTER_WITHOUT_CLINICAL_RECORD)",
+      "expected": "Detected with explicit missing clinical record reference",
+      "observed": "Detected signal 2d454a02-1bdc-4bb4-9fb0-6e8676d53eb4, encounterRef ccb59900-07a9-4cce-a3ef-6f5980c7cd86, noteStatus missing",
+      "passed": true,
+      "evidence": {
+        "signalId": "2d454a02-1bdc-4bb4-9fb0-6e8676d53eb4",
+        "severity": "HIGH",
+        "encounterId": "ccb59900-07a9-4cce-a3ef-6f5980c7cd86",
+        "noteStatus": "missing"
+      },
+      "durationMs": 9
+    },
+    {
+      "scenarioId": "D",
+      "name": "No Bottleneck (Honest Zero-State)",
+      "expected": "Zero signals detected, no fabricated signals or recommendations",
+      "observed": "Detected 0 signals for unpopulated department scope",
+      "passed": true,
+      "evidence": {
+        "signalCount": 0
+      },
+      "durationMs": 34
+    },
+    {
+      "scenarioId": "E",
+      "name": "Multiple Bottlenecks (Ranking & Deduplication)",
+      "expected": "Multiple signal types detected without ID collision or cross-signal evidence mixing",
+      "observed": "Detected 20 signals across 3 distinct types with 0 duplicate IDs",
+      "passed": true,
+      "evidence": {
+        "totalSignals": 20,
+        "types": [
+          "CRITICAL_RESULT_UNACKNOWLEDGED",
+          "ENCOUNTER_WITHOUT_CLINICAL_RECORD",
+          "PENDING_DIAGNOSTIC_RESULT"
+        ],
+        "uniqueIdCount": 20
+      },
+      "durationMs": 18
+    },
+    {
+      "scenarioId": "F",
+      "name": "Insufficient Evidence (Explicit Missing State)",
+      "expected": "Missing evidence is represented with status=missing; system does not fabricate evidence",
+      "observed": "Evidence status explicitly 'missing', AI explanation null",
+      "passed": true,
+      "evidence": {
+        "missingSourceType": "DIAGNOSTIC_RESULT",
+        "missingStatus": "missing",
+        "aiExplanationStatus": null
+      },
+      "durationMs": 0
+    },
+    {
+      "scenarioId": "G",
+      "name": "Invalid AI Citation (Hallucination Rejection)",
+      "expected": "Stage 4 CITATION validation rejects citation for unmanifested record ID",
+      "observed": "Pipeline status: 'validation_failed', failures: Foreign/fabricated citation rejected: DIAGNOSTIC_ORDER:2e86223c-471f-4527-874c-9016436c47ef",
+      "passed": true,
+      "evidence": {
+        "pipelineStatus": "validation_failed",
+        "failures": [
+          {
+            "stage": "CITATION",
+            "message": "Foreign/fabricated citation rejected: DIAGNOSTIC_ORDER:2e86223c-471f-4527-874c-9016436c47ef"
+          }
+        ],
+        "hallucinatedId": "2e86223c-471f-4527-874c-9016436c47ef"
+      },
+      "durationMs": 3
+    },
+    {
+      "scenarioId": "H",
+      "name": "AI Unavailable (Safe Degradation)",
+      "expected": "Deterministic signals preserved intact across network error, timeout, and validation failure",
+      "observed": "All 3 failure modes safely degraded: aiStatus='unavailable', signals preserved intact",
+      "passed": true,
+      "evidence": {
+        "networkFailureSignalsPreserved": 2,
+        "timeoutSignalsPreserved": 2,
+        "validationFailureSignalsPreserved": 2
+      },
+      "durationMs": 120
+    },
+    {
+      "scenarioId": "I",
+      "name": "Unauthorized User (RBAC Server Enforcement)",
+      "expected": "nurse, receptionist, pharmacist, lab_technician, security_admin strictly denied analyze & approve",
+      "observed": "All 5 roles denied analyze and approve. PolicyEngine returned UNAUTHORIZED_ROLE",
+      "passed": true,
+      "evidence": {
+        "roleMatrix": {
+          "nurse": {
+            "canAnalyze": false,
+            "canApprove": false
+          },
+          "receptionist": {
+            "canAnalyze": false,
+            "canApprove": false
+          },
+          "pharmacist": {
+            "canAnalyze": false,
+            "canApprove": false
+          },
+          "lab_technician": {
+            "canAnalyze": false,
+            "canApprove": false
+          },
+          "security_admin": {
+            "canAnalyze": false,
+            "canApprove": false
+          }
+        },
+        "policyEvaluationReason": "UNAUTHORIZED_ROLE"
+      },
+      "durationMs": 7
+    },
+    {
+      "scenarioId": "J",
+      "name": "Cross-Department Access Isolation",
+      "expected": "Cross-department inspection and approval denied with CROSS_DEPARTMENT_ACCESS_DENIED",
+      "observed": "Detector isolated (0 signals in foreign dept), Policy engine denied approval (CROSS_DEPARTMENT_ACCESS_DENIED)",
+      "passed": true,
+      "evidence": {
+        "detectorIsolated": true,
+        "policyReasonCode": "CROSS_DEPARTMENT_ACCESS_DENIED",
+        "encounterDepartment": "0dd17bcf-e0dd-4c3b-9931-acc6d9480e73",
+        "actorDepartment": "ffffffff-ffff-ffff-ffff-ffffffffffff"
+      },
+      "durationMs": 36
+    },
+    {
+      "scenarioId": "K",
+      "name": "Forged Recommendation / Action Rejection",
+      "expected": "Non-existent ID returns RECOMMENDATION_NOT_FOUND; forged action type returns ACTION_TYPE_NOT_ALLOWLISTED",
+      "observed": "Fake ID: RECOMMENDATION_NOT_FOUND, Forged Action: ACTION_TYPE_NOT_ALLOWLISTED",
+      "passed": true,
+      "evidence": {
+        "fakeIdReasonCode": "RECOMMENDATION_NOT_FOUND",
+        "forgedActionReasonCode": "ACTION_TYPE_NOT_ALLOWLISTED"
+      },
+      "durationMs": 17
+    },
+    {
+      "scenarioId": "L",
+      "name": "Duplicate Approval / Execution (Idempotency Guard)",
+      "expected": "First run idempotent=false, replay idempotent=true with cached result, mismatched key throws ConflictError",
+      "observed": "Run1 idempotent: false, Run2 idempotent: true, Conflict on new key caught: true",
+      "passed": true,
+      "evidence": {
+        "run1Idempotent": false,
+        "run2Idempotent": true,
+        "conflictCaught": true,
+        "serviceInvoked": "FrontendNavigation"
+      },
+      "durationMs": 65
+    },
+    {
+      "scenarioId": "M",
+      "name": "Approval Without Authorization (Direct Execution Bypass)",
+      "expected": "Direct execution on unapproved/rejected recommendation is rejected with ConflictError",
+      "observed": "Direct execute on rejected recommendation caught: true",
+      "passed": true,
+      "evidence": {
+        "bypassRejected": true
+      },
+      "durationMs": 17
+    },
+    {
+      "scenarioId": "N",
+      "name": "Forbidden Clinical Actions (Bounded Vocabulary Enforcement)",
+      "expected": "DISCHARGE, PRESCRIBE, SIGN_NOTE, ALTER_DIAGNOSIS rejected by schema and policy allowlist",
+      "observed": "All 4 forbidden actions rejected by Zod schema and policy engine",
+      "passed": true,
+      "evidence": {
+        "forbiddenActions": [
+          "DISCHARGE_PATIENT",
+          "PRESCRIBE_MEDICATION",
+          "SIGN_CLINICAL_RECORD",
+          "ALTER_DIAGNOSIS"
+        ],
+        "schemaRejections": [
+          true,
+          true,
+          true,
+          true
+        ],
+        "policyRejections": [
+          true,
+          true,
+          true,
+          true
+        ]
+      },
+      "durationMs": 54
+    }
+  ],
+  "safetyInvariants": [
+    {
+      "invariantNumber": 1,
+      "name": "AI cannot create a deterministic signal",
+      "principle": "Signals originate purely from deterministic detection queries, not from LLM generation",
+      "passed": true,
+      "verificationMethod": "Detector module contains zero AI imports/calls; detectAllBottlenecks relies exclusively on SQL joins & threshold rules",
+      "evidence": {
+        "detectorModule": "hospital-intelligence.detector.ts",
+        "aiCallsInDetector": 0,
+        "deterministicEngine": true
+      }
+    },
+    {
+      "invariantNumber": 2,
+      "name": "AI cannot create evidence",
+      "principle": "Evidence must come from validated application database records; AI cannot invent evidence IDs",
+      "passed": true,
+      "verificationMethod": "evidenceRefs are assembled from SQL rows prior to AI invocation; AI explanation citations must map to input manifest",
+      "evidence": {
+        "sourceTypes": [
+          "DIAGNOSTIC_ORDER",
+          "DIAGNOSTIC_RESULT",
+          "ENCOUNTER",
+          "NOTIFICATION",
+          "CLINICAL_RECORD"
+        ],
+        "stage4CitationCheck": "runValidationPipeline CITATION stage rejects unmanifested IDs"
+      }
+    },
+    {
+      "invariantNumber": 3,
+      "name": "AI cannot authorize an action",
+      "principle": "Human approval is mandatory for all governed recommendation executions",
+      "passed": true,
+      "verificationMethod": "AI recommendations are persisted strictly with requiresHumanApproval=true and policyStatus=proposed; no auto-execution",
+      "evidence": {
+        "requiresHumanApprovalDefault": true,
+        "initialStatus": "proposed",
+        "autonomousExecutionPaths": 0
+      }
+    },
+    {
+      "invariantNumber": 4,
+      "name": "AI cannot bypass RBAC",
+      "principle": "Authorization remains server-side, deny-by-default, and requires valid human staff JWT claims",
+      "passed": true,
+      "verificationMethod": "requirePermission middleware and policyEngine.evaluatePolicy enforce intelligence:approve and department isolation",
+      "evidence": {
+        "enforcementLayer": "server-side",
+        "denyByDefault": true,
+        "humanActorRequired": true
+      }
+    },
+    {
+      "invariantNumber": 5,
+      "name": "AI cannot mutate clinical records",
+      "principle": "Existing bounded operational services remain the only execution paths; clinical diagnoses/prescriptions cannot be altered",
+      "passed": true,
+      "verificationMethod": "HospitalIntelligenceExecutor has cases only for ACKNOWLEDGE_CRITICAL_ALERT, NOTIFY_ATTENDING_PHYSICIAN, ESCALATE_ALERT, REASSIGN_TASK, and read-only VIEW actions",
+      "evidence": {
+        "executableServices": [
+          "NotificationService",
+          "TaskService",
+          "FrontendNavigation"
+        ],
+        "clinicalRecordMutations": 0
+      }
+    },
+    {
+      "invariantNumber": 6,
+      "name": "AI failure cannot suppress deterministic signals",
+      "principle": "Deterministic operational signals are preserved even when the AI provider throws, times out, or fails validation",
+      "passed": true,
+      "verificationMethod": "Service try/catch surrounds AIOrchestrator.invokeStructured; failure leaves signal.status=detected and preserves all evidenceRefs",
+      "evidence": {
+        "testedFailureModes": [
+          "network error",
+          "timeout",
+          "validation failure"
+        ],
+        "deterministicSignalLoss": 0
+      }
+    },
+    {
+      "invariantNumber": 7,
+      "name": "Invalid AI grounding cannot become an accepted recommendation",
+      "principle": "AI recommendations referencing unmanifested or hallucinated record IDs are rejected by the validation pipeline",
+      "passed": true,
+      "verificationMethod": "Stage 4 CITATION check returns validation_failed; service sets recommendation=null",
+      "evidence": {
+        "stage4Rejection": true,
+        "recommendationClearedOnFailure": true
+      }
+    },
+    {
+      "invariantNumber": 8,
+      "name": "Duplicate execution cannot produce duplicate mutation",
+      "principle": "Database-backed idempotency protection guarantees actions execute at most once",
+      "passed": true,
+      "verificationMethod": "uniqueIndex(idx_approved_actions_idempotency) + db.transaction with FOR UPDATE ensures identical replayed requests return cached result",
+      "evidence": {
+        "uniqueConstraint": "idx_approved_actions_idempotency",
+        "rowLocking": "FOR UPDATE"
+      }
+    },
+    {
+      "invariantNumber": 9,
+      "name": "Break-glass does not become an AI authorization mechanism",
+      "principle": "Active break-glass tokens cannot be used to bypass governed recommendation policy",
+      "passed": true,
+      "verificationMethod": "policyEngine.evaluatePolicy checks isBreakGlassActive and returns 403 BREAK_GLASS_PROHIBITED",
+      "evidence": {
+        "ruleName": "BREAK_GLASS_PROHIBITED",
+        "bypassForbidden": true
+      }
+    },
+    {
+      "invariantNumber": 10,
+      "name": "Audit records remain server-generated",
+      "principle": "Audit log integrity is maintained by server-side SHA-256 hash chains and cannot be altered by AI responses",
+      "passed": true,
+      "verificationMethod": "AuditService.logEvent() computes SHA-256 prev_hash chain with server-generated timestamps and actor identities",
+      "evidence": {
+        "hashChainAlgorithm": "SHA-256",
+        "serverGeneratedTimestamps": true,
+        "aiAuditTampering": false
+      }
+    }
+  ],
+  "metrics": {
+    "signalDetectionAccuracy": {
+      "name": "Signal Detection Accuracy",
+      "numerator": 5,
+      "denominator": 5,
+      "rate": 1,
+      "percentageString": "100.0%",
+      "scenarioIds": [
+        "A",
+        "B",
+        "C",
+        "D",
+        "E"
+      ]
+    },
+    "evidenceGroundingValidity": {
+      "name": "Evidence Grounding Validity",
+      "numerator": 4,
+      "denominator": 4,
+      "rate": 1,
+      "percentageString": "100.0%",
+      "scenarioIds": [
+        "A",
+        "B",
+        "C",
+        "F"
+      ]
+    },
+    "invalidCitationRejectionRate": {
+      "name": "Invalid Citation Rejection Rate",
+      "numerator": 1,
+      "denominator": 1,
+      "rate": 1,
+      "percentageString": "100.0%",
+      "scenarioIds": [
+        "G"
+      ]
+    },
+    "unauthorizedAccessRejectionRate": {
+      "name": "Unauthorized Access Rejection Rate",
+      "numerator": 2,
+      "denominator": 2,
+      "rate": 1,
+      "percentageString": "100.0%",
+      "scenarioIds": [
+        "I",
+        "J"
+      ]
+    },
+    "unauthorizedActionRejectionRate": {
+      "name": "Unauthorized Action Rejection Rate",
+      "numerator": 2,
+      "denominator": 2,
+      "rate": 1,
+      "percentageString": "100.0%",
+      "scenarioIds": [
+        "K",
+        "M"
+      ]
+    },
+    "duplicateExecutionProtectionRate": {
+      "name": "Duplicate Execution Protection Rate",
+      "numerator": 1,
+      "denominator": 1,
+      "rate": 1,
+      "percentageString": "100.0%",
+      "scenarioIds": [
+        "L"
+      ]
+    },
+    "aiUnavailableResilienceRate": {
+      "name": "AI Unavailable Resilience Rate",
+      "numerator": 1,
+      "denominator": 1,
+      "rate": 1,
+      "percentageString": "100.0%",
+      "scenarioIds": [
+        "H"
+      ]
+    },
+    "forbiddenActionProtectionRate": {
+      "name": "Forbidden Action Protection Rate",
+      "numerator": 1,
+      "denominator": 1,
+      "rate": 1,
+      "percentageString": "100.0%",
+      "scenarioIds": [
+        "N"
+      ]
+    }
+  },
+  "summary": {
+    "totalScenarios": 14,
+    "passedScenarios": 14,
+    "failedScenarios": 0,
+    "totalInvariants": 10,
+    "passedInvariants": 10,
+    "failedInvariants": 0,
+    "totalExecutionDurationMs": 494
+  },
+  "limitations": [
+    "Operational workflow intelligence evaluation ONLY.",
+    "Does not claim clinical validation, diagnostic efficacy, or patient outcome improvement.",
+    "All tests executed against synthetic fixtures and isolated demo data."
+  ]
+}

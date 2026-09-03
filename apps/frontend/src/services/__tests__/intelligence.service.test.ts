@@ -30,7 +30,7 @@ const mockSignal: DetectedSignal = {
   aiExplanation: {
     summary: 'Stat laboratory order for patient remains unresulted, delaying critical clinical decision-making.',
     clinicalImpact: 'Potential diagnostic delay for acute inpatient condition.',
-    citations: [{ sourceId: 'd1111111-1111-1111-1111-111111111111', sentenceIndex: 0 }],
+    citations: [{ sourceType: 'DIAGNOSTIC_ORDER', sourceId: 'd1111111-1111-1111-1111-111111111111', excerpt: 'Stat order' }],
     disclaimers: ['Advisory operational intelligence only. Clinical decisions remain the sole responsibility of the physician.'],
     informationGaps: [],
     groundingStatus: 'grounded',
