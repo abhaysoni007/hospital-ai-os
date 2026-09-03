@@ -1,0 +1,107 @@
+name: Hospital Analytics CI
+
+on:
+  push:
+    paths:
+      - 'services/hospital-analytics/**'
+      - '.github/workflows/hospital-analytics.yml'
+  pull_request:
+    paths:
+      - 'services/hospital-analytics/**'
+      - '.github/workflows/hospital-analytics.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+jobs:
+  python-tests:
+    name: Python Tests & Coverage
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+          cache-dependency-path: services/hospital-analytics/pyproject.toml
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e "./services/hospital-analytics[dev]"
+
+      - name: Run pytest with coverage
+        run: |
+          python -m pytest services/hospital-analytics/tests -v \
+            --cov=hospital_analytics \
+            --cov-report=term-missing
+
+  docker-smoke:
+    name: Docker Build & Smoke Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: |
+          docker build \
+            -t hospital-analytics-plugin:ci \
+            services/hospital-analytics
+
+      - name: Run container
+        run: |
+          docker run -d \
+            --name hospital-analytics-plugin \
+            -p 8001:8001 \
+            hospital-analytics-plugin:ci
+
+      - name: Smoke test /health endpoint
+        run: |
+          echo "Polling container /health endpoint..."
+          TIMEOUT=30
+          ELAPSED=0
+          until curl -s -f http://127.0.0.1:8001/health > /dev/null 2>&1; do
+            if [ $ELAPSED -ge $TIMEOUT ]; then
+              echo "ERROR: Service did not become reachable within ${TIMEOUT}s"
+              docker logs hospital-analytics-plugin
+              exit 1
+            fi
+            sleep 1
+            ELAPSED=$((ELAPSED + 1))
+          done
+
+          echo "Service became reachable after ${ELAPSED}s"
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8001/health)
+          RESPONSE_BODY=$(curl -s http://127.0.0.1:8001/health)
+
+          echo "HTTP Status: $HTTP_STATUS"
+          echo "Response Body: $RESPONSE_BODY"
+
+          if [ "$HTTP_STATUS" -ne 200 ]; then
+            echo "ERROR: Expected HTTP 200, got $HTTP_STATUS"
+            exit 1
+          fi
+
+          if ! echo "$RESPONSE_BODY" | grep -q -E '"status":\s*"(ok|healthy)"'; then
+            echo "ERROR: Expected healthy status in response body"
+            exit 1
+          fi
+
+          echo "Smoke test passed successfully!"
+
+      - name: Stop and remove container
+        if: always()
+        run: |
+          docker stop hospital-analytics-plugin || true
+          docker rm hospital-analytics-plugin || true
