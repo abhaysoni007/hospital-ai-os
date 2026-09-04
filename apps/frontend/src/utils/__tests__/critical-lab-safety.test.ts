@@ -6,6 +6,9 @@ import {
   isTaskAcknowledgedOnServer,
   executeAuthoritativeAcknowledgment,
   classifyProbeError,
+  resolveAuthoritativeCriticalTasks,
+  CRITICAL_TASK_RESOLUTION_ERROR,
+  type CriticalTaskListService,
 } from '../critical-result-acknowledgment';
 import { ApiError } from '../../services/api-client';
 import type { DiagnosticOrderResponse, DiagnosticResultResponse, TaskResponse } from 'shared';
@@ -167,6 +170,7 @@ describe('ADR-010 / ADR-016 Critical Lab Safety Contract', () => {
       orderId: 'order-1',
       isCritical: isCrit,
       authoritativeTaskId: 'task-1',
+      taskResolution: 'resolved',
     });
 
     expect(action).toEqual({ type: 'none' });
@@ -183,6 +187,7 @@ describe('ADR-010 / ADR-016 Critical Lab Safety Contract', () => {
       orderId: 'order-1',
       isCritical: isCriticalResult(result),
       authoritativeTaskId: taskId,
+      taskResolution: 'resolved',
     });
 
     expect(action.type).toBe('authoritative_acknowledge');
@@ -205,6 +210,7 @@ describe('ADR-010 / ADR-016 Critical Lab Safety Contract', () => {
       orderId: 'order-1',
       isCritical: isCriticalResult(result),
       authoritativeTaskId: undefined,
+      taskResolution: 'resolved',
     });
     expect(action1).toEqual({
       type: 'navigation_only',
@@ -217,6 +223,7 @@ describe('ADR-010 / ADR-016 Critical Lab Safety Contract', () => {
       orderId: 'order-2',
       isCritical: isCriticalResult(result),
       authoritativeTaskId: '   ',
+      taskResolution: 'resolved',
     });
     expect(action2).toEqual({
       type: 'navigation_only',
@@ -440,5 +447,150 @@ describe('ADR-010 Order Priority vs Result Severity — Data Layer Contract', ()
 
     expect(routineCritical.order.priority).toBe('routine');
     expect(routineCritical.result.isCritical).toBe(true);
+  });
+});
+
+describe('ADR-010 Critical Task Resolution — Fail-Closed Contract', () => {
+  function makeListService(
+    impl: CriticalTaskListService['listTasks'],
+  ): CriticalTaskListService & { listTasks: ReturnType<typeof vi.fn> } {
+    return { listTasks: vi.fn(impl) };
+  }
+
+  /**
+   * Successful lookup with matching tasks -> resolved (authoritative action available).
+   */
+  it('Test N: successful task lookup resolves with the returned tasks', async () => {
+    const tasks = [makeTask()];
+    const service = makeListService(async () => ({ data: tasks } as never));
+
+    const resolution = await resolveAuthoritativeCriticalTasks(service);
+
+    expect(resolution.state).toBe('resolved');
+    expect(resolution.error).toBeUndefined();
+    expect(resolution.tasks).toEqual(tasks);
+  });
+
+  /**
+   * Successful lookup with zero tasks -> resolved (navigation-only is then permitted).
+   */
+  it('Test O: successful lookup with zero matching tasks resolves (NOT a failure)', async () => {
+    const service = makeListService(async () => ({ data: [] } as never));
+
+    const resolution = await resolveAuthoritativeCriticalTasks(service);
+
+    expect(resolution.state).toBe('resolved');
+    expect(resolution.tasks).toEqual([]);
+  });
+
+  /**
+   * Test 6 — task lookup 403: failure must NOT be represented as "no task".
+   */
+  it('Test P: task lookup 403 fails closed — never navigation-only, never "no task"', async () => {
+    const service = makeListService(async () => {
+      throw new ApiError(403, { code: 'FORBIDDEN', message: 'task:read denied' });
+    });
+
+    const resolution = await resolveAuthoritativeCriticalTasks(service);
+
+    expect(resolution.state).toBe('failed');
+    expect(resolution.tasks).toEqual([]);
+    expect(resolution.error).toBe(CRITICAL_TASK_RESOLUTION_ERROR);
+
+    const result = makeResult(true, 'critical_flagged');
+    const action = determineCriticalAction({
+      orderId: 'order-1',
+      isCritical: isCriticalResult(result),
+      authoritativeTaskId: undefined,
+      taskResolution: resolution.state === 'failed' ? 'failed' : 'resolved',
+    });
+    expect(action.type).toBe('task_resolution_failed');
+    expect(action.type).not.toBe('navigation_only');
+  });
+
+  /**
+   * Test 7 — task lookup 500: failure must NOT be interpreted as no task.
+   */
+  it('Test Q: task lookup 500 fails closed — action is task_resolution_failed even if a taskId existed', async () => {
+    const service = makeListService(async () => {
+      throw new ApiError(500, { code: 'INTERNAL_ERROR', message: 'Database failure' });
+    });
+
+    const resolution = await resolveAuthoritativeCriticalTasks(service);
+
+    expect(resolution.state).toBe('failed');
+
+    const action = determineCriticalAction({
+      orderId: 'order-1',
+      isCritical: true,
+      authoritativeTaskId: 'task-crit-1',
+      taskResolution: 'failed',
+    });
+    expect(action.type).toBe('task_resolution_failed');
+    expect(action).not.toEqual({ type: 'none' });
+  });
+
+  /**
+   * Test 8 — task lookup network failure: unresolved/error state preserved.
+   */
+  it('Test R: task lookup network failure preserves the failed (unresolved) state', async () => {
+    const service = makeListService(async () => {
+      throw new TypeError('Failed to fetch');
+    });
+
+    const resolution = await resolveAuthoritativeCriticalTasks(service);
+
+    expect(resolution.state).not.toBe('resolved');
+    expect(resolution.state).toBe('failed');
+    expect(resolution.error).toBe(CRITICAL_TASK_RESOLUTION_ERROR);
+  });
+
+  /**
+   * Malformed/unusable service response must also fail closed.
+   */
+  it('Test S: malformed task service response fails closed instead of assuming no tasks', async () => {
+    const nullService = makeListService(async () => null as never);
+    const nullResolution = await resolveAuthoritativeCriticalTasks(nullService);
+    expect(nullResolution.state).toBe('failed');
+
+    const malformedService = makeListService(async () => ({}) as never);
+    const malformedResolution = await resolveAuthoritativeCriticalTasks(malformedService);
+    expect(malformedResolution.state).toBe('failed');
+    expect(malformedResolution.tasks).toEqual([]);
+  });
+
+  /**
+   * Acknowledgment presentation truth: only a server-returned acknowledged task
+   * state can make the banner acknowledged.
+   */
+  it('Test T: acknowledged presentation derives ONLY from server task state', async () => {
+    const taskId = 'task-crit-server-truth';
+    const createdTask = makeTask({ id: taskId, status: 'created' });
+
+    // Before server transition: not acknowledged
+    expect(isTaskAcknowledgedOnServer(createdTask)).toBe(false);
+
+    // Server acknowledges and returns updated task — that response is the only truth
+    const mockService = {
+      acknowledgeTask: vi.fn(async () => makeTask({ id: taskId, status: 'in_progress' })),
+    };
+    const serverResponse = await executeAuthoritativeAcknowledgment(taskId, mockService);
+
+    // Storing ONLY the server response (no local Set of IDs):
+    const serverAcknowledgedTasks: Record<string, TaskResponse> = { [taskId]: serverResponse };
+    const effectiveTask = serverAcknowledgedTasks[taskId] ?? createdTask;
+    expect(isTaskAcknowledgedOnServer(effectiveTask)).toBe(true);
+
+    // A failed acknowledgment stores nothing -> banner stays unacknowledged
+    const failingService = {
+      acknowledgeTask: vi.fn(async () => {
+        throw new Error('Acknowledgment failed');
+      }),
+    };
+    await expect(executeAuthoritativeAcknowledgment(taskId, failingService)).rejects.toThrow(
+      'Acknowledgment failed',
+    );
+    const noServerResponse: Record<string, TaskResponse> = {};
+    expect(isTaskAcknowledgedOnServer(noServerResponse[taskId] ?? createdTask)).toBe(false);
   });
 });

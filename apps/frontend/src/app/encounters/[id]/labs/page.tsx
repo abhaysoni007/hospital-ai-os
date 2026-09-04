@@ -13,7 +13,6 @@ import { Table, THead, TH, TBody, TR, TD, RowLink, TableSkeleton } from '../../.
 import { AlertBanner } from '../../../../components/ui/Alert/AlertBanner';
 import { encounterService } from '../../../../services/encounter-service';
 import { diagnosticsService } from '../../../../services/diagnostics-service';
-import { taskService } from '../../../../services/task-service';
 import { computeAgeYears } from '../../../../utils/dashboard';
 import { useAuth } from '../../../../hooks/useAuth';
 import { hasPermission } from '../../../../utils/rbac';
@@ -24,6 +23,8 @@ import {
   determineCriticalAction,
   executeAuthoritativeAcknowledgment,
   classifyProbeError,
+  resolveAuthoritativeCriticalTasks,
+  CRITICAL_TASK_RESOLUTION_ERROR,
 } from '../../../../utils/critical-result-acknowledgment';
 import type {
   EncounterDetailResponse,
@@ -47,9 +48,12 @@ import styles from './labs.module.css';
  *
  * Acknowledgment invariant:
  * A critical result MUST NOT be dismissed solely through local React state.
- * Acknowledgment MUST either be server-authoritative via taskService.acknowledgeTask(taskId),
- * or explicitly navigation-only ('Review Critical Result' -> /diagnostics/[orderId])
- * when no authoritative critical-alert task can be safely attributed.
+ * Acknowledgment MUST be server-authoritative via taskService.acknowledgeTask(taskId),
+ * and the acknowledged presentation is derived ONLY from the server-returned task state.
+ * When the task lookup RESOLVES with no authoritative critical-alert task for the current
+ * user, the action is strictly navigation-only ('Review Critical Result' -> /diagnostics/[orderId]).
+ * When the task lookup FAILS (403/500/network/malformed), the page fails closed: the banner
+ * remains visible, unacknowledged, with a task-resolution error and retry — never navigation-only.
  */
 
 interface CriticalResultInfo {
@@ -73,8 +77,14 @@ export default function EncounterLabsPage() {
   const [criticalResults, setCriticalResults] = useState<CriticalResultInfo[]>([]);
   const [ackError, setAckError] = useState<string | null>(null);
   const [probeError, setProbeError] = useState<string | null>(null);
-  // Server-acknowledged task IDs tracked in session (authoritative on server)
-  const [acknowledgedTaskIds, setAcknowledgedTaskIds] = useState<Set<string>>(new Set());
+  // Fail-closed task resolution: a failed lookup is NEVER presented as "no task".
+  const [taskResolutionFailed, setTaskResolutionFailed] = useState(false);
+  // Server-derived acknowledgment truth: only responses returned by
+  // taskService.acknowledgeTask() are stored here. Local state never creates
+  // an acknowledged presentation on its own.
+  const [serverAcknowledgedTasks, setServerAcknowledgedTasks] = useState<
+    Record<string, TaskResponse>
+  >({});
   const [, setAckLoadingOrderId] = useState<string | null>(null);
 
   const canOrder = hasPermission(user?.role, 'diagnostic_order:create');
@@ -92,25 +102,17 @@ export default function EncounterLabsPage() {
     if (completedOrders.length === 0) {
       setCriticalResults([]);
       setProbeError(null);
+      setTaskResolutionFailed(false);
       return;
     }
 
-    // Safely retrieve active user tasks to identify any authoritative critical alert task
-    // assigned to the current authenticated clinician.
-    let userTasks: TaskResponse[] = [];
-    try {
-      const taskRes = await taskService.listTasks({
-        page: 1,
-        pageSize: 50,
-        scope: 'me',
-        taskType: 'critical_alert',
-      });
-      userTasks = taskRes?.data ?? [];
-    } catch {
-      // If task listing fails (e.g. role lacks task:read or network issue),
-      // actions safely degrade to navigation_only.
-      userTasks = [];
-    }
+    // Fail-safe resolution of the current clinician's authoritative critical-alert tasks.
+    // A lookup failure (403/500/network/malformed) sets state 'failed' and MUST NOT be
+    // interpreted as "there is no task" — navigation-only fallback is then forbidden.
+    const resolution = await resolveAuthoritativeCriticalTasks();
+    if (!mounted.current) return;
+    const userTasks = resolution.state === 'resolved' ? resolution.tasks : [];
+    setTaskResolutionFailed(resolution.state === 'failed');
 
     const settled = await Promise.allSettled(
       completedOrders.map(async (order) => {
@@ -187,13 +189,16 @@ export default function EncounterLabsPage() {
    *
    * Invariant: A critical result MUST NOT be dismissed locally without confirmed server transition.
    * If the server call fails, the banner remains visible and an error is shown.
+   *
+   * Presentation truth: only the TaskResponse returned by the server is stored; the UI
+   * derives "acknowledged" from that server state via isTaskAcknowledgedOnServer().
    */
   const handleAcknowledge = useCallback(async (orderId: string, taskId: string) => {
     setAckError(null);
     setAckLoadingOrderId(orderId);
     try {
-      await executeAuthoritativeAcknowledgment(taskId);
-      setAcknowledgedTaskIds((prev) => new Set([...prev, taskId]));
+      const updatedTask = await executeAuthoritativeAcknowledgment(taskId);
+      setServerAcknowledgedTasks((prev) => ({ ...prev, [taskId]: updatedTask }));
     } catch (err) {
       setAckError(
         (err as Error).message ||
@@ -203,6 +208,11 @@ export default function EncounterLabsPage() {
       setAckLoadingOrderId(null);
     }
   }, []);
+
+  /** Re-run the critical-result probe after a failed task resolution. */
+  const handleRetryTaskResolution = useCallback(() => {
+    void probeCriticalResults(orders.filter((o) => o.status === 'completed'));
+  }, [orders, probeCriticalResults]);
 
   return (
     <AppShell
@@ -248,12 +258,15 @@ export default function EncounterLabsPage() {
          * Order priority is NEVER inspected here.
          *
          * Actions:
-         * 1. Authoritative Task exists for current user:
+         * 1. Authoritative Task exists for current user (lookup resolved):
          *    - Explicit server acknowledgment via taskService.acknowledgeTask(taskId).
          *    - Banner remains visible if acknowledgment fails.
-         * 2. No authoritative task exists for current user:
+         * 2. Lookup resolved, no authoritative task exists for current user:
          *    - Strictly navigation-only ('Review Critical Result' -> /diagnostics/[orderId]).
          *    - NO local dismiss button is rendered.
+         * 3. Task lookup FAILED (403/500/network/malformed):
+         *    - Fail closed: banner remains visible and UNACKNOWLEDGED.
+         *    - Task-resolution error is surfaced with retry; navigation-only is forbidden.
          */}
         {criticalResults.map(({ orderId, result, authoritativeTask }) => {
           const order = orders.find((o) => o.id === orderId);
@@ -278,14 +291,16 @@ export default function EncounterLabsPage() {
               ? `${matchingParam.bounds.normalLow}–${matchingParam.bounds.normalHigh} ${firstValue?.unit ?? ''}`
               : undefined;
 
-          const isAcknowledged =
-            isTaskAcknowledgedOnServer(authoritativeTask) ||
-            (authoritativeTask ? acknowledgedTaskIds.has(authoritativeTask.id) : false);
+          const effectiveTask = authoritativeTask
+            ? serverAcknowledgedTasks[authoritativeTask.id] ?? authoritativeTask
+            : undefined;
+          const isAcknowledged = isTaskAcknowledgedOnServer(effectiveTask);
 
           const criticalAction = determineCriticalAction({
             orderId,
             isCritical: true,
             authoritativeTaskId: authoritativeTask?.id,
+            taskResolution: taskResolutionFailed ? 'failed' : 'resolved',
           });
 
           return (
@@ -312,23 +327,39 @@ export default function EncounterLabsPage() {
                     >
                       {isAcknowledged ? 'View verified result & audit trail' : 'Review Critical Result'}
                     </RowLink>
-                  ) : (
+                  ) : criticalAction.type === 'navigation_only' ? (
                     <RowLink
-                      href={
-                        criticalAction.type === 'navigation_only'
-                          ? criticalAction.href
-                          : `/diagnostics/${orderId}`
-                      }
+                      href={criticalAction.href}
                       aria-label={`Review critical result for ${order?.testName ?? result.testCode}`}
                     >
                       Review Critical Result
                     </RowLink>
-                  )
+                  ) : criticalAction.type === 'task_resolution_failed' ? (
+                    <Button variant="secondary" size="sm" onClick={handleRetryTaskResolution}>
+                      Retry
+                    </Button>
+                  ) : null
                 }
               />
             </div>
           );
         })}
+
+        {taskResolutionFailed && (
+          <div style={{ marginBottom: 'var(--space-4)' }}>
+            <AlertBanner
+              severity="critical"
+              title="Task resolution failed"
+              action={
+                <Button variant="secondary" size="sm" onClick={handleRetryTaskResolution}>
+                  Retry
+                </Button>
+              }
+            >
+              {CRITICAL_TASK_RESOLUTION_ERROR}
+            </AlertBanner>
+          </div>
+        )}
 
         {probeError && (
           <div style={{ marginBottom: 'var(--space-4)' }}>

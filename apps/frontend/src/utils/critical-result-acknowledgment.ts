@@ -7,13 +7,16 @@
  *    Order priority (stat/urgent/routine) is NEVER inspected or conflated with result severity.
  * 2. Critical result acknowledgment MUST be server-authoritative via taskService.acknowledgeTask(taskId).
  *    A critical result MUST NEVER disappear solely because a local React state variable changed.
- * 3. When no authoritative task can be safely identified (e.g. current user is not the assigned physician),
- *    the action is strictly navigation-only ('Review Critical Result' -> /diagnostics/[orderId]).
+ * 3. When the task lookup RESOLVES and no authoritative task can be safely identified
+ *    (e.g. current user is not the assigned physician), the action is strictly
+ *    navigation-only ('Review Critical Result' -> /diagnostics/[orderId]).
  *    No fake local dismissal is ever presented.
+ *    If the task lookup FAILS (403/500/network/malformed), the action fails closed
+ *    ('task_resolution_failed') — unknown task state is never treated as absent task state.
  * 4. Probe errors distinguish benign 404 (no result yet) from 403/500/network service failures.
  */
 
-import type { DiagnosticResultResponse, TaskResponse } from 'shared';
+import type { DiagnosticResultResponse, TaskListResponse, TaskResponse } from 'shared';
 import { taskService } from '../services/task-service';
 import { ApiError } from '../services/api-client';
 
@@ -29,7 +32,63 @@ export type CriticalAction =
       type: 'navigation_only';
       href: string;
       label: string;
-    };
+    }
+  | { type: 'task_resolution_failed' };
+
+/**
+ * Resolution state of the authoritative critical-alert task lookup.
+ *
+ * 'failed' means the lookup itself errored (403/500/network/malformed response).
+ * Unknown task state is NOT equivalent to absent task state, so a failed lookup
+ * MUST NEVER be treated as "no matching task" (navigation-only).
+ */
+export type CriticalTaskResolutionState = 'loading' | 'resolved' | 'failed';
+
+export const CRITICAL_TASK_RESOLUTION_ERROR =
+  'Critical result acknowledgment status could not be verified. Please retry or review the associated task.';
+
+export interface CriticalTaskResolution {
+  state: CriticalTaskResolutionState;
+  /** Populated only when state === 'resolved'; empty on failure. */
+  tasks: TaskResponse[];
+  error?: string;
+}
+
+export interface CriticalTaskListService {
+  listTasks(query: {
+    page: number;
+    pageSize: number;
+    scope: 'me';
+    taskType: 'critical_alert';
+  }): Promise<TaskListResponse>;
+}
+
+/**
+ * Resolves the current clinician's authoritative critical_alert tasks.
+ *
+ * Fail-safe semantics:
+ * - Successful response with a usable `data` array -> { state: 'resolved', tasks }.
+ * - 403 / 500 / network / malformed response -> { state: 'failed', error }.
+ * A failure is NEVER converted into an empty task list.
+ */
+export async function resolveAuthoritativeCriticalTasks(
+  service: CriticalTaskListService = taskService,
+): Promise<CriticalTaskResolution> {
+  try {
+    const res = await service.listTasks({
+      page: 1,
+      pageSize: 50,
+      scope: 'me',
+      taskType: 'critical_alert',
+    });
+    if (!res || typeof res !== 'object' || !Array.isArray(res.data)) {
+      return { state: 'failed', tasks: [], error: CRITICAL_TASK_RESOLUTION_ERROR };
+    }
+    return { state: 'resolved', tasks: res.data };
+  } catch {
+    return { state: 'failed', tasks: [], error: CRITICAL_TASK_RESOLUTION_ERROR };
+  }
+}
 
 /**
  * Evaluates whether a diagnostic result is critical.
@@ -84,22 +143,34 @@ export interface DetermineActionParams {
   orderId: string;
   isCritical: boolean;
   authoritativeTaskId?: string | null;
+  /**
+   * Outcome of the authoritative task lookup. Required so callers cannot
+   * silently treat a failed lookup as "no task exists".
+   */
+  taskResolution: Exclude<CriticalTaskResolutionState, 'loading'>;
 }
 
 /**
  * Pure decision function determining the clinical action for a critical result.
  *
  * - Non-critical: { type: 'none' }
+ * - Critical + failed task lookup: { type: 'task_resolution_failed' } — fail closed;
+ *   NEVER navigation-only, NEVER presented as acknowledged.
  * - Critical + authoritative task ID: { type: 'authoritative_acknowledge', taskId, label, reviewHref }
- * - Critical + no authoritative task ID: { type: 'navigation_only', href, label: 'Review Critical Result' }
+ * - Critical + resolved lookup with no authoritative task ID: { type: 'navigation_only', href, label: 'Review Critical Result' }
  */
 export function determineCriticalAction({
   orderId,
   isCritical,
   authoritativeTaskId,
+  taskResolution,
 }: DetermineActionParams): CriticalAction {
   if (!isCritical) {
     return { type: 'none' };
+  }
+
+  if (taskResolution === 'failed') {
+    return { type: 'task_resolution_failed' };
   }
 
   if (authoritativeTaskId && authoritativeTaskId.trim().length > 0) {
