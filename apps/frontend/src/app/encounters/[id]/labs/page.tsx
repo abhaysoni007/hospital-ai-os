@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { Plus, ArrowLeft } from 'lucide-react';
 import { AppShell } from '../../../../components/layout/AppShell/AppShell';
 import { PatientHeader, CriticalResultBanner } from '../../../../components/clinical/LovableClinical';
+import { EncounterNavTabs } from '../../../../components/clinical/EncounterNavTabs';
 import { Card, CardContent } from '../../../../components/ui/Card/Card';
 import { Badge } from '../../../../components/ui/Badge/Badge';
 import { Button } from '../../../../components/ui/Button/Button';
@@ -251,6 +252,8 @@ export default function EncounterLabsPage() {
             />
           </div>
         )}
+
+        <EncounterNavTabs encounterId={encounterId} />
 
         {/*
          * CRITICAL RESULT BANNERS — driven exclusively by DiagnosticResultResponse.isCritical

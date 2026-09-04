@@ -58,12 +58,16 @@ describe('Lovable UI Transplant Contract & Safety Invariants', () => {
 
     const filesToCheck = [
       'components/dashboard/DashboardShell.tsx',
+      'components/dashboard/RoleDashboard.tsx',
+      'components/dashboard/PhysicianDashboard.tsx',
+      'components/dashboard/RoleComponents.tsx',
       'components/dashboard/LabTechnicianDashboard.tsx',
       'components/dashboard/ReceptionistDashboard.tsx',
       'components/dashboard/SecurityAdminDashboard.tsx',
       'components/dashboard/NursingDashboard.tsx',
       'components/dashboard/PharmacistDashboard.tsx',
       'components/dashboard/HospitalAdminDashboard.tsx',
+      'components/clinical/EncounterNavTabs.tsx',
       'components/navigation/CommandMenu.tsx',
       'components/clinical/LovableClinical.tsx',
       'components/ai/LovableAI.tsx',

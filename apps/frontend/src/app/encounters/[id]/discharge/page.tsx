@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { LogOut, ArrowLeft, Check } from 'lucide-react';
 import { AppShell } from '../../../../components/layout/AppShell/AppShell';
 import { PatientHeader } from '../../../../components/clinical/LovableClinical';
+import { EncounterNavTabs } from '../../../../components/clinical/EncounterNavTabs';
 import { Card } from '../../../../components/ui/Card/Card';
 import { Button } from '../../../../components/ui/Button/Button';
 import { AlertBanner } from '../../../../components/ui/Alert/AlertBanner';
@@ -94,6 +95,8 @@ export default function EncounterDischargePage() {
             />
           </div>
         )}
+
+        <EncounterNavTabs encounterId={encounterId} />
 
         {error && (
           <AlertBanner severity="warning" title="Discharge Attention">

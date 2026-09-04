@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { Plus, ArrowLeft } from 'lucide-react';
 import { AppShell } from '../../../../components/layout/AppShell/AppShell';
 import { PatientHeader } from '../../../../components/clinical/LovableClinical';
+import { EncounterNavTabs } from '../../../../components/clinical/EncounterNavTabs';
 import { AiNoteDraftPanel } from '../../../../components/ai/AiNoteDraftPanel';
 import { Card, CardContent } from '../../../../components/ui/Card/Card';
 import { Badge } from '../../../../components/ui/Badge/Badge';
@@ -105,6 +106,8 @@ export default function EncounterNotesPage() {
             />
           </div>
         )}
+
+        <EncounterNavTabs encounterId={encounterId} />
 
         {error && (
           <AlertBanner severity="warning" title="Documentation unavailable">

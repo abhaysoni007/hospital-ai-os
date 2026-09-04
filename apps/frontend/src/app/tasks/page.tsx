@@ -307,126 +307,128 @@ export default function TasksPage() {
             }
           />
         ) : (
-          <Table ariaLabel="Tasks">
-            <THead>
-              <tr>
-                <TH>Title</TH>
-                <TH width="120px">Priority</TH>
-                <TH width="160px">Assignee</TH>
-                <TH width="140px">Created</TH>
-                <TH width="140px">Due</TH>
-                <TH width="150px">Status</TH>
-                <TH aria-label="Actions" />
-              </tr>
-            </THead>
-            <TBody>
-              {tasks.map((task) => {
-                const contextHref = taskContextHref(task);
-                return (
-                  <TR
-                    key={task.id}
-                    interactive={!!contextHref}
-                    onClick={contextHref ? () => router.push(contextHref) : undefined}
-                    aria-label={contextHref ? `Open task context: ${task.title}` : undefined}
-                  >
-                    <TD>
-                      <div className={styles.titleCell}>
-                        <strong>{task.title}</strong>
-                        {isOverdue(task) && (
-                          <Badge variant="critical" size="sm" icon={<AlertCircle size={11} />}>
-                            Overdue
-                          </Badge>
-                        )}
-                      </div>
-                      {task.description && (
-                        <div className={styles.titleDescription}>{task.description}</div>
-                      )}
-                    </TD>
-                    <TD>
-                      <TaskPriorityBadge priority={task.priority} size="sm" />
-                    </TD>
-                    <TD>{task.assignedTo ? (staffMap[task.assignedTo] ?? '—') : 'Unassigned'}</TD>
-                    <TD>
-                      {new Date(task.createdAt).toLocaleString([], {
-                        month: 'short',
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
-                    </TD>
-                    <TD>
-                      {task.dueAt
-                        ? new Date(task.dueAt).toLocaleString([], {
-                            month: 'short',
-                            day: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })
-                        : '—'}
-                    </TD>
-                    <TD>
-                      <TaskStatusBadge status={task.status} size="sm" />
-                    </TD>
-                    <TD align="right">
-                      <div className={styles.rowActions}>
-                        {task.assignedTo === user?.id && task.status === 'created' && (
-                          <Button
-                            variant="primary"
-                            size="sm"
-                            isLoading={actionLoading === task.id}
-                            onClick={(e) => handleAcknowledge(e, task.id)}
-                          >
-                            Acknowledge
-                          </Button>
-                        )}
-                        {task.assignedTo === user?.id && task.status === 'in_progress' && (
-                          <Button
-                            variant="primary"
-                            size="sm"
-                            isLoading={actionLoading === task.id}
-                            onClick={(e) => handleComplete(e, task.id)}
-                          >
-                            Complete
-                          </Button>
-                        )}
-                        {task.assignedTo === user?.id &&
-                          !['completed', 'cancelled'].includes(task.status) && (
-                            <>
-                              <Button
-                                variant="secondary"
-                                size="sm"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setReassignTask(task);
-                                }}
-                              >
-                                Reassign
-                              </Button>
-                              <Button
-                                variant="danger"
-                                size="sm"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setEscalateTask(task);
-                                }}
-                                disabled={task.priority === 'critical'}
-                              >
-                                Escalate
-                              </Button>
-                            </>
+          <div className="clinical-panel" style={{ padding: 0, overflow: 'hidden' }}>
+            <Table ariaLabel="Tasks">
+              <THead>
+                <tr>
+                  <TH>Title</TH>
+                  <TH width="120px">Priority</TH>
+                  <TH width="160px">Assignee</TH>
+                  <TH width="140px">Created</TH>
+                  <TH width="140px">Due</TH>
+                  <TH width="150px">Status</TH>
+                  <TH aria-label="Actions" />
+                </tr>
+              </THead>
+              <TBody>
+                {tasks.map((task) => {
+                  const contextHref = taskContextHref(task);
+                  return (
+                    <TR
+                      key={task.id}
+                      interactive={!!contextHref}
+                      onClick={contextHref ? () => router.push(contextHref) : undefined}
+                      aria-label={contextHref ? `Open task context: ${task.title}` : undefined}
+                    >
+                      <TD>
+                        <div className={styles.titleCell}>
+                          <strong>{task.title}</strong>
+                          {isOverdue(task) && (
+                            <Badge variant="critical" size="sm" icon={<AlertCircle size={11} />}>
+                              Overdue
+                            </Badge>
                           )}
-                        {['completed', 'cancelled'].includes(task.status) && contextHref && (
-                          <RowLink href={contextHref} aria-label="View task context">
-                            View context
-                          </RowLink>
+                        </div>
+                        {task.description && (
+                          <div className={styles.titleDescription}>{task.description}</div>
                         )}
-                      </div>
-                    </TD>
-                  </TR>
-                );
-              })}
-            </TBody>
-          </Table>
+                      </TD>
+                      <TD>
+                        <TaskPriorityBadge priority={task.priority} size="sm" />
+                      </TD>
+                      <TD>{task.assignedTo ? (staffMap[task.assignedTo] ?? '—') : 'Unassigned'}</TD>
+                      <TD>
+                        {new Date(task.createdAt).toLocaleString([], {
+                          month: 'short',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </TD>
+                      <TD>
+                        {task.dueAt
+                          ? new Date(task.dueAt).toLocaleString([], {
+                              month: 'short',
+                              day: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })
+                          : '—'}
+                      </TD>
+                      <TD>
+                        <TaskStatusBadge status={task.status} size="sm" />
+                      </TD>
+                      <TD align="right">
+                        <div className={styles.rowActions}>
+                          {task.assignedTo === user?.id && task.status === 'created' && (
+                            <Button
+                              variant="primary"
+                              size="sm"
+                              isLoading={actionLoading === task.id}
+                              onClick={(e) => handleAcknowledge(e, task.id)}
+                            >
+                              Acknowledge
+                            </Button>
+                          )}
+                          {task.assignedTo === user?.id && task.status === 'in_progress' && (
+                            <Button
+                              variant="primary"
+                              size="sm"
+                              isLoading={actionLoading === task.id}
+                              onClick={(e) => handleComplete(e, task.id)}
+                            >
+                              Complete
+                            </Button>
+                          )}
+                          {task.assignedTo === user?.id &&
+                            !['completed', 'cancelled'].includes(task.status) && (
+                              <>
+                                <Button
+                                  variant="secondary"
+                                  size="sm"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setReassignTask(task);
+                                  }}
+                                >
+                                  Reassign
+                                </Button>
+                                <Button
+                                  variant="danger"
+                                  size="sm"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setEscalateTask(task);
+                                  }}
+                                  disabled={task.priority === 'critical'}
+                                >
+                                  Escalate
+                                </Button>
+                              </>
+                            )}
+                          {['completed', 'cancelled'].includes(task.status) && contextHref && (
+                            <RowLink href={contextHref} aria-label="View task context">
+                              View context
+                            </RowLink>
+                          )}
+                        </div>
+                      </TD>
+                    </TR>
+                  );
+                })}
+              </TBody>
+            </Table>
+          </div>
         )}
 
         <ConfirmDialog

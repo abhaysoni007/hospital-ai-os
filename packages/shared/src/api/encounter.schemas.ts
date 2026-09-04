@@ -9,7 +9,7 @@ import { offsetPaginationSchema } from './pagination';
  * Discharge transitions (discharge_initiated/discharged/closed) belong to
  * the discharge module (M13) and are intentionally NOT reachable via this API yet.
  */
-export const encounterTypeSchema = z.enum(['opd', 'follow_up']);
+export const encounterTypeSchema = z.enum(['opd', 'follow_up', 'inpatient', 'emergency']);
 
 export type EncounterType = z.infer<typeof encounterTypeSchema>;
 

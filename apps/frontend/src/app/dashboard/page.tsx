@@ -2,12 +2,12 @@
 
 import React from 'react';
 import { AppShell } from '../../components/layout/AppShell/AppShell';
-import { DashboardShell } from '../../components/dashboard/DashboardShell';
+import { RoleDashboard } from '../../components/dashboard/RoleDashboard';
 
 export default function DashboardPage() {
   return (
     <AppShell breadcrumbs={['Operations', 'Dashboard']}>
-      <DashboardShell />
+      <RoleDashboard />
     </AppShell>
   );
 }

@@ -2,37 +2,39 @@
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { Pill, CheckSquare, AlertOctagon, RefreshCw, ArrowUpRight, Check } from 'lucide-react';
+import { Check } from 'lucide-react';
 import type { TaskResponse } from 'shared';
 import { useAuth } from '../../hooks/useAuth';
-import { useNotifications } from '../../hooks/useNotifications';
-import { ROLE_DISPLAY_NAMES } from '../../utils/rbac';
 import { taskService } from '../../services/task-service';
-import { Card, CardContent } from '../ui/Card/Card';
-import { Badge } from '../ui/Badge/Badge';
-import { AlertBanner } from '../ui/Alert/AlertBanner';
-import { MetricCard } from '../ui/MetricCard/MetricCard';
-import { Table, THead, TH, TBody, TR, TD, TableSkeleton } from '../ui/Table/Table';
+import { Button } from '../ui/Button/Button';
+import { TableSkeleton } from '../ui/Table/Table';
+import {
+  RoleIntro,
+  DateRangeFilter,
+  useDateRange,
+  MetricGrid,
+  RoleMetricCard,
+  DashboardGrid,
+  ChartCard,
+} from './RoleComponents';
 import styles from './DashboardShell.module.css';
 
 export function PharmacistDashboard() {
   const { user } = useAuth();
-  const notifications = useNotifications(40);
+  const { range, setRange } = useDateRange('7d');
   const [tasks, setTasks] = useState<TaskResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [completingTaskId, setCompletingTaskId] = useState<string | null>(null);
-  const [now, setNow] = useState(() => new Date());
   const mounted = useRef(true);
 
   const loadData = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const taskRes = await taskService.listTasks({ page: 1, pageSize: 25 });
+      const taskRes = await taskService.listTasks({ page: 1, pageSize: 50 });
       if (!mounted.current) return;
       setTasks(taskRes.data);
-      setNow(new Date());
     } catch {
       if (!mounted.current) return;
       setError('Could not load pharmacy tasks.');
@@ -61,144 +63,156 @@ export function PharmacistDashboard() {
     }
   };
 
-  const criticalItems = notifications.items.filter(
-    (n) => n.priority === 'critical' && n.status !== 'acknowledged',
-  );
+  const openTasks = tasks.filter((t) => t.status !== 'completed' && t.status !== 'cancelled');
+  const criticalTasks = openTasks.filter((t) => t.priority === 'critical' || t.priority === 'high');
+  const completedTasks = tasks.filter((t) => t.status === 'completed');
+  const pharmacistName = user?.firstName ? `${user.firstName} ${user.lastName ?? ''}` : 'Pharmacist';
 
   return (
-    <div className={styles.dashboardContainer}>
-      <header className={styles.greetingBanner}>
-        <div>
-          <h1 className={styles.greetingTitle}>
-            <span className={styles.greetingIcon} aria-hidden="true">💊</span>
-            Clinical Pharmacy — {user?.firstName ? `${user.firstName} ${user.lastName ?? ''}` : 'Pharmacist'}
-          </h1>
-          <p className={styles.greetingSubtitle}>
-            {now.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-            {' · '}
-            {ROLE_DISPLAY_NAMES.pharmacist} Workspace
-          </p>
-        </div>
-        <div className={styles.greetingMeta}>
-          <span className={styles.livePill}><span className={styles.liveDot} aria-hidden="true" />Active</span>
-          <button type="button" className={styles.refreshButton} onClick={() => void loadData()}>
-            <RefreshCw size={14} aria-hidden="true" />
-            Refresh
-          </button>
-        </div>
-      </header>
+    <div className="space-y-4">
+      <RoleIntro
+        title="Medication review workspace"
+        subtitle={`${pharmacistName}, PharmD · reviews assigned to clinical pharmacy, in clinical priority order.`}
+        aside={<DateRangeFilter value={range} onChange={setRange} />}
+      />
 
-      {/* Metrics */}
-      <section aria-label="Pharmacy metrics" className={styles.metricRow}>
-        <MetricCard
-          label="Pending Pharmacy Tasks"
-          icon={<CheckSquare size={16} aria-hidden="true" />}
-          tone="info"
-          href="/tasks"
-          value={loading ? '—' : tasks.filter((t) => t.status !== 'completed').length}
-          hint="Verification and medication preparation"
-        />
-        <MetricCard
-          label="Critical Clinical Alerts"
-          icon={<AlertOctagon size={16} aria-hidden="true" />}
-          tone={criticalItems.length > 0 ? 'critical' : 'success'}
-          href="/notifications"
-          value={notifications.isLoading ? '—' : criticalItems.length}
-          hint={criticalItems.length === 0 ? 'No critical drug alerts' : 'Immediate review required'}
-        />
-        <MetricCard
-          label="Total Tasks Managed"
-          icon={<Pill size={16} aria-hidden="true" />}
-          tone="primary"
-          href="/tasks"
+      {error && (
+        <div role="alert" className={styles.quietEmpty} style={{ color: 'var(--color-danger-main)' }}>
+          {error}
+        </div>
+      )}
+
+      {/* 4-Card Metric Grid */}
+      <MetricGrid columns={4}>
+        <RoleMetricCard
+          label="Assigned tasks"
           value={loading ? '—' : tasks.length}
-          hint="Assigned in this window"
+          hint="All work routed to pharmacy today"
+          href="/tasks"
         />
-      </section>
+        <RoleMetricCard
+          label="Review queue"
+          value={loading ? '—' : openTasks.length}
+          hint="Not yet completed"
+          href="/tasks"
+          tone={openTasks.length > 5 ? 'warning' : 'default'}
+        />
+        <RoleMetricCard
+          label="Critical reviews"
+          value={loading ? '—' : criticalTasks.length}
+          hint="Renal or allergy risk flagged"
+          tone={criticalTasks.length > 0 ? 'critical' : 'default'}
+          href="/tasks"
+        />
+        <RoleMetricCard
+          label="Completed today"
+          value={loading ? '—' : completedTasks.length}
+          hint="Resolved during shift"
+          tone="success"
+          href="/tasks"
+        />
+      </MetricGrid>
 
-      {/* Pharmacy Tasks Queue */}
-      <Card elevation="xs" padding="none" className={styles.tableCard}>
-        <div className={styles.sectionCardHeader}>
-          <div className={styles.sectionHeaderTitle}>
-            <h3>Pharmacy Task Inbox</h3>
-            <p>Direct pharmacy orders and medication verification</p>
+      {/* Analytical Dashboard Grid */}
+      <DashboardGrid columns={2}>
+        <ChartCard
+          title="Review queue by priority"
+          decision="What must I clear before anything else today?"
+          action={{ label: 'Task centre', href: '/tasks' }}
+        >
+          <div style={{ padding: 'var(--space-3)' }}>
+            <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: 'var(--space-2)' }}>
+              Breakdown of {openTasks.length} active medication reviews by acuity.
+            </p>
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              <span className="num" style={{ padding: '4px 8px', borderRadius: '4px', background: 'var(--color-danger-bg)', color: 'var(--color-danger-text)', fontSize: '0.75rem', fontWeight: 600 }}>
+                {criticalTasks.length} Critical
+              </span>
+              <span className="num" style={{ padding: '4px 8px', borderRadius: '4px', background: 'var(--color-warning-bg)', color: 'var(--color-warning-text)', fontSize: '0.75rem', fontWeight: 600 }}>
+                {openTasks.filter((t) => t.priority === 'high').length} High/Urgent
+              </span>
+              <span className="num" style={{ padding: '4px 8px', borderRadius: '4px', background: 'var(--bg-subtle)', fontSize: '0.75rem' }}>
+                {openTasks.filter((t) => t.priority === 'low' || t.priority === 'medium').length} Routine
+              </span>
+            </div>
           </div>
-          <Link href="/tasks" className={styles.viewAllLink}>
-            Open task manager <ArrowUpRight size={14} aria-hidden="true" />
+        </ChartCard>
+
+        <ChartCard
+          title="Reviews completed per day"
+          decision="Is the pharmacy queue clearing at a sustainable rate?"
+          action={{ label: 'Tasks', href: '/tasks' }}
+        >
+          <div style={{ padding: 'var(--space-3)' }}>
+            <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: 'var(--space-2)' }}>
+              Completed reviews: {completedTasks.length} total across the service.
+            </p>
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              <span className="num" style={{ padding: '4px 8px', borderRadius: '4px', background: 'var(--color-success-bg)', color: 'var(--color-success-text)', fontSize: '0.75rem', fontWeight: 600 }}>
+                {completedTasks.length} Verified & Dispensed
+              </span>
+            </div>
+          </div>
+        </ChartCard>
+      </DashboardGrid>
+
+      {/* Review Queue */}
+      <section className="clinical-panel p-4" aria-label="Pharmacy review queue">
+        <header style={{ marginBottom: 'var(--space-3)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <h2 style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+              Your Review Queue
+            </h2>
+            <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+              Prescriptions and medication orders awaiting clinical pharmacist sign-off.
+            </p>
+          </div>
+          <Link href="/tasks" style={{ fontSize: '0.75rem', color: 'var(--color-primary-600)', textDecoration: 'none', fontWeight: 500 }}>
+            View all tasks →
           </Link>
-        </div>
+        </header>
 
         {loading ? (
-          <TableSkeleton rows={5} />
-        ) : error ? (
-          <CardContent>
-            <AlertBanner severity="warning" title="Could not load tasks">
-              {error}
-            </AlertBanner>
-          </CardContent>
-        ) : tasks.length === 0 ? (
-          <CardContent>
-            <p className={styles.quietEmpty}>No active tasks in your pharmacy inbox.</p>
-          </CardContent>
+          <TableSkeleton rows={4} />
+        ) : openTasks.length === 0 ? (
+          <div className={styles.quietEmpty}>No outstanding pharmacy review tasks.</div>
         ) : (
-          <Table ariaLabel="Pharmacy Tasks">
-            <THead>
-              <tr>
-                <TH>Task Title</TH>
-                <TH>Type</TH>
-                <TH>Priority</TH>
-                <TH>Status</TH>
-                <TH align="right">Action</TH>
-              </tr>
-            </THead>
-            <TBody>
-              {tasks.map((t) => (
-                <TR key={t.id}>
-                  <TD>
-                    <span style={{ fontWeight: 600 }}>{t.title}</span>
-                    {t.description && (
-                      <span style={{ display: 'block', fontSize: '0.8125rem', color: 'var(--color-neutral-500)' }}>
-                        {t.description}
-                      </span>
-                    )}
-                  </TD>
-                  <TD>
-                    <Badge variant="neutral" size="sm">
-                      {t.taskType}
-                    </Badge>
-                  </TD>
-                  <TD>
-                    <Badge variant={t.priority === 'critical' ? 'critical' : t.priority === 'high' ? 'urgent' : 'neutral'} size="sm">
-                      {t.priority.toUpperCase()}
-                    </Badge>
-                  </TD>
-                  <TD>
-                    <Badge variant={t.status === 'completed' ? 'stable' : t.status === 'in_progress' ? 'info' : 'neutral'} size="sm">
-                      {t.status.replace('_', ' ')}
-                    </Badge>
-                  </TD>
-                  <TD align="right">
-                    {t.status !== 'completed' ? (
-                      <button
-                        type="button"
-                        className={styles.refreshButton}
-                        disabled={completingTaskId === t.id}
-                        onClick={() => void handleCompleteTask(t.id)}
-                        style={{ padding: '4px 10px', fontSize: '0.8125rem' }}
-                      >
-                        <Check size={12} aria-hidden="true" />
-                        {completingTaskId === t.id ? 'Saving…' : 'Complete'}
-                      </button>
-                    ) : (
-                      <span style={{ fontSize: '0.8125rem', color: 'var(--color-success-main)' }}>Done</span>
-                    )}
-                  </TD>
-                </TR>
-              ))}
-            </TBody>
-          </Table>
+          <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {openTasks.slice(0, 6).map((task) => (
+              <li
+                key={task.id}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '8px 12px',
+                  borderRadius: '6px',
+                  border: '1px solid var(--border-subtle)',
+                  backgroundColor: 'var(--bg-surface)',
+                }}
+              >
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <p style={{ fontSize: '0.8125rem', fontWeight: 500, margin: 0, color: 'var(--text-primary)' }}>
+                    {task.title}
+                  </p>
+                  <p style={{ fontSize: '0.6875rem', color: 'var(--text-secondary)', margin: '2px 0 0 0' }}>
+                    Acuity: {task.priority.toUpperCase()} · Status: {task.status}
+                  </p>
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={completingTaskId === task.id}
+                  onClick={() => void handleCompleteTask(task.id)}
+                  iconLeft={<Check size={12} />}
+                >
+                  Verify
+                </Button>
+              </li>
+            ))}
+          </ul>
         )}
-      </Card>
+      </section>
     </div>
   );
 }

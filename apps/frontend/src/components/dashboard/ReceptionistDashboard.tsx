@@ -2,28 +2,34 @@
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { Calendar, UserPlus, CheckCircle2, RefreshCw, Clock, ArrowUpRight, Check } from 'lucide-react';
+import { Calendar, UserPlus, Check, Clock } from 'lucide-react';
 import type { AppointmentListItem } from 'shared';
 import { useAuth } from '../../hooks/useAuth';
-import { ROLE_DISPLAY_NAMES } from '../../utils/rbac';
 import { appointmentService } from '../../services/appointment-service';
 import { todayIsoDate } from '../../utils/dashboard';
-import { Card, CardContent } from '../ui/Card/Card';
 import { Badge } from '../ui/Badge/Badge';
-import { AlertBanner } from '../ui/Alert/AlertBanner';
-import { MetricCard } from '../ui/MetricCard/MetricCard';
-import { Table, THead, TH, TBody, TR, TD, RowLink, TableSkeleton } from '../ui/Table/Table';
+import { Button } from '../ui/Button/Button';
+import { Table, THead, TH, TBody, TR, TD, TableSkeleton } from '../ui/Table/Table';
 import { PatientIdentity } from '../ui/Identity/Identity';
+import {
+  RoleIntro,
+  DateRangeFilter,
+  useDateRange,
+  MetricGrid,
+  RoleMetricCard,
+  DashboardGrid,
+  ChartCard,
+} from './RoleComponents';
 import styles from './DashboardShell.module.css';
 
 export function ReceptionistDashboard() {
   const { user } = useAuth();
+  const { range, setRange } = useDateRange('today');
   const [appointments, setAppointments] = useState<AppointmentListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [checkingInId, setCheckingInId] = useState<string | null>(null);
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
-  const [now, setNow] = useState(() => new Date());
   const mounted = useRef(true);
 
   const loadAppointments = useCallback(async () => {
@@ -34,7 +40,6 @@ export function ReceptionistDashboard() {
       const res = await appointmentService.getAppointments({ page: 1, date: today, pageSize: 50 });
       if (!mounted.current) return;
       setAppointments(res.data);
-      setNow(new Date());
     } catch {
       if (!mounted.current) return;
       setError('Could not load appointments for today.');
@@ -68,168 +73,204 @@ export function ReceptionistDashboard() {
   const bookedCount = appointments.filter((a) => a.status === 'booked').length;
   const checkedInCount = appointments.filter((a) => a.status === 'checked_in').length;
   const completedCount = appointments.filter((a) => a.status === 'completed').length;
+  const recName = user?.firstName ? `${user.firstName} ${user.lastName ?? ''}` : 'Front Desk';
 
   return (
-    <div className={styles.dashboardContainer}>
-      <header className={styles.greetingBanner}>
-        <div>
-          <h1 className={styles.greetingTitle}>
-            <span className={styles.greetingIcon} aria-hidden="true">🏥</span>
-            Patient Reception & Registration — {user?.firstName ? `${user.firstName} ${user.lastName ?? ''}` : 'Front Desk'}
-          </h1>
-          <p className={styles.greetingSubtitle}>
-            {now.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-            {' · '}
-            {ROLE_DISPLAY_NAMES.receptionist} Workspace
-          </p>
-        </div>
-        <div className={styles.greetingMeta}>
-          <Link href="/patients/new" className={styles.refreshButton} style={{ background: 'var(--color-primary-600)', color: '#fff', border: 'none' }}>
-            <UserPlus size={14} aria-hidden="true" />
-            Register Patient
-          </Link>
-          <Link href="/appointments/new" className={styles.refreshButton}>
-            <Calendar size={14} aria-hidden="true" />
-            Book Slot
-          </Link>
-          <button type="button" className={styles.refreshButton} onClick={() => void loadAppointments()}>
-            <RefreshCw size={14} aria-hidden="true" />
-            Refresh
-          </button>
-        </div>
-      </header>
+    <div className="space-y-4">
+      <RoleIntro
+        title="Front desk workspace"
+        subtitle={`${recName} · registration, check-in and schedule flow for today.`}
+        aside={<DateRangeFilter value={range} onChange={setRange} />}
+      />
 
       {actionSuccess && (
-        <AlertBanner severity="success" title="Check-In Completed" onDismiss={() => setActionSuccess(null)}>
+        <div style={{ padding: '8px 12px', background: 'var(--color-success-bg)', color: 'var(--color-success-text)', borderRadius: '6px', fontSize: '0.8125rem', fontWeight: 500 }}>
           {actionSuccess}
-        </AlertBanner>
+        </div>
       )}
 
-      {/* Metrics */}
-      <section aria-label="Reception metrics" className={styles.metricRow}>
-        <MetricCard
-          label="Today's Bookings"
-          icon={<Calendar size={16} aria-hidden="true" />}
-          tone="info"
-          href="/appointments"
+      {error && (
+        <div role="alert" className={styles.quietEmpty} style={{ color: 'var(--color-danger-main)' }}>
+          {error}
+        </div>
+      )}
+
+      {/* 4-Card Metric Grid */}
+      <MetricGrid columns={4}>
+        <RoleMetricCard
+          label="Today's appointments"
           value={loading ? '—' : appointments.length}
-          hint="Total scheduled visits for today"
-        />
-        <MetricCard
-          label="Awaiting Check-In"
-          icon={<Clock size={16} aria-hidden="true" />}
-          tone="warning"
+          hint="Total scheduled bookings"
           href="/appointments"
+        />
+        <RoleMetricCard
+          label="Booked / waiting"
           value={loading ? '—' : bookedCount}
-          hint="Patients yet to arrive"
-        />
-        <MetricCard
-          label="Checked In"
-          icon={<CheckCircle2 size={16} aria-hidden="true" />}
-          tone="primary"
+          hint="Awaiting patient arrival"
           href="/appointments"
-          value={loading ? '—' : checkedInCount}
-          hint="Ready for clinical consultation"
+          tone={bookedCount > 0 ? 'warning' : 'default'}
         />
-        <MetricCard
-          label="Completed Consultations"
-          icon={<CheckCircle2 size={16} aria-hidden="true" />}
+        <RoleMetricCard
+          label="Checked in"
+          value={loading ? '—' : checkedInCount}
+          hint="Arrived and ready for consult"
+          tone="default"
+          href="/appointments"
+        />
+        <RoleMetricCard
+          label="Completed"
+          value={loading ? '—' : completedCount}
+          hint="Consultations finished"
           tone="success"
           href="/appointments"
-          value={loading ? '—' : completedCount}
-          hint="Completed today"
         />
-      </section>
+      </MetricGrid>
 
-      {/* Today's Queue */}
-      <Card elevation="xs" padding="none" className={styles.tableCard}>
-        <div className={styles.sectionCardHeader}>
-          <div className={styles.sectionHeaderTitle}>
-            <h3>Today&apos;s Patient Appointments Queue</h3>
-            <p>Direct check-in initiates clinical encounter for the attending doctor</p>
+      {/* Analytical Dashboard Grid */}
+      <DashboardGrid columns={2}>
+        <ChartCard
+          title="Today's appointment status"
+          decision="How much of today's scheduled list has actually arrived?"
+          action={{ label: 'Schedule', href: '/appointments' }}
+        >
+          <div style={{ padding: 'var(--space-3)' }}>
+            <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: 'var(--space-2)' }}>
+              Breakdown of today's {appointments.length} appointments.
+            </p>
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              <span className="num" style={{ padding: '4px 8px', borderRadius: '4px', background: 'var(--bg-subtle)', fontSize: '0.75rem' }}>
+                {bookedCount} Booked
+              </span>
+              <span className="num" style={{ padding: '4px 8px', borderRadius: '4px', background: 'var(--color-info-bg)', color: 'var(--color-info-text)', fontSize: '0.75rem' }}>
+                {checkedInCount} Checked In
+              </span>
+              <span className="num" style={{ padding: '4px 8px', borderRadius: '4px', background: 'var(--color-success-bg)', color: 'var(--color-success-text)', fontSize: '0.75rem' }}>
+                {completedCount} Completed
+              </span>
+            </div>
           </div>
-          <Link href="/appointments" className={styles.viewAllLink}>
-            View full calendar <ArrowUpRight size={14} aria-hidden="true" />
+        </ChartCard>
+
+        <ChartCard
+          title="Reception quick actions"
+          decision="Register a walk-in patient or book an appointment slot"
+        >
+          <div style={{ padding: 'var(--space-3)', display: 'flex', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
+            <Link
+              href="/patients/new"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '8px 14px',
+                borderRadius: '6px',
+                backgroundColor: 'var(--color-primary-600)',
+                color: '#ffffff',
+                textDecoration: 'none',
+                fontSize: '0.8125rem',
+                fontWeight: 600,
+              }}
+            >
+              <UserPlus size={14} /> Register New Patient
+            </Link>
+            <Link
+              href="/appointments/new"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '8px 14px',
+                borderRadius: '6px',
+                border: '1px solid var(--border-strong)',
+                backgroundColor: 'var(--bg-surface)',
+                color: 'var(--text-primary)',
+                textDecoration: 'none',
+                fontSize: '0.8125rem',
+                fontWeight: 600,
+              }}
+            >
+              <Calendar size={14} /> Book Appointment Slot
+            </Link>
+          </div>
+        </ChartCard>
+      </DashboardGrid>
+
+      {/* Appointment Queue */}
+      <section className="clinical-panel p-4" aria-label="Today's patient arrival queue">
+        <header style={{ marginBottom: 'var(--space-3)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <h2 style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+              Today's Patient Arrival & Check-In Queue
+            </h2>
+            <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+              Check-in creates the clinical encounter and initiates doctor assignment.
+            </p>
+          </div>
+          <Link href="/appointments" style={{ fontSize: '0.75rem', color: 'var(--color-primary-600)', textDecoration: 'none', fontWeight: 500 }}>
+            Full schedule →
           </Link>
-        </div>
+        </header>
 
         {loading ? (
-          <TableSkeleton rows={6} />
-        ) : error ? (
-          <CardContent>
-            <AlertBanner severity="warning" title="Could not load appointments">
-              {error}
-            </AlertBanner>
-          </CardContent>
+          <TableSkeleton rows={4} />
         ) : appointments.length === 0 ? (
-          <CardContent>
-            <p className={styles.quietEmpty}>No appointments scheduled for today.</p>
-          </CardContent>
+          <div className={styles.quietEmpty}>No appointments scheduled for today.</div>
         ) : (
-          <Table ariaLabel="Today's Appointments">
+          <Table ariaLabel="Today's Patient Arrival & Check-In Queue">
             <THead>
-              <tr>
-                <TH>Token</TH>
+              <TR>
                 <TH>Patient</TH>
                 <TH>Time</TH>
-                <TH>Attending Doctor</TH>
+                <TH>Department</TH>
                 <TH>Status</TH>
                 <TH align="right">Action</TH>
-              </tr>
+              </TR>
             </THead>
             <TBody>
-              {appointments.map((a) => (
-                <TR key={a.id}>
-                  <TD>
-                    <span style={{ fontWeight: 700, fontSize: '0.9375rem' }}>#{a.tokenNumber ?? '—'}</span>
-                  </TD>
+              {appointments.slice(0, 6).map((apt) => (
+                <TR key={apt.id}>
                   <TD>
                     <PatientIdentity
+                      firstName={apt.patient?.firstName ?? 'Walk-in'}
+                      lastName={apt.patient?.lastName ?? ''}
+                      mrn={apt.patient?.mrn ?? 'MRN-—'}
                       compact
-                      firstName={a.patient?.firstName ?? 'Unknown'}
-                      lastName={a.patient?.lastName ?? 'Patient'}
-                      mrn={a.patient?.mrn ?? '—'}
                     />
                   </TD>
                   <TD>
                     <span className={styles.timeCell}>
                       <Clock size={12} aria-hidden="true" />
-                      {a.scheduledTime.slice(0, 5)}
+                      {apt.scheduledTime}
                     </span>
                   </TD>
-                  <TD>
-                    {a.doctor ? `Dr. ${a.doctor.firstName} ${a.doctor.lastName}` : 'Unassigned'}
-                  </TD>
+                  <TD>{apt.departmentId}</TD>
                   <TD>
                     <Badge
                       variant={
-                        a.status === 'checked_in'
-                          ? 'primary'
-                          : a.status === 'completed'
+                        apt.status === 'checked_in'
+                          ? 'info'
+                          : apt.status === 'completed'
                             ? 'stable'
-                            : 'neutral'
+                            : 'pending'
                       }
                       size="sm"
                     >
-                      {a.status === 'checked_in' ? 'Checked In' : a.status === 'booked' ? 'Waiting' : a.status}
+                      {apt.status.replace('_', ' ').toUpperCase()}
                     </Badge>
                   </TD>
                   <TD align="right">
-                    {a.status === 'booked' ? (
-                      <button
-                        type="button"
-                        className={styles.refreshButton}
-                        disabled={checkingInId === a.id}
-                        onClick={() => void handleCheckIn(a.id)}
-                        style={{ padding: '4px 10px', fontSize: '0.8125rem' }}
+                    {apt.status === 'booked' ? (
+                      <Button
+                        size="sm"
+                        variant="primary"
+                        disabled={checkingInId === apt.id}
+                        onClick={() => void handleCheckIn(apt.id)}
+                        iconLeft={<Check size={12} />}
                       >
-                        <Check size={12} aria-hidden="true" />
-                        {checkingInId === a.id ? 'Checking in…' : 'Check In'}
-                      </button>
+                        Check In
+                      </Button>
                     ) : (
-                      <RowLink href={`/appointments`} aria-label="View appointment details">
-                        View
-                      </RowLink>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Arrived</span>
                     )}
                   </TD>
                 </TR>
@@ -237,7 +278,7 @@ export function ReceptionistDashboard() {
             </TBody>
           </Table>
         )}
-      </Card>
+      </section>
     </div>
   );
 }

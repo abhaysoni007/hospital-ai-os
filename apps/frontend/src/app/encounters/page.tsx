@@ -109,54 +109,56 @@ export default function EncountersPage() {
             }
           />
         ) : (
-          <Table ariaLabel="Encounters">
-            <THead>
-              <tr>
-                <TH>Patient</TH>
-                <TH width="120px">Type</TH>
-                <TH width="140px">Started</TH>
-                <TH>Status</TH>
-                <TH aria-label="Open" />
-              </tr>
-            </THead>
-            <TBody>
-              {encounters.map((enc) => (
-                <TR
-                  key={enc.id}
-                  interactive
-                  onClick={() => router.push(`/encounters/${enc.id}`)}
-                  aria-label={`Open encounter for ${enc.patient.firstName} ${enc.patient.lastName}`}
-                >
-                  <TD>
-                    <PatientIdentity
-                      firstName={enc.patient.firstName}
-                      lastName={enc.patient.lastName}
-                      mrn={enc.patient.mrn}
-                    />
-                  </TD>
-                  <TD className={styles.capitalize}>{enc.encounterType.replace('_', ' ')}</TD>
-                  <TD>
-                    {enc.startedAt
-                      ? new Date(enc.startedAt).toLocaleString([], {
-                          month: 'short',
-                          day: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })
-                      : '—'}
-                  </TD>
-                  <TD>
-                    <EncounterStatusBadge status={enc.status} size="sm" />
-                  </TD>
-                  <TD align="right">
-                    <RowLink href={`/encounters/${enc.id}`} aria-label={`Open encounter`}>
-                      Open workspace
-                    </RowLink>
-                  </TD>
-                </TR>
-              ))}
-            </TBody>
-          </Table>
+          <div className="clinical-panel" style={{ padding: 0, overflow: 'hidden' }}>
+            <Table ariaLabel="Encounters">
+              <THead>
+                <tr>
+                  <TH>Patient</TH>
+                  <TH width="120px">Type</TH>
+                  <TH width="140px">Started</TH>
+                  <TH>Status</TH>
+                  <TH aria-label="Open" />
+                </tr>
+              </THead>
+              <TBody>
+                {encounters.map((enc) => (
+                  <TR
+                    key={enc.id}
+                    interactive
+                    onClick={() => router.push(`/encounters/${enc.id}`)}
+                    aria-label={`Open encounter for ${enc.patient.firstName} ${enc.patient.lastName}`}
+                  >
+                    <TD>
+                      <PatientIdentity
+                        firstName={enc.patient.firstName}
+                        lastName={enc.patient.lastName}
+                        mrn={enc.patient.mrn}
+                      />
+                    </TD>
+                    <TD className={styles.capitalize}>{enc.encounterType.replace('_', ' ')}</TD>
+                    <TD>
+                      {enc.startedAt
+                        ? new Date(enc.startedAt).toLocaleString([], {
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })
+                        : '—'}
+                    </TD>
+                    <TD>
+                      <EncounterStatusBadge status={enc.status} size="sm" />
+                    </TD>
+                    <TD align="right">
+                      <RowLink href={`/encounters/${enc.id}`} aria-label={`Open encounter`}>
+                        Open workspace
+                      </RowLink>
+                    </TD>
+                  </TR>
+                ))}
+              </TBody>
+            </Table>
+          </div>
         )}
       </div>
     </AppShell>

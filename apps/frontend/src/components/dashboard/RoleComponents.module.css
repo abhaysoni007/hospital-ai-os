@@ -1,0 +1,308 @@
+.roleIntro {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+@media (min-width: 640px) {
+  .roleIntro {
+    flex-direction: row;
+    align-items: flex-end;
+    justify-content: space-between;
+  }
+}
+
+.introTitle {
+  font-size: 1.25rem;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  color: var(--text-primary);
+  line-height: 1.25;
+}
+
+.introSubtitle {
+  margin-top: 4px;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+/* Date Range Filter */
+.dateRangeFilter {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  background-color: var(--bg-surface);
+  padding: 2px;
+}
+
+.dateRangeBtn {
+  border-radius: calc(var(--radius-md) - 2px);
+  padding: 4px 8px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  transition: background-color var(--duration-fast), color var(--duration-fast);
+  cursor: pointer;
+  background: transparent;
+  border: none;
+}
+
+.dateRangeBtn:hover {
+  background-color: var(--bg-subtle);
+  color: var(--text-primary);
+}
+
+.dateRangeBtnActive {
+  background-color: var(--color-primary-600) !important;
+  color: #ffffff !important;
+}
+
+/* Metric Grid */
+.metricGrid {
+  display: grid;
+  gap: var(--space-3);
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+}
+
+@media (min-width: 640px) {
+  .metricGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1280px) {
+  .metricGrid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.metricGrid6 {
+  display: grid;
+  gap: var(--space-3);
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+}
+
+@media (min-width: 640px) {
+  .metricGrid6 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1280px) {
+  .metricGrid6 {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+}
+
+/* Role Metric Card */
+.metricCard {
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-subtle);
+  background-color: var(--bg-surface);
+  padding: var(--space-4);
+  transition: border-color var(--duration-fast), background-color var(--duration-fast), box-shadow var(--duration-fast);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
+}
+
+.metricCardLink {
+  text-decoration: none;
+  display: block;
+  border-radius: var(--radius-lg);
+}
+
+.metricCardLink:hover .metricCard {
+  border-color: var(--color-primary-400);
+  background-color: var(--color-primary-50);
+}
+
+[data-theme='dark'] .metricCardLink:hover .metricCard {
+  background-color: rgba(30, 58, 138, 0.2);
+}
+
+.metricCardCritical {
+  border-color: rgba(239, 68, 68, 0.4) !important;
+  background-color: rgba(239, 68, 68, 0.05) !important;
+}
+
+.metricCardWarning {
+  border-color: rgba(245, 158, 11, 0.4) !important;
+  background-color: rgba(245, 158, 11, 0.05) !important;
+}
+
+.metricCardSuccess {
+  border-color: rgba(34, 197, 94, 0.4) !important;
+  background-color: rgba(34, 197, 94, 0.05) !important;
+}
+
+.metricLabel {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-tertiary);
+}
+
+.metricValueRow {
+  margin-top: var(--space-2);
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.metricValue {
+  font-size: 1.875rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+  font-family: var(--font-family-mono);
+}
+
+.metricValueCritical {
+  color: var(--color-danger-main, #dc2626) !important;
+}
+
+.metricHint {
+  margin-top: var(--space-2);
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+/* Trend & Delta */
+.trendBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  font-family: var(--font-family-mono);
+}
+
+.trendUp {
+  color: var(--color-success-main, #16a34a);
+}
+
+.trendDown {
+  color: var(--color-danger-main, #dc2626);
+}
+
+.trendFlat {
+  color: var(--text-tertiary);
+}
+
+/* Dashboard Grid */
+.dashboardGrid {
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+}
+
+@media (min-width: 1024px) {
+  .dashboardGrid2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .dashboardGrid3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* Chart Card */
+.chartCard {
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-subtle);
+  background-color: var(--bg-surface);
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+}
+
+.chartCardHeader {
+  margin-bottom: var(--space-3);
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.chartCardTitle {
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+}
+
+.chartCardDecision {
+  margin-top: 2px;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.chartCardAction {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: var(--radius-sm);
+  padding: 4px 8px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--color-primary-600);
+  text-decoration: none;
+  transition: background-color var(--duration-fast);
+  white-space: nowrap;
+}
+
+.chartCardAction:hover {
+  background-color: var(--color-primary-50);
+}
+
+.chartCardBody {
+  flex: 1;
+}
+
+/* Role Aware Task Queue */
+.taskQueueList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.taskQueueItem {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  padding: var(--space-3);
+  background-color: var(--bg-surface);
+}
+
+@media (min-width: 640px) {
+  .taskQueueItem {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
+.taskItemTitle {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.taskItemMeta {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}

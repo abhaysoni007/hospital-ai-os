@@ -2,17 +2,23 @@
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { FlaskConical, AlertOctagon, RefreshCw, Clock, ArrowUpRight } from 'lucide-react';
+import { Clock } from 'lucide-react';
 import type { DiagnosticOrderResponse } from 'shared';
 import { useAuth } from '../../hooks/useAuth';
 import { useNotifications } from '../../hooks/useNotifications';
-import { ROLE_DISPLAY_NAMES } from '../../utils/rbac';
 import { diagnosticsService } from '../../services/diagnostics-service';
-import { Card, CardContent } from '../ui/Card/Card';
 import { Badge } from '../ui/Badge/Badge';
-import { AlertBanner } from '../ui/Alert/AlertBanner';
-import { MetricCard } from '../ui/MetricCard/MetricCard';
 import { Table, THead, TH, TBody, TR, TD, RowLink, TableSkeleton } from '../ui/Table/Table';
+import { CriticalResultBanner } from '../clinical/LovableClinical';
+import {
+  RoleIntro,
+  DateRangeFilter,
+  useDateRange,
+  MetricGrid,
+  RoleMetricCard,
+  DashboardGrid,
+  ChartCard,
+} from './RoleComponents';
 import styles from './DashboardShell.module.css';
 
 function formatStartedAt(iso: string | null | undefined): string {
@@ -24,12 +30,12 @@ function formatStartedAt(iso: string | null | undefined): string {
 
 export function LabTechnicianDashboard() {
   const { user } = useAuth();
+  const { range, setRange } = useDateRange('7d');
   const notifications = useNotifications(40);
   const [orders, setOrders] = useState<DiagnosticOrderResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [counts, setCounts] = useState({ ordered: 0, sample_collected: 0, in_progress: 0, completed: 0 });
-  const [now, setNow] = useState(() => new Date());
   const mounted = useRef(true);
 
   const loadData = useCallback(async () => {
@@ -51,7 +57,6 @@ export function LabTechnicianDashboard() {
         in_progress: inProgressRes.meta.total,
         completed: completedRes.meta.total,
       });
-      setNow(new Date());
     } catch {
       if (!mounted.current) return;
       setError('Could not load laboratory queue from the diagnostic service.');
@@ -71,132 +76,183 @@ export function LabTechnicianDashboard() {
   const criticalItems = notifications.items.filter(
     (n) => n.priority === 'critical' && n.status !== 'acknowledged',
   );
+  const techName = user?.firstName ? `${user.firstName} ${user.lastName ?? ''}` : 'Technician';
 
   return (
-    <div className={styles.dashboardContainer}>
-      <header className={styles.greetingBanner}>
-        <div>
-          <h1 className={styles.greetingTitle}>
-            <span className={styles.greetingIcon} aria-hidden="true">🔬</span>
-            Laboratory Operations — {user?.firstName ? `${user.firstName} ${user.lastName ?? ''}` : 'Technician'}
-          </h1>
-          <p className={styles.greetingSubtitle}>
-            {now.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-            {' · '}
-            {ROLE_DISPLAY_NAMES.lab_technician} Workspace
-          </p>
-        </div>
-        <div className={styles.greetingMeta}>
-          <span className={styles.livePill}><span className={styles.liveDot} aria-hidden="true" />Live</span>
-          <button type="button" className={styles.refreshButton} onClick={() => void loadData()}>
-            <RefreshCw size={14} aria-hidden="true" />
-            Refresh
-          </button>
-        </div>
-      </header>
+    <div className="space-y-4">
+      <RoleIntro
+        title="Laboratory workspace"
+        subtitle={`${techName} · Core Laboratory · specimen throughput, verification and critical escalation.`}
+        aside={<DateRangeFilter value={range} onChange={setRange} />}
+      />
 
-      {/* Metric Tiles */}
-      <section aria-label="Laboratory metrics" className={styles.metricRow}>
-        <MetricCard
-          label="Pending Collection"
-          icon={<FlaskConical size={16} aria-hidden="true" />}
+      {/* Critical alerts banner */}
+      {!notifications.isLoading && criticalItems.length > 0 && (
+        <CriticalResultBanner
+          testName={criticalItems[0].title}
+          value={criticalItems[0].body}
+          patientName="Urgent Lab Escalation"
+          action={
+            criticalItems[0].relatedOrderId ? (
+              <Link
+                href={`/diagnostics/${criticalItems[0].relatedOrderId}`}
+                className={styles.criticalCta}
+              >
+                Review and acknowledge
+              </Link>
+            ) : undefined
+          }
+        />
+      )}
+
+      {error && (
+        <div role="alert" className={styles.quietEmpty} style={{ color: 'var(--color-danger-main)' }}>
+          {error}
+        </div>
+      )}
+
+      {/* 4-Card Metric Grid */}
+      <MetricGrid columns={4}>
+        <RoleMetricCard
+          label="Pending specimens"
+          value={loading ? '—' : counts.ordered + counts.sample_collected}
+          hint="Awaiting collection or accessioning"
+          href="/diagnostics"
+        />
+        <RoleMetricCard
+          label="Processing"
+          value={loading ? '—' : counts.in_progress}
+          hint="On analyser benches now"
+          href="/diagnostics"
+        />
+        <RoleMetricCard
+          label="Awaiting verification"
+          value={loading ? '—' : counts.completed}
+          hint="Results entered · needs 4-eyes check"
           tone="warning"
           href="/diagnostics"
-          value={loading ? '—' : counts.ordered}
-          hint="Specimens ordered but not collected"
         />
-        <MetricCard
-          label="Samples Collected"
-          icon={<FlaskConical size={16} aria-hidden="true" />}
-          tone="info"
-          href="/diagnostics"
-          value={loading ? '—' : counts.sample_collected}
-          hint="Awaiting specimen processing"
-        />
-        <MetricCard
-          label="In Progress / Entry"
-          icon={<Clock size={16} aria-hidden="true" />}
-          tone="primary"
-          href="/diagnostics"
-          value={loading ? '—' : counts.in_progress}
-          hint="Results entered · pending verification"
-        />
-        <MetricCard
-          label="Critical Lab Alerts"
-          icon={<AlertOctagon size={16} aria-hidden="true" />}
+        <RoleMetricCard
+          label="Critical results"
+          value={loading ? '—' : criticalItems.length}
+          hint={criticalItems.length > 0 ? 'Escalation required on release' : 'Zero panic flags active'}
           tone={criticalItems.length > 0 ? 'critical' : 'success'}
           href="/diagnostics"
-          value={notifications.isLoading ? '—' : criticalItems.length}
-          hint={criticalItems.length === 0 ? 'All panic values handled' : 'Immediate clinician notification required'}
         />
-      </section>
+      </MetricGrid>
 
-      {/* Main Laboratory Orders Queue */}
-      <Card elevation="xs" padding="none" className={styles.tableCard}>
-        <div className={styles.sectionCardHeader}>
-          <div className={styles.sectionHeaderTitle}>
-            <h3>Active Diagnostic Orders Queue</h3>
-            <p>Real-time order state machine · ordered → sample_collected → in_progress → completed</p>
+      {/* Analytical Dashboard Grid */}
+      <DashboardGrid columns={2}>
+        <ChartCard
+          title="Orders received & in-flight"
+          decision="Is inbound diagnostic demand rising faster than throughput?"
+          action={{ label: 'Order queue', href: '/diagnostics' }}
+        >
+          <div style={{ padding: 'var(--space-3)' }}>
+            <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: 'var(--space-2)' }}>
+              Active load: {counts.ordered + counts.sample_collected + counts.in_progress} specimens across laboratory benches.
+            </p>
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              <span className="num" style={{ padding: '4px 8px', borderRadius: '4px', background: 'var(--bg-subtle)', fontSize: '0.75rem' }}>
+                {counts.ordered} Ordered
+              </span>
+              <span className="num" style={{ padding: '4px 8px', borderRadius: '4px', background: 'var(--bg-subtle)', fontSize: '0.75rem' }}>
+                {counts.sample_collected} Sample Collected
+              </span>
+              <span className="num" style={{ padding: '4px 8px', borderRadius: '4px', background: 'var(--color-info-bg)', color: 'var(--color-info-text)', fontSize: '0.75rem' }}>
+                {counts.in_progress} In Progress
+              </span>
+            </div>
           </div>
-          <Link href="/diagnostics" className={styles.viewAllLink}>
-            Open diagnostics console <ArrowUpRight size={14} aria-hidden="true" />
+        </ChartCard>
+
+        <ChartCard
+          title="Verification & TAT status"
+          decision="Is unverified work accumulating at the verification station?"
+          action={{ label: 'Diagnostics', href: '/diagnostics' }}
+        >
+          <div style={{ padding: 'var(--space-3)' }}>
+            <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: 'var(--space-2)' }}>
+              {counts.completed} tests ready for final verification and release to chart.
+            </p>
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              <span className="num" style={{ padding: '4px 8px', borderRadius: '4px', background: 'var(--color-success-bg)', color: 'var(--color-success-text)', fontSize: '0.75rem', fontWeight: 600 }}>
+                {counts.completed} Awaiting Verification
+              </span>
+            </div>
+          </div>
+        </ChartCard>
+      </DashboardGrid>
+
+      {/* Specimen Queue */}
+      <section className="clinical-panel p-4" aria-label="Laboratory specimen queue">
+        <header style={{ marginBottom: 'var(--space-3)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <h2 style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+              Diagnostic Orders & Specimen Queue
+            </h2>
+            <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+              Real-time specimen processing across haematology, biochemistry, and microbiology.
+            </p>
+          </div>
+          <Link href="/diagnostics" style={{ fontSize: '0.75rem', color: 'var(--color-primary-600)', textDecoration: 'none', fontWeight: 500 }}>
+            Full lab queue →
           </Link>
-        </div>
+        </header>
 
         {loading ? (
-          <TableSkeleton rows={6} />
-        ) : error ? (
-          <CardContent>
-            <AlertBanner severity="warning" title="Diagnostic queue unavailable">
-              {error}
-            </AlertBanner>
-          </CardContent>
+          <TableSkeleton rows={4} />
         ) : orders.length === 0 ? (
-          <CardContent>
-            <p className={styles.quietEmpty}>No active diagnostic orders in the queue right now.</p>
-          </CardContent>
+          <div className={styles.quietEmpty}>No specimens currently in the laboratory queue.</div>
         ) : (
-          <Table ariaLabel="Diagnostic Orders Queue">
+          <Table ariaLabel="Specimen Processing Queue">
             <THead>
-              <tr>
+              <TR>
+                <TH>Order ID</TH>
                 <TH>Test Name</TH>
-                <TH>Code</TH>
                 <TH>Priority</TH>
                 <TH>Status</TH>
                 <TH>Ordered At</TH>
                 <TH align="right">Action</TH>
-              </tr>
+              </TR>
             </THead>
             <TBody>
-              {orders.map((o) => (
-                <TR key={o.id}>
+              {orders.slice(0, 6).map((order) => (
+                <TR key={order.id}>
                   <TD>
-                    <span style={{ fontWeight: 600 }}>{o.testName}</span>
-                    {o.clinicalIndication && (
-                      <span style={{ display: 'block', fontSize: '0.8125rem', color: 'var(--color-neutral-500)' }}>
-                        {o.clinicalIndication}
-                      </span>
-                    )}
+                    <span className="num" style={{ fontWeight: 600 }}>
+                      {order.id.slice(0, 8)}...
+                    </span>
                   </TD>
+                  <TD>{order.testName}</TD>
                   <TD>
-                    <code style={{ fontSize: '0.8125rem', padding: '2px 6px', background: 'var(--color-neutral-100)', borderRadius: '4px' }}>
-                      {o.testCode}
-                    </code>
-                  </TD>
-                  <TD>
-                    <Badge variant={o.priority === 'stat' ? 'critical' : o.priority === 'urgent' ? 'urgent' : 'neutral'} size="sm">
-                      {o.priority.toUpperCase()}
+                    <Badge variant={order.priority === 'stat' ? 'critical' : 'neutral'} size="sm">
+                      {order.priority.toUpperCase()}
                     </Badge>
                   </TD>
                   <TD>
-                    <Badge variant={o.status === 'completed' ? 'stable' : o.status === 'in_progress' ? 'info' : 'neutral'} size="sm">
-                      {o.status.replace('_', ' ')}
+                    <Badge
+                      variant={
+                        order.status === 'completed'
+                          ? 'stable'
+                          : order.status === 'in_progress'
+                            ? 'info'
+                            : 'urgent'
+                      }
+                      size="sm"
+                    >
+                      {order.status.replace('_', ' ').toUpperCase()}
                     </Badge>
                   </TD>
-                  <TD>{formatStartedAt(o.createdAt)}</TD>
+                  <TD>
+                    <span className={styles.timeCell}>
+                      <Clock size={12} aria-hidden="true" />
+                      {formatStartedAt(order.createdAt)}
+                    </span>
+                  </TD>
                   <TD align="right">
-                    <RowLink href={`/diagnostics/${o.id}`} aria-label={`Open order ${o.testCode}`}>
-                      Open
+                    <RowLink href={`/diagnostics/${order.id}`} aria-label="Open order details">
+                      {order.status === 'completed' ? 'Verify' : 'Process'}
                     </RowLink>
                   </TD>
                 </TR>
@@ -204,7 +260,7 @@ export function LabTechnicianDashboard() {
             </TBody>
           </Table>
         )}
-      </Card>
+      </section>
     </div>
   );
 }

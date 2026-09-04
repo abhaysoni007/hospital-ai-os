@@ -26,6 +26,7 @@ import { BreakGlassModal } from '../../../components/break-glass/BreakGlassModal
 import { BreakGlassBanner } from '../../../components/break-glass/BreakGlassBanner';
 import { ChartBrief } from '../../../components/intelligence/ChartBrief';
 import { ClinicalTimeline } from '../../../components/intelligence/ClinicalTimeline';
+import { EncounterNavTabs } from '../../../components/clinical/EncounterNavTabs';
 import type {
   EncounterDetailResponse,
   ClinicalRecordResponse,
@@ -337,6 +338,8 @@ export default function EncounterDetailPage() {
             </>
           }
         />
+
+        <EncounterNavTabs encounterId={encounter.id} />
 
         {actionError && (
           <AlertBanner

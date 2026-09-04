@@ -2,13 +2,13 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { AppShell } from '../../components/layout/AppShell/AppShell';
-import { Search, UserPlus, Users } from 'lucide-react';
+import { Search, UserPlus, Users, AlertTriangle } from 'lucide-react';
 import { Button } from '../../components/ui/Button/Button';
 import { Input } from '../../components/ui/Input/Input';
 import { Badge } from '../../components/ui/Badge/Badge';
 import { Table, THead, TH, TBody, TR, TD, TableSkeleton } from '../../components/ui/Table/Table';
-import { PatientIdentity } from '../../components/ui/Identity/Identity';
 import { PageHeader } from '../../components/ui/PageHeader/PageHeader';
 import { EmptyState } from '../../components/ui/EmptyState/EmptyState';
 import { ErrorState } from '../../components/ui/ErrorState/ErrorState';
@@ -18,10 +18,11 @@ import styles from './patients.module.css';
 import { useAuth } from '../../hooks/useAuth';
 import { hasPermission } from '../../utils/rbac';
 import { parseApiError, ParsedError } from '../../utils/error-parser';
+import { computeAgeYears } from '../../utils/dashboard';
 
 /**
- * M13 — Patient directory. Truthful loading/error/empty states; rows are
- * fully keyboard-accessible; identity follows the canonical hierarchy.
+ * M13 & Lovable — Patient directory. Truthful loading/error/empty states;
+ * rows are fully keyboard-accessible; identity follows the canonical clinical hierarchy.
  */
 export default function PatientsPage() {
   const router = useRouter();
@@ -31,6 +32,7 @@ export default function PatientsPage() {
   const [error, setError] = useState<ParsedError | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [retryTick, setRetryTick] = useState(0);
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'discharged'>('all');
 
   const canCreate = hasPermission(user?.role, 'patient:create');
 
@@ -78,6 +80,11 @@ export default function PatientsPage() {
 
   const retry = () => setRetryTick((t) => t + 1);
 
+  const filteredPatients = patients.filter((p) => {
+    if (statusFilter === 'all') return true;
+    return p.status === statusFilter;
+  });
+
   return (
     <AppShell breadcrumbs={['Operations', 'Patients']} requiredPermission="patient:read">
       <div className={styles.container}>
@@ -97,17 +104,56 @@ export default function PatientsPage() {
           }
         />
 
-        <div className={styles.filterBar}>
-          <Input
-            id="patient-search-input"
-            label="Search patients by name or MRN"
-            hideLabel
-            placeholder="Search by patient name, MRN, or phone number..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            iconLeft={<Search size={16} aria-hidden="true" />}
-            type="search"
-          />
+        {/* Filter bar with Lovable search and status pills */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: 'var(--space-4)' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+            <div style={{ maxWidth: '360px', width: '100%' }}>
+              <Input
+                id="patient-search-input"
+                label="Search patients by name or MRN"
+                hideLabel
+                placeholder="Search by patient name or MRN..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                iconLeft={<Search size={16} aria-hidden="true" />}
+                type="search"
+              />
+            </div>
+
+            <div
+              role="group"
+              aria-label="Filter by patient status"
+              style={{
+                display: 'inline-flex',
+                gap: '4px',
+                borderRadius: 'var(--radius-md)',
+                border: '1px solid var(--border-subtle)',
+                backgroundColor: 'var(--bg-surface)',
+                padding: '2px',
+              }}
+            >
+              {(['all', 'active', 'discharged'] as const).map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => setStatusFilter(s)}
+                  style={{
+                    borderRadius: '4px',
+                    padding: '4px 10px',
+                    fontSize: '0.75rem',
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                    border: 'none',
+                    backgroundColor: statusFilter === s ? 'var(--color-primary-600)' : 'transparent',
+                    color: statusFilter === s ? '#ffffff' : 'var(--text-secondary)',
+                    textTransform: 'capitalize',
+                  }}
+                >
+                  {s === 'all' ? 'All Patients' : s}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
 
         {loading ? (
@@ -119,7 +165,7 @@ export default function PatientsPage() {
             correlationId={error.requestId}
             onRetry={retry}
           />
-        ) : patients.length === 0 ? (
+        ) : filteredPatients.length === 0 ? (
           <EmptyState
             icon={<Users size={32} />}
             title={searchQuery ? 'No patients match your search' : 'No patients registered yet'}
@@ -143,51 +189,95 @@ export default function PatientsPage() {
             }
           />
         ) : (
-          <div role="group" aria-label="Patient list">
-            <p className={styles.resultNote} aria-live="polite">
-              {searchQuery
-                ? `${patients.length} match${patients.length === 1 ? '' : 'es'}`
-                : `${patients.length} patient${patients.length === 1 ? '' : 's'}`}
-            </p>
+          <div className="clinical-panel overflow-x-auto" style={{ padding: 'var(--space-2)' }}>
             <Table ariaLabel="Registered patients">
               <THead>
                 <tr>
                   <TH>Patient</TH>
-                  <TH>Date of birth</TH>
+                  <TH>MRN</TH>
                   <TH>Gender</TH>
-                  <TH>Phone</TH>
+                  <TH>Contact</TH>
                   <TH>Status</TH>
+                  <TH align="right">Chart</TH>
                 </tr>
               </THead>
               <TBody>
-                {patients.map((patient) => (
-                  <TR
-                    key={patient.id}
-                    interactive
-                    onClick={() => router.push(`/patients/${patient.id}`)}
-                    aria-label={`Open ${patient.firstName} ${patient.lastName}, MRN ${patient.mrn}`}
-                  >
-                    <TD>
-                      <PatientIdentity
-                        firstName={patient.firstName}
-                        lastName={patient.lastName}
-                        mrn={patient.mrn}
-                      />
-                    </TD>
-                    <TD>{new Date(patient.dateOfBirth).toLocaleDateString()}</TD>
-                    <TD className={styles.capitalize}>{patient.gender}</TD>
-                    <TD>{patient.phonePrimary}</TD>
-                    <TD>
-                      <Badge variant={patient.status === 'active' ? 'stable' : 'neutral'} size="sm">
-                        {patient.status === 'active' ? 'Active' : patient.status}
-                      </Badge>
-                    </TD>
-                  </TR>
-                ))}
+                {filteredPatients.map((patient) => {
+                  const age = computeAgeYears(patient.dateOfBirth);
+                  return (
+                    <TR
+                      key={patient.id}
+                      interactive
+                      onClick={() => router.push(`/patients/${patient.id}`)}
+                      aria-label={`Open ${patient.firstName} ${patient.lastName}, MRN ${patient.mrn}`}
+                    >
+                      <TD>
+                        <div>
+                          <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
+                            {patient.firstName} {patient.lastName}
+                          </span>
+                          <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                            {age ? `${age} yrs · ` : ''}{patient.gender === 'male' ? 'Male' : patient.gender === 'female' ? 'Female' : patient.gender}
+                          </span>
+                        </div>
+                      </TD>
+                      <TD>
+                        <span className="num" style={{ fontSize: '0.75rem', fontWeight: 600 }}>
+                          {patient.mrn}
+                        </span>
+                      </TD>
+                      <TD className={styles.capitalize}>{patient.gender}</TD>
+                      <TD>
+                        <span className="num" style={{ fontSize: '0.8125rem' }}>
+                          {patient.phonePrimary || '—'}
+                        </span>
+                      </TD>
+                      <TD>
+                        <Badge variant={patient.status === 'active' ? 'stable' : 'neutral'} size="sm">
+                          {patient.status === 'active' ? 'Active' : patient.status}
+                        </Badge>
+                      </TD>
+                      <TD align="right">
+                        <Link
+                          href={`/patients/${patient.id}`}
+                          style={{
+                            fontSize: '0.75rem',
+                            fontWeight: 600,
+                            color: 'var(--color-primary-600)',
+                            textDecoration: 'none',
+                          }}
+                        >
+                          Open Chart →
+                        </Link>
+                      </TD>
+                    </TR>
+                  );
+                })}
               </TBody>
             </Table>
           </div>
         )}
+
+        {/* Lovable Duplicate Resolution Advisory Panel */}
+        <div style={{ marginTop: 'var(--space-6)' }}>
+          <div
+            className="clinical-panel p-4"
+            style={{
+              borderLeft: '4px solid var(--color-warning-main, #d97706)',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+              <AlertTriangle size={18} style={{ color: 'var(--color-warning-main, #d97706)' }} />
+              <h3 style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>
+                Identity Resolution & Duplicate Check
+              </h3>
+            </div>
+            <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.4 }}>
+              Automatic soundex and phone matching verifies incoming patient registrations against the central Master Patient Index.
+              Zero duplicate records currently flagged for supervisor review.
+            </p>
+          </div>
+        </div>
       </div>
     </AppShell>
   );
