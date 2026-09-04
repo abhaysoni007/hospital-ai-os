@@ -16,7 +16,7 @@ import {
   Brain,
 } from 'lucide-react';
 import { useAuth } from '../../../hooks/useAuth';
-import { getNavItemsForRole, NavItemConfig } from '../../../utils/rbac';
+import { getNavItemsForRole, NavItemConfig, ROLE_DISPLAY_NAMES } from '../../../utils/rbac';
 import { isNavItemActive } from '../../../utils/nav-helpers';
 import { SidebarItem } from '../../ui/SidebarItem/SidebarItem';
 import styles from './AppSidebar.module.css';
@@ -194,7 +194,9 @@ export function AppSidebar({
           {!isCollapsed && (
             <div className={styles.brandTitles}>
               <span className={styles.brandTitle}>Hospital AI OS</span>
-              <span className={styles.brandSubtitle}>Clinical OS v1.0</span>
+              <span className={styles.brandSubtitle}>
+                {user?.role ? `${ROLE_DISPLAY_NAMES[user.role]} workspace` : 'Clinical OS'}
+              </span>
             </div>
           )}
           {isMobileOpen && onMobileClose && (

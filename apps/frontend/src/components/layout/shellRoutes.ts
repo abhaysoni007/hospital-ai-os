@@ -62,6 +62,11 @@ export const AUTHENTICATED_ROUTES: readonly AuthenticatedShellRoute[] = [
     label: 'Intelligence',
     requiredPermission: 'intelligence:read',
   },
+  {
+    href: '/notifications',
+    section: 'Operations',
+    label: 'Notifications',
+  },
 
   // Clinical — diagnostic + clinical record surfaces
   {
@@ -96,6 +101,12 @@ export const AUTHENTICATED_ROUTES: readonly AuthenticatedShellRoute[] = [
     href: '/admin/staff',
     section: 'Administration',
     label: 'Staff Management',
+    requiredPermission: 'staff:manage',
+  },
+  {
+    href: '/admin/departments',
+    section: 'Administration',
+    label: 'Departments',
     requiredPermission: 'staff:manage',
   },
   {

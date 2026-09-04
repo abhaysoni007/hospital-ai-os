@@ -4,11 +4,9 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { AppShell } from '../../../components/layout/AppShell/AppShell';
 import { Card, CardHeader, CardContent } from '../../../components/ui/Card/Card';
-import { Badge } from '../../../components/ui/Badge/Badge';
 import { Skeleton } from '../../../components/ui/Skeleton/Skeleton';
 import { EmptyState } from '../../../components/ui/EmptyState/EmptyState';
 import { ErrorState } from '../../../components/ui/ErrorState/ErrorState';
-import { PageHeader } from '../../../components/ui/PageHeader/PageHeader';
 import {
   Table,
   THead,
@@ -32,6 +30,8 @@ import type { AppointmentListItem, EncounterListItem, PatientResponse } from 'sh
 import styles from './profile.module.css';
 import { CalendarPlus, Stethoscope } from 'lucide-react';
 import { Button } from '../../../components/ui/Button/Button';
+import { PatientHeader } from '../../../components/clinical/LovableClinical';
+import { computeAgeYears } from '../../../utils/dashboard';
 import { useAuth } from '../../../hooks/useAuth';
 import { hasPermission } from '../../../utils/rbac';
 import { parseApiError, ParsedError } from '../../../utils/error-parser';
@@ -170,23 +170,17 @@ export default function PatientProfilePage() {
         ) : (
           <>
             <BreakGlassBanner patientId={id} />
-        <PageHeader
-          title={`${patient.firstName} ${patient.lastName}`}
-          description={`Medical record number ${patient.mrn}`}
-          actions={scheduleAction}
-          meta={
-            <>
-              <Badge variant={patient.status === 'active' ? 'stable' : 'neutral'} size="sm">
-                {patient.status === 'active' ? 'Active' : patient.status}
-              </Badge>
-              <span className={styles.metaItem}>
-                DOB {new Date(patient.dateOfBirth).toLocaleDateString()}
-              </span>
-              <span className={styles.metaItem}>{patient.gender}</span>
-              <span className={styles.metaItem}>{patient.phonePrimary}</span>
-            </>
-          }
-        />
+            <div style={{ marginBottom: 'var(--space-4)' }}>
+              <PatientHeader
+                patient={{
+                  name: `${patient.firstName} ${patient.lastName}`,
+                  mrn: patient.mrn,
+                  age: computeAgeYears(patient.dateOfBirth) ?? undefined,
+                  gender: patient.gender,
+                }}
+                actions={scheduleAction}
+              />
+            </div>
 
         <div className={styles.grid}>
           <Card elevation="xs">

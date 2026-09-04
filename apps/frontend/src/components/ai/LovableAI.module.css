@@ -1,0 +1,360 @@
+.aiBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-caption);
+  font-weight: 600;
+}
+
+.badgeAi {
+  background-color: var(--ai-surface);
+  color: var(--ai);
+  border: 1px solid rgba(124, 58, 237, 0.3);
+}
+
+.badgeMuted {
+  background-color: var(--surface);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+}
+
+.stateBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-caption);
+  font-weight: 600;
+  border: 1px solid transparent;
+}
+
+.stateGrounded {
+  background-color: rgba(2, 132, 199, 0.1);
+  border-color: rgba(2, 132, 199, 0.4);
+  color: var(--color-info-main);
+}
+
+.stateReviewRequired {
+  background-color: var(--color-warning-bg);
+  border-color: var(--color-warning-border);
+  color: var(--color-warning-main);
+}
+
+.stateHumanReviewed {
+  background-color: rgba(37, 99, 235, 0.1);
+  border-color: rgba(37, 99, 235, 0.4);
+  color: var(--color-primary-600);
+}
+
+.stateApproved {
+  background-color: var(--color-success-bg);
+  border-color: var(--color-success-border);
+  color: var(--color-success-main);
+}
+
+.stateCommitted {
+  background-color: var(--color-success-bg);
+  border-color: var(--color-success-main);
+  color: var(--color-success-text);
+}
+
+.humanReviewBanner {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background-color: var(--color-warning-bg);
+  border: 1px solid var(--color-warning-border);
+  color: var(--color-warning-text);
+  margin-top: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+.warningIcon {
+  color: var(--color-warning-main);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.warningText {
+  font-size: var(--font-size-sm);
+  line-height: 1.4;
+}
+
+.draftHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--border);
+  margin-bottom: var(--space-4);
+}
+
+.badgeGroup {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.draftMeta {
+  font-size: var(--font-size-caption);
+  color: var(--text-secondary);
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.draftPanel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.panelControls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.panelInstructions {
+  font-size: var(--font-size-caption);
+  color: var(--text-secondary);
+}
+
+.diffToggleBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--font-size-caption);
+  color: var(--text-secondary);
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 4px 8px;
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-standard);
+}
+
+.diffToggleBtn:hover {
+  background-color: var(--surface);
+  color: var(--text-primary);
+}
+
+.sectionsList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.sectionField {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.sectionLabel {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.sectionTextarea {
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  font-family: inherit;
+  font-size: var(--font-size-body);
+  color: var(--text-primary);
+  background-color: var(--card);
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.sectionTextarea:focus {
+  outline: 2px solid var(--ring);
+  outline-offset: 1px;
+}
+
+.diffBox {
+  margin-top: var(--space-2);
+  padding: var(--space-2);
+  border-radius: var(--radius-md);
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.diffOriginal {
+  font-size: var(--font-size-caption);
+  color: var(--color-danger-main);
+  text-decoration: line-through;
+}
+
+.diffEdited {
+  font-size: var(--font-size-caption);
+  color: var(--color-success-main);
+  font-weight: 600;
+}
+
+.diffUnchanged {
+  font-size: var(--font-size-caption);
+  color: var(--text-tertiary);
+  margin-top: var(--space-1);
+}
+
+.reviewActionsContainer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-3);
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  margin-top: var(--space-4);
+}
+
+.actionStep {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.stepHint {
+  font-size: var(--font-size-caption);
+  color: var(--text-secondary);
+}
+
+.divider {
+  width: 1px;
+  height: 36px;
+  background-color: var(--border);
+}
+
+.drawerOverlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(2px);
+  z-index: 2000;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.drawerContent {
+  width: min(100%, 480px);
+  height: 100vh;
+  background-color: var(--card);
+  border-left: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: var(--shadow-modal);
+  animation: page-enter var(--duration-base) var(--ease-standard);
+}
+
+.drawerHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-bottom: 1px solid var(--border);
+}
+
+.drawerTitle {
+  font-size: var(--font-size-body);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.drawerSub {
+  font-size: var(--font-size-caption);
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+.drawerClose {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 4px;
+}
+
+.drawerClose:hover {
+  color: var(--text-primary);
+}
+
+.evidenceList {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  list-style: none;
+}
+
+.evidenceItem {
+  padding: var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background-color: var(--surface);
+}
+
+.evidenceTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.evidenceSource {
+  font-size: var(--font-size-caption);
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.confidenceBadge {
+  font-size: var(--font-size-caption);
+  color: var(--color-info-main);
+  background-color: rgba(2, 132, 199, 0.1);
+  padding: 1px 6px;
+  border-radius: var(--radius-sm);
+}
+
+.evidenceExcerpt {
+  font-size: var(--font-size-caption);
+  color: var(--text-secondary);
+  margin-top: var(--space-1);
+  line-height: 1.4;
+}
+
+.evidenceTimestamp {
+  display: block;
+  font-size: 10px;
+  color: var(--text-tertiary);
+  margin-top: var(--space-1);
+}
+
+.noEvidence {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  text-align: center;
+  padding: var(--space-6);
+}

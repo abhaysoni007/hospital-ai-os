@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { AuthGuard } from '../../auth/AuthGuard';
 import { AppSidebar } from '../AppSidebar/AppSidebar';
 import { AppHeader } from '../AppHeader/AppHeader';
+import { CommandMenu } from '../../navigation/CommandMenu';
 import { Permission, StaffRole } from '../../../types/auth';
 import styles from './AppShell.module.css';
 
@@ -104,6 +105,7 @@ export function AppShell({
           </main>
         </div>
       </div>
+      <CommandMenu />
     </AuthGuard>
   );
 }

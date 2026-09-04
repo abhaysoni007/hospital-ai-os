@@ -40,6 +40,12 @@ import { PatientIdentity } from '../ui/Identity/Identity';
 import { Table, THead, TH, TBody, TR, TD, RowLink, TableSkeleton } from '../ui/Table/Table';
 import { LineChart, LineChartTone } from '../ui/LineChart/LineChart';
 import { DonutChart, DonutTone } from '../ui/DonutChart/DonutChart';
+import { LabTechnicianDashboard } from './LabTechnicianDashboard';
+import { ReceptionistDashboard } from './ReceptionistDashboard';
+import { SecurityAdminDashboard } from './SecurityAdminDashboard';
+import { NursingDashboard } from './NursingDashboard';
+import { PharmacistDashboard } from './PharmacistDashboard';
+import { HospitalAdminDashboard } from './HospitalAdminDashboard';
 import styles from './DashboardShell.module.css';
 
 /**
@@ -139,7 +145,7 @@ function deltaFromSeries(
   return { direction, label: `${percent}% vs yesterday` };
 }
 
-export function DashboardShell() {
+function PhysicianDashboard() {
   const { user } = useAuth();
   const role = user?.role;
   const canReadEncounters = hasPermission(role, 'encounter:read');
@@ -1063,4 +1069,27 @@ function SnapshotCell({ label, value, hint }: SnapshotCellProps) {
       {hint && <span className={styles.snapshotHint}>{hint}</span>}
     </div>
   );
+}
+
+export function DashboardShell() {
+  const { user } = useAuth();
+  const role = user?.role;
+
+  switch (role) {
+    case 'lab_technician':
+      return <LabTechnicianDashboard />;
+    case 'receptionist':
+      return <ReceptionistDashboard />;
+    case 'security_admin':
+      return <SecurityAdminDashboard />;
+    case 'nurse':
+      return <NursingDashboard />;
+    case 'pharmacist':
+      return <PharmacistDashboard />;
+    case 'hospital_admin':
+      return <HospitalAdminDashboard />;
+    case 'physician':
+    default:
+      return <PhysicianDashboard />;
+  }
 }

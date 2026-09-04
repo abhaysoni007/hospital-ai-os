@@ -1,0 +1,109 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  max-width: 1000px;
+}
+
+.navRow {
+  display: flex;
+  align-items: center;
+  margin-bottom: var(--space-2);
+}
+
+.backLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--font-size-body-sm);
+  color: var(--color-primary-600);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.backLink:hover {
+  text-decoration: underline;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.title {
+  margin: 0;
+  font-size: var(--font-size-title-lg);
+  font-weight: 700;
+  color: var(--color-neutral-900);
+}
+
+.subtitle {
+  margin: 4px 0 0;
+  font-size: var(--font-size-body-sm);
+  color: var(--color-neutral-500);
+}
+
+.refreshButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  font-size: var(--font-size-caption);
+  font-weight: 500;
+  background: var(--color-neutral-0);
+  border: 1px solid var(--color-neutral-200);
+  border-radius: var(--radius-md);
+  color: var(--color-neutral-700);
+  cursor: pointer;
+}
+
+.refreshButton:hover {
+  background: var(--color-neutral-50);
+}
+
+.infoBanner {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--color-info-50, rgba(59, 130, 246, 0.05));
+  border: 1px solid var(--color-info-200, rgba(59, 130, 246, 0.2));
+  color: var(--color-info-800, #1e40af);
+  font-size: var(--font-size-caption);
+  line-height: 1.5;
+}
+
+.infoIcon {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-4);
+  border-bottom: 1px solid var(--color-neutral-100);
+}
+
+.cardHeader h3 {
+  margin: 0;
+  font-size: var(--font-size-subhead);
+  font-weight: 600;
+}
+
+.cardHeader p {
+  margin: 2px 0 0;
+  font-size: var(--font-size-caption);
+  color: var(--color-neutral-500);
+}
+
+.empty {
+  padding: var(--space-6);
+  text-align: center;
+  color: var(--color-neutral-500);
+}

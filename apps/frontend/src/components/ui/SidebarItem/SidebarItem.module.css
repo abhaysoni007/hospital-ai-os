@@ -6,7 +6,8 @@
   border-radius: var(--radius-md);
   font-size: var(--font-size-body);
   font-weight: 500;
-  color: var(--text-secondary);
+  color: var(--sidebar-foreground);
+  opacity: 0.85;
   text-decoration: none;
   transition:
     background-color var(--duration-fast) var(--ease-standard),
@@ -16,14 +17,16 @@
 }
 
 .item:hover {
-  background-color: var(--bg-subtle);
-  color: var(--text-primary);
+  background-color: var(--sidebar-accent);
+  color: var(--sidebar-accent-foreground);
+  opacity: 1;
 }
 
 .active {
-  background-color: var(--color-primary-50);
-  color: var(--color-primary-700) !important;
+  background-color: var(--sidebar-accent);
+  color: var(--sidebar-accent-foreground) !important;
   font-weight: 600;
+  opacity: 1;
 }
 
 .active::before {
@@ -33,19 +36,19 @@
   top: 6px;
   bottom: 6px;
   width: 3px;
-  background-color: var(--color-primary-600);
+  background-color: var(--sidebar-primary);
   border-radius: 0 var(--radius-xs) var(--radius-xs) 0;
 }
 
 .pending {
-  background-color: var(--color-primary-50);
-  color: var(--color-primary-600);
+  background-color: var(--sidebar-accent);
+  color: var(--sidebar-primary);
   opacity: 0.85;
 }
 
 [data-theme='dark'] .pending {
-  background-color: rgba(37, 99, 235, 0.15);
-  color: var(--color-primary-300);
+  background-color: var(--sidebar-accent);
+  color: var(--sidebar-primary);
   opacity: 0.85;
 }
 

@@ -1,6 +1,7 @@
 .sidebar {
-  background-color: var(--bg-surface);
-  border-right: 1px solid var(--border-subtle);
+  background-color: var(--sidebar);
+  border-right: 1px solid var(--sidebar-border);
+  color: var(--sidebar-foreground);
   display: flex;
   flex-direction: column;
   height: 100vh;
@@ -26,7 +27,7 @@
   align-items: center;
   gap: var(--space-3);
   padding: 0 var(--space-4);
-  border-bottom: 1px solid var(--border-subtle);
+  border-bottom: 1px solid var(--sidebar-border);
   flex-shrink: 0;
 }
 
@@ -37,14 +38,14 @@
   width: 36px;
   height: 36px;
   border-radius: var(--radius-md);
-  background: linear-gradient(135deg, var(--color-primary-600) 0%, var(--color-primary-800) 100%);
-  color: #ffffff;
+  background: var(--sidebar-primary);
+  color: var(--sidebar-primary-foreground);
   flex-shrink: 0;
   box-shadow: var(--shadow-sm);
 }
 
 .brandLogoIcon {
-  color: #ffffff;
+  color: var(--sidebar-primary-foreground);
 }
 
 .brandTitles {
@@ -56,14 +57,14 @@
 .brandTitle {
   font-size: var(--font-size-body);
   font-weight: 700;
-  color: var(--text-primary);
+  color: var(--sidebar-foreground);
   line-height: 1.2;
   white-space: nowrap;
 }
 
 .brandSubtitle {
   font-size: var(--font-size-caption);
-  color: var(--color-primary-600);
+  color: var(--sidebar-primary);
   font-weight: 600;
   letter-spacing: 0.02em;
   white-space: nowrap;
@@ -72,7 +73,7 @@
 .mobileCloseButton {
   display: none;
   margin-left: auto;
-  color: var(--text-secondary);
+  color: var(--sidebar-foreground);
   padding: 4px;
 }
 
@@ -96,13 +97,14 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--text-tertiary);
+  color: var(--sidebar-foreground);
+  opacity: 0.6;
   padding: 0 var(--space-3) var(--space-1);
 }
 
 .sectionDivider {
   height: 1px;
-  background-color: var(--border-subtle);
+  background-color: var(--sidebar-border);
   margin: var(--space-2) var(--space-2);
 }
 
@@ -114,7 +116,7 @@
 
 .sidebarFooter {
   padding: var(--space-3);
-  border-top: 1px solid var(--border-subtle);
+  border-top: 1px solid var(--sidebar-border);
   flex-shrink: 0;
 }
 
@@ -126,7 +128,8 @@
   width: 100%;
   padding: var(--space-2);
   border-radius: var(--radius-md);
-  color: var(--text-secondary);
+  color: var(--sidebar-foreground);
+  opacity: 0.75;
   font-size: var(--font-size-sm);
   font-weight: 500;
   transition:
@@ -135,8 +138,9 @@
 }
 
 .collapseButton:hover {
-  background-color: var(--bg-subtle);
-  color: var(--text-primary);
+  background-color: var(--sidebar-accent);
+  color: var(--sidebar-accent-foreground);
+  opacity: 1;
 }
 
 .collapseLabel {
