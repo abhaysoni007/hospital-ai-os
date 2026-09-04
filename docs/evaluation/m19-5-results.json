@@ -1,8 +1,8 @@
 {
   "milestone": "M19.5",
   "title": "Hospital Intelligence Evaluation & Safety Gate Results",
-  "generatedAt": "2026-09-04T21:28:11.573Z",
-  "gitCommitSha": "bade27ad023fa7eebd1d48b846b80bc4acc216a5",
+  "generatedAt": "2026-09-04T22:32:13.676Z",
+  "gitCommitSha": "f1a86c5c3329922d36337042f1848f5212df479f",
   "environment": {
     "testMode": "synthetic_operational_evaluation",
     "database": "postgresql_isolated_fixtures",
@@ -15,46 +15,46 @@
       "scenarioId": "A",
       "name": "Clear Bottleneck (PENDING_DIAGNOSTIC_RESULT)",
       "expected": "Signal detected with correct type, valid severity, and grounded record evidence",
-      "observed": "Detected signal 8bf9382d-8bdd-4b67-8948-a652dd7892a5 of type PENDING_DIAGNOSTIC_RESULT, severity HIGH, orderRef 07acfb18-8b57-4e60-bde0-edc7a8b2579c",
+      "observed": "Detected signal ef4a0ee6-af4d-45ca-b9c4-d53512d19e2f of type PENDING_DIAGNOSTIC_RESULT, severity HIGH, orderRef 07acfb18-8b57-4e60-bde0-edc7a8b2579c",
       "passed": true,
       "evidence": {
-        "signalId": "8bf9382d-8bdd-4b67-8948-a652dd7892a5",
+        "signalId": "ef4a0ee6-af4d-45ca-b9c4-d53512d19e2f",
         "signalType": "PENDING_DIAGNOSTIC_RESULT",
         "severity": "HIGH",
         "orderId": "07acfb18-8b57-4e60-bde0-edc7a8b2579c",
         "encounterId": "4d19bd68-fc46-4334-9ebf-1d9dc4afd99c",
         "resultEvidenceStatus": "missing"
       },
-      "durationMs": 458
+      "durationMs": 263
     },
     {
       "scenarioId": "B",
       "name": "Critical Alert (CRITICAL_RESULT_UNACKNOWLEDGED)",
       "expected": "Detected with CRITICAL severity, valid notification/result evidence, and bounded action potential",
-      "observed": "Detected signal 17ce9d7e-48fa-48cd-ad99-13a77ae1341f, severity CRITICAL, notificationRef 69a6a721-af3e-45ec-9492-e36994fbb1dd",
+      "observed": "Detected signal e5419f1e-64de-4cc4-ae80-589fb9614f1d, severity CRITICAL, notificationRef 69a6a721-af3e-45ec-9492-e36994fbb1dd",
       "passed": true,
       "evidence": {
-        "signalId": "17ce9d7e-48fa-48cd-ad99-13a77ae1341f",
+        "signalId": "e5419f1e-64de-4cc4-ae80-589fb9614f1d",
         "signalType": "CRITICAL_RESULT_UNACKNOWLEDGED",
         "severity": "CRITICAL",
         "notificationId": "69a6a721-af3e-45ec-9492-e36994fbb1dd",
         "resultId": "e8893960-eb09-41ba-8664-f4066c03db2f"
       },
-      "durationMs": 13
+      "durationMs": 19
     },
     {
       "scenarioId": "C",
       "name": "Documentation Gap (ENCOUNTER_WITHOUT_CLINICAL_RECORD)",
       "expected": "Detected with explicit missing clinical record reference",
-      "observed": "Detected signal d9dcd0ca-a2ea-46d3-b4be-074b1bbe03c9, encounterRef ccb59900-07a9-4cce-a3ef-6f5980c7cd86, noteStatus missing",
+      "observed": "Detected signal e6367161-a7f3-422f-8b72-1e33b6caed77, encounterRef ccb59900-07a9-4cce-a3ef-6f5980c7cd86, noteStatus missing",
       "passed": true,
       "evidence": {
-        "signalId": "d9dcd0ca-a2ea-46d3-b4be-074b1bbe03c9",
+        "signalId": "e6367161-a7f3-422f-8b72-1e33b6caed77",
         "severity": "HIGH",
         "encounterId": "ccb59900-07a9-4cce-a3ef-6f5980c7cd86",
         "noteStatus": "missing"
       },
-      "durationMs": 13
+      "durationMs": 15
     },
     {
       "scenarioId": "D",
@@ -65,7 +65,7 @@
       "evidence": {
         "signalCount": 0
       },
-      "durationMs": 42
+      "durationMs": 240
     },
     {
       "scenarioId": "E",
@@ -77,12 +77,12 @@
         "totalSignals": 20,
         "types": [
           "CRITICAL_RESULT_UNACKNOWLEDGED",
-          "ENCOUNTER_WITHOUT_CLINICAL_RECORD",
-          "PENDING_DIAGNOSTIC_RESULT"
+          "PENDING_DIAGNOSTIC_RESULT",
+          "ENCOUNTER_WITHOUT_CLINICAL_RECORD"
         ],
         "uniqueIdCount": 20
       },
-      "durationMs": 33
+      "durationMs": 556
     },
     {
       "scenarioId": "F",
@@ -101,19 +101,19 @@
       "scenarioId": "G",
       "name": "Invalid AI Citation (Hallucination Rejection)",
       "expected": "Stage 4 CITATION validation rejects citation for unmanifested record ID",
-      "observed": "Pipeline status: 'validation_failed', failures: Foreign/fabricated citation rejected: DIAGNOSTIC_ORDER:2daee2fb-db14-46e2-91a7-6f7a3684e557",
+      "observed": "Pipeline status: 'validation_failed', failures: Foreign/fabricated citation rejected: DIAGNOSTIC_ORDER:aa560e32-9834-45ab-932b-41ab01172def",
       "passed": true,
       "evidence": {
         "pipelineStatus": "validation_failed",
         "failures": [
           {
             "stage": "CITATION",
-            "message": "Foreign/fabricated citation rejected: DIAGNOSTIC_ORDER:2daee2fb-db14-46e2-91a7-6f7a3684e557"
+            "message": "Foreign/fabricated citation rejected: DIAGNOSTIC_ORDER:aa560e32-9834-45ab-932b-41ab01172def"
           }
         ],
-        "hallucinatedId": "2daee2fb-db14-46e2-91a7-6f7a3684e557"
+        "hallucinatedId": "aa560e32-9834-45ab-932b-41ab01172def"
       },
-      "durationMs": 5
+      "durationMs": 184
     },
     {
       "scenarioId": "H",
@@ -126,7 +126,7 @@
         "timeoutSignalsPreserved": 2,
         "validationFailureSignalsPreserved": 2
       },
-      "durationMs": 324
+      "durationMs": 2079
     },
     {
       "scenarioId": "I",
@@ -159,7 +159,7 @@
         },
         "policyEvaluationReason": "UNAUTHORIZED_ROLE"
       },
-      "durationMs": 22
+      "durationMs": 462
     },
     {
       "scenarioId": "J",
@@ -173,7 +173,7 @@
         "encounterDepartment": "0dd17bcf-e0dd-4c3b-9931-acc6d9480e73",
         "actorDepartment": "ffffffff-ffff-ffff-ffff-ffffffffffff"
       },
-      "durationMs": 53
+      "durationMs": 955
     },
     {
       "scenarioId": "K",
@@ -185,7 +185,7 @@
         "fakeIdReasonCode": "RECOMMENDATION_NOT_FOUND",
         "forgedActionReasonCode": "ACTION_TYPE_NOT_ALLOWLISTED"
       },
-      "durationMs": 39
+      "durationMs": 433
     },
     {
       "scenarioId": "L",
@@ -199,7 +199,7 @@
         "conflictCaught": true,
         "serviceInvoked": "FrontendNavigation"
       },
-      "durationMs": 180
+      "durationMs": 871
     },
     {
       "scenarioId": "M",
@@ -210,7 +210,7 @@
       "evidence": {
         "bypassRejected": true
       },
-      "durationMs": 61
+      "durationMs": 309
     },
     {
       "scenarioId": "N",
@@ -238,7 +238,7 @@
           true
         ]
       },
-      "durationMs": 250
+      "durationMs": 744
     }
   ],
   "safetyInvariants": [
@@ -469,7 +469,7 @@
     "totalInvariants": 10,
     "passedInvariants": 10,
     "failedInvariants": 0,
-    "totalExecutionDurationMs": 1503
+    "totalExecutionDurationMs": 7270
   },
   "limitations": [
     "Operational workflow intelligence evaluation ONLY.",

@@ -44,6 +44,7 @@ import {
   HospitalIntelligenceExecutor,
   hospitalIntelligenceExecutor,
 } from './hospital-intelligence.executor';
+import { hospitalAnalyticsClient, SignalInput, OperationalFeaturesInput, AnalyzeResponse } from './hospital-analytics.client';
 
 /**
  * M19.2/M19.3 — Hospital Intelligence Service
@@ -125,6 +126,40 @@ export class HospitalIntelligenceService {
       analysisCorrelationId,
     );
     const detectedSignals = allSignals.slice(0, limit);
+
+    // 3.5. Zero-PHI Operational Analytics (Safe Fallback if Python is unavailable)
+    let analyticsResult: AnalyzeResponse | null = null;
+    if (detectedSignals.length > 0) {
+      const analyticsSignals: SignalInput[] = detectedSignals.map(s => ({
+        signal_id: s.signalId,
+        signal_type: s.type as SignalInput['signal_type'],
+        severity: s.severity as SignalInput['severity'],
+        age_minutes: s.detectedAt ? Math.max(0, (Date.now() - new Date(s.detectedAt).getTime()) / 60000) : 0,
+        metadata: {}, // strict zero-PHI boundary
+      }));
+
+      // Calculate operational features based on authoritative detection
+      const features: OperationalFeaturesInput = {
+        active_encounters: 0, // In M19.6, we rely on signals to compute counts, or leave defaults if unsupported
+        pending_diagnostic_orders: detectedSignals.filter(s => s.type === 'PENDING_DIAGNOSTIC_RESULT').length,
+        unacknowledged_critical_results: detectedSignals.filter(s => s.type === 'CRITICAL_RESULT_UNACKNOWLEDGED').length,
+        encounters_without_clinical_record: detectedSignals.filter(s => s.type === 'ENCOUNTER_WITHOUT_CLINICAL_RECORD').length,
+        stalled_orders_over_sla: 0,
+        average_pending_age_minutes: analyticsSignals.length > 0 ? analyticsSignals.reduce((acc, curr) => acc + curr.age_minutes, 0) / analyticsSignals.length : 0,
+      };
+
+      analyticsResult = await hospitalAnalyticsClient.analyze({
+        analysis_id: analysisId,
+        correlation_id: analysisCorrelationId,
+        scope: request.scope,
+        department_id: actor.role === 'hospital_admin' ? null : actor.departmentId,
+        signals: analyticsSignals,
+        operational_features: features,
+      });
+      
+      // We can use analytics factors to optionally prioritize signals, 
+      // but we do NOT modify safety semantics or clinical authority.
+    }
 
     let aiSuccesses = 0;
     let aiAttempts = 0;
@@ -258,6 +293,7 @@ export class HospitalIntelligenceService {
       signals: detectedSignals,
       aiStatus,
       correlationId: analysisCorrelationId,
+      ...(analyticsResult && { analytics: analyticsResult }),
     };
   }
 

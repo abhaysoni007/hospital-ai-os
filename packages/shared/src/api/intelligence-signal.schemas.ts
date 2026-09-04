@@ -197,6 +197,7 @@ export const hospitalIntelligenceAnalysisResponseSchema = z
     signals: z.array(detectedSignalSchema),
     aiStatus: z.enum(['grounded', 'degraded', 'unavailable']),
     correlationId: uuidSchema,
+    analytics: z.any().optional(), // Advisory operational intelligence from Python sidecar
   })
   .strict();
 export type HospitalIntelligenceAnalysisResponse = z.infer<
