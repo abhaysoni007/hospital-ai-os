@@ -18,3 +18,121 @@
 .capitalize {
   text-transform: capitalize;
 }
+
+.filterBar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.filterControls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.searchInputWrap {
+  max-width: 360px;
+  width: 100%;
+}
+
+.statusGroup {
+  display: inline-flex;
+  gap: 4px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  background-color: var(--bg-surface);
+  padding: 2px;
+}
+
+.statusButton {
+  border-radius: 4px;
+  padding: 4px 10px;
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  background-color: transparent;
+  color: var(--text-secondary);
+  text-transform: capitalize;
+}
+
+.statusButtonActive {
+  background-color: var(--color-primary-600);
+  color: #ffffff;
+}
+
+.tableWrapper {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: var(--space-2);
+  overflow-x: auto;
+}
+
+.patientName {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.patientMeta {
+  display: block;
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+.mrn {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+}
+
+.phone {
+  font-size: 0.8125rem;
+}
+
+.chartLink {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-primary-600);
+  text-decoration: none;
+}
+
+.chartLink:hover {
+  text-decoration: underline;
+}
+
+.advisoryPanel {
+  margin-top: var(--space-6);
+}
+
+.advisoryCard {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-left: 4px solid var(--color-warning-main, #d97706);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+}
+
+.advisoryHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
+.advisoryTitle {
+  font-size: var(--font-size-body);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.advisoryText {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.4;
+}

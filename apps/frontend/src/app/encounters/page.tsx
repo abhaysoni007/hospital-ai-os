@@ -109,7 +109,7 @@ export default function EncountersPage() {
             }
           />
         ) : (
-          <div className="clinical-panel" style={{ padding: 0, overflow: 'hidden' }}>
+          
             <Table ariaLabel="Encounters">
               <THead>
                 <tr>
@@ -158,7 +158,6 @@ export default function EncountersPage() {
                 ))}
               </TBody>
             </Table>
-          </div>
         )}
       </div>
     </AppShell>

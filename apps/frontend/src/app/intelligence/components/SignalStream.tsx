@@ -221,7 +221,7 @@ export function SignalStream({
 
             return (
               <div
-                key={signal.signalId}
+                key={`${signal.signalId}-${index}`}
                 role="listitem"
                 tabIndex={0}
                 aria-selected={isSelected}

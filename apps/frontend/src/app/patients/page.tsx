@@ -105,9 +105,9 @@ export default function PatientsPage() {
         />
 
         {/* Filter bar with Lovable search and status pills */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: 'var(--space-4)' }}>
-          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
-            <div style={{ maxWidth: '360px', width: '100%' }}>
+        <div className={styles.filterBar}>
+          <div className={styles.filterControls}>
+            <div className={styles.searchInputWrap}>
               <Input
                 id="patient-search-input"
                 label="Search patients by name or MRN"
@@ -123,31 +123,14 @@ export default function PatientsPage() {
             <div
               role="group"
               aria-label="Filter by patient status"
-              style={{
-                display: 'inline-flex',
-                gap: '4px',
-                borderRadius: 'var(--radius-md)',
-                border: '1px solid var(--border-subtle)',
-                backgroundColor: 'var(--bg-surface)',
-                padding: '2px',
-              }}
+              className={styles.statusGroup}
             >
               {(['all', 'active', 'discharged'] as const).map((s) => (
                 <button
                   key={s}
                   type="button"
                   onClick={() => setStatusFilter(s)}
-                  style={{
-                    borderRadius: '4px',
-                    padding: '4px 10px',
-                    fontSize: '0.75rem',
-                    fontWeight: 500,
-                    cursor: 'pointer',
-                    border: 'none',
-                    backgroundColor: statusFilter === s ? 'var(--color-primary-600)' : 'transparent',
-                    color: statusFilter === s ? '#ffffff' : 'var(--text-secondary)',
-                    textTransform: 'capitalize',
-                  }}
+                  className={`${styles.statusButton} ${statusFilter === s ? styles.statusButtonActive : ''}`}
                 >
                   {s === 'all' ? 'All Patients' : s}
                 </button>
@@ -189,90 +172,78 @@ export default function PatientsPage() {
             }
           />
         ) : (
-          <div className="clinical-panel overflow-x-auto" style={{ padding: 'var(--space-2)' }}>
-            <Table ariaLabel="Registered patients">
-              <THead>
-                <tr>
-                  <TH>Patient</TH>
-                  <TH>MRN</TH>
-                  <TH>Gender</TH>
-                  <TH>Contact</TH>
-                  <TH>Status</TH>
-                  <TH align="right">Chart</TH>
-                </tr>
-              </THead>
-              <TBody>
-                {filteredPatients.map((patient) => {
-                  const age = computeAgeYears(patient.dateOfBirth);
-                  return (
-                    <TR
-                      key={patient.id}
-                      interactive
-                      onClick={() => router.push(`/patients/${patient.id}`)}
-                      aria-label={`Open ${patient.firstName} ${patient.lastName}, MRN ${patient.mrn}`}
-                    >
-                      <TD>
-                        <div>
-                          <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
-                            {patient.firstName} {patient.lastName}
-                          </span>
-                          <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                            {age ? `${age} yrs · ` : ''}{patient.gender === 'male' ? 'Male' : patient.gender === 'female' ? 'Female' : patient.gender}
-                          </span>
-                        </div>
-                      </TD>
-                      <TD>
-                        <span className="num" style={{ fontSize: '0.75rem', fontWeight: 600 }}>
-                          {patient.mrn}
+          <Table ariaLabel="Registered patients">
+            <THead>
+              <tr>
+                <TH>Patient</TH>
+                <TH>MRN</TH>
+                <TH>Gender</TH>
+                <TH>Contact</TH>
+                <TH>Status</TH>
+                <TH align="right">Chart</TH>
+              </tr>
+            </THead>
+            <TBody>
+              {filteredPatients.map((patient) => {
+                const age = computeAgeYears(patient.dateOfBirth);
+                return (
+                  <TR
+                    key={patient.id}
+                    interactive
+                    onClick={() => router.push(`/patients/${patient.id}`)}
+                    aria-label={`Open ${patient.firstName} ${patient.lastName}, MRN ${patient.mrn}`}
+                  >
+                    <TD>
+                      <div>
+                        <span className={styles.patientName}>
+                          {patient.firstName} {patient.lastName}
                         </span>
-                      </TD>
-                      <TD className={styles.capitalize}>{patient.gender}</TD>
-                      <TD>
-                        <span className="num" style={{ fontSize: '0.8125rem' }}>
-                          {patient.phonePrimary || '—'}
+                        <span className={styles.patientMeta}>
+                          {age ? `${age} yrs · ` : ''}{patient.gender === 'male' ? 'Male' : patient.gender === 'female' ? 'Female' : patient.gender}
                         </span>
-                      </TD>
-                      <TD>
-                        <Badge variant={patient.status === 'active' ? 'stable' : 'neutral'} size="sm">
-                          {patient.status === 'active' ? 'Active' : patient.status}
-                        </Badge>
-                      </TD>
-                      <TD align="right">
-                        <Link
-                          href={`/patients/${patient.id}`}
-                          style={{
-                            fontSize: '0.75rem',
-                            fontWeight: 600,
-                            color: 'var(--color-primary-600)',
-                            textDecoration: 'none',
-                          }}
-                        >
-                          Open Chart →
-                        </Link>
-                      </TD>
-                    </TR>
-                  );
-                })}
-              </TBody>
-            </Table>
-          </div>
+                      </div>
+                    </TD>
+                    <TD>
+                      <span className={`num ${styles.mrn}`}>
+                        {patient.mrn}
+                      </span>
+                    </TD>
+                    <TD className={styles.capitalize}>{patient.gender}</TD>
+                    <TD>
+                      <span className={`num ${styles.phone}`}>
+                        {patient.phonePrimary || '—'}
+                      </span>
+                    </TD>
+                    <TD>
+                      <Badge variant={patient.status === 'active' ? 'stable' : 'neutral'} size="sm">
+                        {patient.status === 'active' ? 'Active' : patient.status}
+                      </Badge>
+                    </TD>
+                    <TD align="right">
+                      <Link
+                        href={`/patients/${patient.id}`}
+                        className={styles.chartLink}
+                      >
+                        Open Chart →
+                      </Link>
+                    </TD>
+                  </TR>
+                );
+              })}
+            </TBody>
+          </Table>
         )}
 
         {/* Lovable Duplicate Resolution Advisory Panel */}
-        <div style={{ marginTop: 'var(--space-6)' }}>
-          <div
-            className="clinical-panel p-4"
-            style={{
-              borderLeft: '4px solid var(--color-warning-main, #d97706)',
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+        <div className={styles.advisoryPanel}>
+          <div className={styles.advisoryCard}>
+            <div className={styles.advisoryHeader}>
               <AlertTriangle size={18} style={{ color: 'var(--color-warning-main, #d97706)' }} />
-              <h3 style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>
+              <h3 className={styles.advisoryTitle}>
                 Identity Resolution & Duplicate Check
               </h3>
             </div>
-            <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.4 }}>
+            <p className={styles.advisoryText}>
               Automatic soundex and phone matching verifies incoming patient registrations against the central Master Patient Index.
               Zero duplicate records currently flagged for supervisor review.
             </p>

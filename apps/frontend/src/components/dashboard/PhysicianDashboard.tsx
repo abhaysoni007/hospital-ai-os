@@ -305,17 +305,17 @@ export function PhysicianDashboard() {
       </DashboardGrid>
 
       {/* 5. Active Clinical Encounters Queue */}
-      <section className="clinical-panel p-4" aria-label="Active patient encounters">
-        <header style={{ marginBottom: 'var(--space-3)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <section className={styles.queuePanel} aria-label="Active patient encounters">
+        <header className={styles.queueHeader}>
           <div>
-            <h2 style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+            <h2 className={styles.queueTitle}>
               Active Patient Encounters
             </h2>
-            <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+            <p className={styles.queueSubtitle}>
               Patients currently under care in consultation or ward observation.
             </p>
           </div>
-          <Link href="/encounters" style={{ fontSize: '0.75rem', color: 'var(--color-primary-600)', textDecoration: 'none', fontWeight: 500 }}>
+          <Link href="/encounters" className={styles.queueLink}>
             Full encounter queue →
           </Link>
         </header>

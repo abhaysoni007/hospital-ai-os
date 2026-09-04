@@ -17,3 +17,11 @@
 .capitalize {
   text-transform: capitalize;
 }
+
+.tableWrapper {
+  padding: 0;
+  overflow: hidden;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+}

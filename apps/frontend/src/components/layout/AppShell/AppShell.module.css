@@ -6,7 +6,7 @@
 
 .skipLink {
   position: absolute;
-  top: -48px;
+  top: -100px;
   left: var(--space-4);
   z-index: calc(var(--z-toast) + 1);
   padding: var(--space-2) var(--space-4);
@@ -16,11 +16,16 @@
   font-weight: 600;
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-lg);
-  transition: top var(--duration-fast) var(--ease-standard);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-100%);
+  transition: transform var(--duration-fast) var(--ease-standard), opacity var(--duration-fast) var(--ease-standard);
 }
 
-.skipLink:focus {
-  top: var(--space-2);
+.skipLink:focus-visible {
+  transform: translateY(112px);
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .mainWrapper {
