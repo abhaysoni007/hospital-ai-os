@@ -6,6 +6,7 @@
 **Scope**: Operational Workflow Intelligence Safety Gate ONLY  
 **Evaluation Mode**: Deterministic Synthetic Fixture Battery (Zero PHI)  
 **Evaluator**: Lead AI Safety Engineer + Evaluation Engineer  
+**Git Commit SHA**: `bade27a` (`bade27ad023fa7eebd1d48b846b80bc4acc216a5`)  
 
 ---
 
