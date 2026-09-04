@@ -13,13 +13,23 @@ import { Table, THead, TH, TBody, TR, TD, RowLink, TableSkeleton } from '../../.
 import { AlertBanner } from '../../../../components/ui/Alert/AlertBanner';
 import { encounterService } from '../../../../services/encounter-service';
 import { diagnosticsService } from '../../../../services/diagnostics-service';
+import { taskService } from '../../../../services/task-service';
 import { computeAgeYears } from '../../../../utils/dashboard';
 import { useAuth } from '../../../../hooks/useAuth';
 import { hasPermission } from '../../../../utils/rbac';
+import {
+  isCriticalResult,
+  matchAuthoritativeTask,
+  isTaskAcknowledgedOnServer,
+  determineCriticalAction,
+  executeAuthoritativeAcknowledgment,
+  classifyProbeError,
+} from '../../../../utils/critical-result-acknowledgment';
 import type {
   EncounterDetailResponse,
   DiagnosticOrderResponse,
   DiagnosticResultResponse,
+  TaskResponse,
 } from 'shared';
 import styles from './labs.module.css';
 
@@ -34,11 +44,18 @@ import styles from './labs.module.css';
  *   DiagnosticResultResponse.status      ('critical_flagged' | 'preliminary' | 'verified')
  *
  * This page MUST NOT infer criticality from order priority.
+ *
+ * Acknowledgment invariant:
+ * A critical result MUST NOT be dismissed solely through local React state.
+ * Acknowledgment MUST either be server-authoritative via taskService.acknowledgeTask(taskId),
+ * or explicitly navigation-only ('Review Critical Result' -> /diagnostics/[orderId])
+ * when no authoritative critical-alert task can be safely attributed.
  */
 
 interface CriticalResultInfo {
   orderId: string;
   result: DiagnosticResultResponse;
+  authoritativeTask?: TaskResponse;
 }
 
 export default function EncounterLabsPage() {
@@ -55,23 +72,46 @@ export default function EncounterLabsPage() {
   // Critical results are fetched from actual result data — never from order priority.
   const [criticalResults, setCriticalResults] = useState<CriticalResultInfo[]>([]);
   const [ackError, setAckError] = useState<string | null>(null);
-  // Local acknowledged set (optimistic update on success, authoritative state on next fetch)
-  const [acknowledgedOrderIds, setAcknowledgedOrderIds] = useState<Set<string>>(new Set());
+  const [probeError, setProbeError] = useState<string | null>(null);
+  // Server-acknowledged task IDs tracked in session (authoritative on server)
+  const [acknowledgedTaskIds, setAcknowledgedTaskIds] = useState<Set<string>>(new Set());
+  const [, setAckLoadingOrderId] = useState<string | null>(null);
 
   const canOrder = hasPermission(user?.role, 'diagnostic_order:create');
   const mounted = useRef(true);
 
   /**
-   * Probe completed orders for critical results.
+   * Probe completed orders for critical results and attribute authoritative critical-alert tasks.
    * Only orders with status 'completed' can have a result.
-   * Failures are silently skipped — the per-order result endpoint returns 404
-   * when no result has been entered yet.
+   *
+   * Error semantics:
+   * - 404 (NOT_FOUND): Benign — no result entered yet for this order.
+   * - 403 / 500 / network: Service failure — must NOT silently present as "no critical result".
    */
   const probeCriticalResults = useCallback(async (completedOrders: DiagnosticOrderResponse[]) => {
     if (completedOrders.length === 0) {
       setCriticalResults([]);
+      setProbeError(null);
       return;
     }
+
+    // Safely retrieve active user tasks to identify any authoritative critical alert task
+    // assigned to the current authenticated clinician.
+    let userTasks: TaskResponse[] = [];
+    try {
+      const taskRes = await taskService.listTasks({
+        page: 1,
+        pageSize: 50,
+        scope: 'me',
+        taskType: 'critical_alert',
+      });
+      userTasks = taskRes?.data ?? [];
+    } catch {
+      // If task listing fails (e.g. role lacks task:read or network issue),
+      // actions safely degrade to navigation_only.
+      userTasks = [];
+    }
+
     const settled = await Promise.allSettled(
       completedOrders.map(async (order) => {
         const res = await diagnosticsService.getResult(order.id);
@@ -79,20 +119,37 @@ export default function EncounterLabsPage() {
       }),
     );
     if (!mounted.current) return;
+
     const critical: CriticalResultInfo[] = [];
+    let hasServiceFailure = false;
+
     for (const s of settled) {
       if (s.status === 'fulfilled') {
         const { result, orderId } = s.value;
         // ADR-010: isCritical is the server-computed authoritative flag.
         // status === 'critical_flagged' is the matching status enum variant.
-        if (result.isCritical === true || result.status === 'critical_flagged') {
-          critical.push({ orderId, result });
+        if (isCriticalResult(result)) {
+          const matchedTask = matchAuthoritativeTask(orderId, user?.id, userTasks);
+          critical.push({ orderId, result, authoritativeTask: matchedTask });
+        }
+      } else {
+        // Distinguish benign 404 from service/network failure
+        const errorKind = classifyProbeError(s.reason);
+        if (errorKind === 'SERVICE_FAILURE') {
+          hasServiceFailure = true;
         }
       }
-      // Rejected promises (404 = no result yet, 403 = no permission) are ignored.
     }
+
     setCriticalResults(critical);
-  }, []);
+    if (hasServiceFailure) {
+      setProbeError(
+        'Some diagnostic results could not be checked. Please review the diagnostic workspace.',
+      );
+    } else {
+      setProbeError(null);
+    }
+  }, [user?.id]);
 
   useEffect(() => {
     mounted.current = true;
@@ -126,42 +183,26 @@ export default function EncounterLabsPage() {
   }, [encounterId, probeCriticalResults]);
 
   /**
-   * Acknowledge a critical result notification.
+   * Acknowledge a critical result using the server-authoritative task acknowledgment service.
    *
-   * The backend issues a critical-priority task when a critical result is
-   * posted (observed in the existing diagnostics/[orderId]/page.tsx pattern).
-   * Task acknowledgment via taskService.acknowledgeTask is the authoritative
-   * acknowledgment service — consistent with the rest of the production app.
-   *
-   * Because the labs page does not carry task IDs, we acknowledge via the
-   * notification service (PATCH /notifications/:id/acknowledge), which is the
-   * same surface used by the NotificationPanel. The UI updates optimistically,
-   * and the backend remains authoritative on next page load.
-   *
-   * If neither a task ID nor notification ID is available in this context,
-   * we direct the clinician to the full result detail page where the complete
-   * acknowledgment workflow (task + four-eyes verification) is available.
+   * Invariant: A critical result MUST NOT be dismissed locally without confirmed server transition.
+   * If the server call fails, the banner remains visible and an error is shown.
    */
-  const handleAcknowledge = useCallback(async (orderId: string) => {
+  const handleAcknowledge = useCallback(async (orderId: string, taskId: string) => {
     setAckError(null);
+    setAckLoadingOrderId(orderId);
     try {
-      // Optimistic update — treat as acknowledged immediately on the client.
-      // The canonical acknowledgment workflow lives in /diagnostics/:orderId
-      // (task.acknowledgeTask + four-eyes verification). Direct the clinician
-      // there for the full audit trail if a backend acknowledgment ID is needed.
-      setAcknowledgedOrderIds((prev) => new Set([...prev, orderId]));
+      await executeAuthoritativeAcknowledgment(taskId);
+      setAcknowledgedTaskIds((prev) => new Set([...prev, taskId]));
+    } catch (err) {
+      setAckError(
+        (err as Error).message ||
+          'Failed to acknowledge critical result on the server. The result remains unacknowledged.',
+      );
     } finally {
-      // no per-result loading state: full workflow is at /diagnostics/:orderId
+      setAckLoadingOrderId(null);
     }
   }, []);
-
-  /**
-   * Critical results that have not yet been locally acknowledged.
-   * The authoritative acknowledged state is on the server; this is UX-only.
-   */
-  const unacknowledgedCritical = criticalResults.filter(
-    ({ orderId }) => !acknowledgedOrderIds.has(orderId),
-  );
 
   return (
     <AppShell
@@ -180,7 +221,7 @@ export default function EncounterLabsPage() {
           <div style={{ marginBottom: 'var(--space-4)' }}>
             <PatientHeader
               patient={{
-                name: `${encounter.patient.firstName} ${encounter.patient.lastName}`,
+                name: `${encounter.patient.firstName} ${encounter.patient.lastName}`.trim(),
                 mrn: encounter.patient.mrn,
                 age: computeAgeYears(encounter.patient.dateOfBirth) ?? undefined,
                 gender: encounter.patient.gender,
@@ -204,13 +245,21 @@ export default function EncounterLabsPage() {
         {/*
          * CRITICAL RESULT BANNERS — driven exclusively by DiagnosticResultResponse.isCritical
          * (server-computed by ADR-010 deterministic rule evaluator).
-         * One banner per unacknowledged critical result. Order priority is irrelevant here.
+         * Order priority is NEVER inspected here.
+         *
+         * Actions:
+         * 1. Authoritative Task exists for current user:
+         *    - Explicit server acknowledgment via taskService.acknowledgeTask(taskId).
+         *    - Banner remains visible if acknowledgment fails.
+         * 2. No authoritative task exists for current user:
+         *    - Strictly navigation-only ('Review Critical Result' -> /diagnostics/[orderId]).
+         *    - NO local dismiss button is rendered.
          */}
-        {unacknowledgedCritical.map(({ orderId, result }) => {
+        {criticalResults.map(({ orderId, result, authoritativeTask }) => {
           const order = orders.find((o) => o.id === orderId);
           const firstValue = result.resultValues[0];
           const patientName = encounter?.patient
-            ? `${encounter.patient.firstName} ${encounter.patient.lastName}`
+            ? `${encounter.patient.firstName} ${encounter.patient.lastName}`.trim()
             : undefined;
           const snapshot = result.referenceRange as {
             parameters?: Array<{
@@ -229,6 +278,16 @@ export default function EncounterLabsPage() {
               ? `${matchingParam.bounds.normalLow}–${matchingParam.bounds.normalHigh} ${firstValue?.unit ?? ''}`
               : undefined;
 
+          const isAcknowledged =
+            isTaskAcknowledgedOnServer(authoritativeTask) ||
+            (authoritativeTask ? acknowledgedTaskIds.has(authoritativeTask.id) : false);
+
+          const criticalAction = determineCriticalAction({
+            orderId,
+            isCritical: true,
+            authoritativeTaskId: authoritativeTask?.id,
+          });
+
           return (
             <div key={orderId} style={{ marginBottom: 'var(--space-4)' }}>
               <CriticalResultBanner
@@ -239,25 +298,62 @@ export default function EncounterLabsPage() {
                 patientName={patientName}
                 mrn={encounter?.patient?.mrn}
                 referenceRange={refRange}
-                acknowledged={false}
-                onAcknowledge={() => void handleAcknowledge(orderId)}
+                acknowledged={isAcknowledged}
+                onAcknowledge={
+                  criticalAction.type === 'authoritative_acknowledge' && !isAcknowledged
+                    ? () => void handleAcknowledge(orderId, criticalAction.taskId)
+                    : undefined
+                }
                 action={
-                  <RowLink
-                    href={`/diagnostics/${orderId}`}
-                    aria-label={`Open full result for ${order?.testName ?? result.testCode}`}
-                  >
-                    View full result & acknowledge
-                  </RowLink>
+                  criticalAction.type === 'authoritative_acknowledge' ? (
+                    <RowLink
+                      href={criticalAction.reviewHref}
+                      aria-label={`Open full result for ${order?.testName ?? result.testCode}`}
+                    >
+                      {isAcknowledged ? 'View verified result & audit trail' : 'Review Critical Result'}
+                    </RowLink>
+                  ) : (
+                    <RowLink
+                      href={
+                        criticalAction.type === 'navigation_only'
+                          ? criticalAction.href
+                          : `/diagnostics/${orderId}`
+                      }
+                      aria-label={`Review critical result for ${order?.testName ?? result.testCode}`}
+                    >
+                      Review Critical Result
+                    </RowLink>
+                  )
                 }
               />
             </div>
           );
         })}
 
+        {probeError && (
+          <div style={{ marginBottom: 'var(--space-4)' }}>
+            <AlertBanner
+              severity="critical"
+              title="Result Check Warning"
+              dismissible
+              onDismiss={() => setProbeError(null)}
+            >
+              {probeError}
+            </AlertBanner>
+          </div>
+        )}
+
         {ackError && (
-          <AlertBanner severity="critical" title="Acknowledgment failed" dismissible onDismiss={() => setAckError(null)}>
-            {ackError}
-          </AlertBanner>
+          <div style={{ marginBottom: 'var(--space-4)' }}>
+            <AlertBanner
+              severity="critical"
+              title="Acknowledgment failed"
+              dismissible
+              onDismiss={() => setAckError(null)}
+            >
+              {ackError}
+            </AlertBanner>
+          </div>
         )}
 
         {error && (
