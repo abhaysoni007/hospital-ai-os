@@ -23,7 +23,7 @@ export const loginHandler = async (req: Request, res: Response, next: NextFuncti
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
       secure: config.NODE_ENV === 'production',
-      sameSite: 'strict',
+      sameSite: config.NODE_ENV === 'production' ? 'none' : 'lax',
       maxAge: config.JWT_REFRESH_EXPIRATION_DAYS * 24 * 60 * 60 * 1000,
     });
 
@@ -68,7 +68,7 @@ export const refreshHandler = async (req: Request, res: Response, next: NextFunc
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
       secure: config.NODE_ENV === 'production',
-      sameSite: 'strict',
+      sameSite: config.NODE_ENV === 'production' ? 'none' : 'lax',
       maxAge: config.JWT_REFRESH_EXPIRATION_DAYS * 24 * 60 * 60 * 1000,
     });
 
@@ -99,7 +99,7 @@ export const logoutHandler = async (req: Request, res: Response, next: NextFunct
     res.clearCookie('refreshToken', {
       httpOnly: true,
       secure: config.NODE_ENV === 'production',
-      sameSite: 'strict',
+      sameSite: config.NODE_ENV === 'production' ? 'none' : 'lax',
     });
 
     res.json({ data: { success: true } });
