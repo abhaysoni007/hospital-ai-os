@@ -137,7 +137,6 @@ export default function FinalCTA() {
           href="/login"
           data-cursor-label="ENTER"
           onMouseMove={handleMouseMove}
-          onMouseLeave={handleMouseLeave}
           style={{
             display: 'inline-flex',
             alignItems: 'center',
