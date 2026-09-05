@@ -21,9 +21,12 @@ function LoginForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [formErrors, setFormErrors] = useState<{ email?: string; password?: string }>({});
-  const { login, isAuthenticated, isLoading, error, clearError } = useAuth();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { login, isAuthenticated, isLoading: isAuthLoading, error, clearError } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
+
+  const isBusy = isAuthLoading || isSubmitting;
 
   const rawReturnUrl = searchParams?.get('returnUrl');
   const returnUrl =
@@ -62,10 +65,12 @@ function LoginForm() {
       return;
     }
 
+    setIsSubmitting(true);
     try {
       await login({ email, password });
       router.push(returnUrl);
     } catch {
+      setIsSubmitting(false);
       // Handled in AuthContext
     }
   };
@@ -147,7 +152,7 @@ function LoginForm() {
               iconLeft={<Mail size={16} />}
               required
               autoComplete="email"
-              disabled={isLoading}
+              disabled={isBusy}
             />
 
             <PasswordInput
@@ -163,10 +168,10 @@ function LoginForm() {
               iconLeft={<Lock size={16} />}
               required
               autoComplete="current-password"
-              disabled={isLoading}
+              disabled={isBusy}
             />
 
-            <Button type="submit" variant="primary" size="lg" fullWidth isLoading={isLoading}>
+            <Button type="submit" variant="primary" size="lg" fullWidth isLoading={isBusy}>
               Sign in
             </Button>
           </form>
