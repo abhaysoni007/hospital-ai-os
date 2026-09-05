@@ -10,8 +10,8 @@ const configSchema = z.object({
   PORT: z.coerce.number().default(3001),
   API_BASE_URL: z.string().url().default('http://localhost:3001'),
 
-  DATABASE_URL: z.string().url(),
-  REDIS_URL: z.string().url().optional(),
+  DATABASE_URL: z.string().min(1),
+  REDIS_URL: z.string().min(1).optional(),
 
   RATE_LIMIT_WINDOW_MS: z.coerce.number().default(60000),
   RATE_LIMIT_MAX_REQUESTS: z.coerce.number().default(100),
