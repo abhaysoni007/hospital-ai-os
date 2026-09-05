@@ -27,6 +27,7 @@ const CustomCursor = dynamic(() => import('../../components/motion/CustomCursor'
 export default function MedoraLanding() {
   const [loading, setLoading] = useState(true);
   const [mounted, setMounted] = useState(false);
+  const [isNavigating, setIsNavigating] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -34,6 +35,10 @@ export default function MedoraLanding() {
 
   const handleLoadComplete = useCallback(() => {
     setLoading(false);
+  }, []);
+
+  const handleEnter = useCallback(() => {
+    setIsNavigating(true);
   }, []);
 
   return (
@@ -54,7 +59,7 @@ export default function MedoraLanding() {
       {!loading && (
         <SmoothScroll>
           {/* Fixed navigation */}
-          <MedoraNavbar />
+          <MedoraNavbar isLoading={isNavigating} onEnter={handleEnter} />
 
           {/* Main content */}
           <main id="main-content">
@@ -84,7 +89,7 @@ export default function MedoraLanding() {
 
             {/* 09 — Final CTA: cinematic closing */}
             <Suspense fallback={null}>
-              <FinalCTA />
+              <FinalCTA isLoading={isNavigating} onEnter={handleEnter} />
             </Suspense>
           </main>
 

@@ -7,7 +7,12 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
 gsap.registerPlugin(ScrollTrigger);
 
-export default function FinalCTA() {
+interface FinalCTAProps {
+  isLoading?: boolean;
+  onEnter?: () => void;
+}
+
+export default function FinalCTA({ isLoading = false, onEnter }: FinalCTAProps) {
   const sectionRef = useRef<HTMLElement>(null);
   const headRef = useRef<HTMLHeadingElement>(null);
   const ctaRef = useRef<HTMLAnchorElement>(null);
@@ -137,6 +142,17 @@ export default function FinalCTA() {
           href="/login"
           data-cursor-label="ENTER"
           onMouseMove={handleMouseMove}
+          onClick={(e) => {
+            if (isLoading) {
+              e.preventDefault();
+              return;
+            }
+            if (onEnter) {
+              onEnter();
+            }
+          }}
+          className={isLoading ? 'm-btn-loading' : ''}
+          aria-busy={isLoading}
           style={{
             display: 'inline-flex',
             alignItems: 'center',
@@ -151,21 +167,46 @@ export default function FinalCTA() {
             textDecoration: 'none',
             opacity: 0,
             willChange: 'transform',
-            transition: 'background 0.3s, border-color 0.3s, color 0.3s',
-            cursor: 'none',
+            transition: 'background 0.3s, border-color 0.3s, color 0.3s, opacity 0.3s',
+            cursor: isLoading ? 'wait' : 'none',
+            pointerEvents: isLoading ? 'none' : 'auto',
           }}
           onMouseEnter={(e) => {
+            if (isLoading) return;
             (e.currentTarget as HTMLAnchorElement).style.background = 'var(--m-accent-dim)';
             (e.currentTarget as HTMLAnchorElement).style.borderColor = 'var(--m-accent-light)';
           }}
           onMouseLeave={(e) => {
+            if (isLoading) return;
             handleMouseLeave(e);
             (e.currentTarget as HTMLAnchorElement).style.background = 'transparent';
             (e.currentTarget as HTMLAnchorElement).style.borderColor = 'var(--m-accent)';
           }}
         >
-          ENTER MEDORA
-          <span style={{ fontSize: '1.2em' }}>→</span>
+          <span>ENTER MEDORA</span>
+          {isLoading ? (
+            <svg
+              className="m-spin"
+              style={{
+                width: '1.2em',
+                height: '1.2em',
+                flexShrink: 0,
+              }}
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+            </svg>
+          ) : (
+            <span style={{ fontSize: '1.2em', lineHeight: 1 }} aria-hidden="true">
+              →
+            </span>
+          )}
         </Link>
 
         {/* Below CTA: subtle tagline */}

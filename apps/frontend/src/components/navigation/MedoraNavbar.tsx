@@ -14,7 +14,12 @@ const NAV_ITEMS = [
   { num: '06', label: 'CONTACT', href: '#contact' },
 ];
 
-export default function Navbar() {
+interface MedoraNavbarProps {
+  isLoading?: boolean;
+  onEnter?: () => void;
+}
+
+export default function Navbar({ isLoading = false, onEnter }: MedoraNavbarProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const overlayRef = useRef<HTMLDivElement>(null);
@@ -144,77 +149,122 @@ export default function Navbar() {
           MEDORA
         </Link>
 
-        {/* Menu Toggle */}
-        <button
-          onClick={() => setMenuOpen(!menuOpen)}
-          aria-label={menuOpen ? 'Close navigation menu' : 'Open navigation menu'}
-          aria-expanded={menuOpen}
-          style={{
-            fontFamily: 'var(--m-font-label)',
-            fontSize: '0.7rem',
-            fontWeight: 500,
-            letterSpacing: '0.14em',
-            textTransform: 'uppercase',
-            color: 'var(--m-text-secondary)',
-            background: 'none',
-            border: 'none',
-            cursor: 'none',
-            padding: '0.5rem 0',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.75rem',
-            transition: 'color 0.3s',
-          }}
-          onMouseEnter={(e) => {
-            (e.currentTarget as HTMLButtonElement).style.color = 'var(--m-text-primary)';
-          }}
-          onMouseLeave={(e) => {
-            (e.currentTarget as HTMLButtonElement).style.color = 'var(--m-text-secondary)';
-          }}
-        >
-          {/* Hamburger Lines */}
-          <span
+        {/* Right side actions */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'clamp(1rem, 2vw, 1.75rem)' }}>
+          {/* Top ENTER MEDORA CTA Button */}
+          <Link
+            href="/login"
+            data-cursor-label="ENTER"
+            onClick={(e) => {
+              if (isLoading) {
+                e.preventDefault();
+                return;
+              }
+              if (onEnter) {
+                onEnter();
+              }
+            }}
+            className={`m-nav-cta ${isLoading ? 'is-loading' : ''}`}
+            aria-busy={isLoading}
+          >
+            <span>ENTER MEDORA</span>
+            {isLoading ? (
+              <svg
+                className="m-spin"
+                style={{
+                  width: '1em',
+                  height: '1em',
+                  flexShrink: 0,
+                }}
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+              </svg>
+            ) : (
+              <span style={{ fontSize: '1.2em', lineHeight: 1 }} aria-hidden="true">
+                →
+              </span>
+            )}
+          </Link>
+
+          {/* Menu Toggle */}
+          <button
+            onClick={() => setMenuOpen(!menuOpen)}
+            aria-label={menuOpen ? 'Close navigation menu' : 'Open navigation menu'}
+            aria-expanded={menuOpen}
             style={{
+              fontFamily: 'var(--m-font-label)',
+              fontSize: '0.7rem',
+              fontWeight: 500,
+              letterSpacing: '0.14em',
+              textTransform: 'uppercase',
+              color: 'var(--m-text-secondary)',
+              background: 'none',
+              border: 'none',
+              cursor: 'none',
+              padding: '0.5rem 0',
               display: 'flex',
-              flexDirection: 'column',
-              gap: '5px',
+              alignItems: 'center',
+              gap: '0.75rem',
+              transition: 'color 0.3s',
+            }}
+            onMouseEnter={(e) => {
+              (e.currentTarget as HTMLButtonElement).style.color = 'var(--m-text-primary)';
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLButtonElement).style.color = 'var(--m-text-secondary)';
             }}
           >
+            {/* Hamburger Lines */}
             <span
               style={{
-                width: menuOpen ? '20px' : '24px',
-                height: '1px',
-                background: 'currentColor',
-                display: 'block',
-                transition: 'width 0.3s, transform 0.3s',
-                transform: menuOpen ? 'rotate(45deg) translate(4px, 4px)' : 'none',
-                transformOrigin: 'left',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '5px',
               }}
-            />
-            <span
-              style={{
-                width: '24px',
-                height: '1px',
-                background: 'currentColor',
-                display: 'block',
-                transition: 'opacity 0.3s',
-                opacity: menuOpen ? 0 : 1,
-              }}
-            />
-            <span
-              style={{
-                width: menuOpen ? '20px' : '24px',
-                height: '1px',
-                background: 'currentColor',
-                display: 'block',
-                transition: 'width 0.3s, transform 0.3s',
-                transform: menuOpen ? 'rotate(-45deg) translate(4px, -4px)' : 'none',
-                transformOrigin: 'left',
-              }}
-            />
-          </span>
-          {menuOpen ? 'CLOSE' : 'MENU'}
-        </button>
+            >
+              <span
+                style={{
+                  width: menuOpen ? '20px' : '24px',
+                  height: '1px',
+                  background: 'currentColor',
+                  display: 'block',
+                  transition: 'width 0.3s, transform 0.3s',
+                  transform: menuOpen ? 'rotate(45deg) translate(4px, 4px)' : 'none',
+                  transformOrigin: 'left',
+                }}
+              />
+              <span
+                style={{
+                  width: '24px',
+                  height: '1px',
+                  background: 'currentColor',
+                  display: 'block',
+                  transition: 'opacity 0.3s',
+                  opacity: menuOpen ? 0 : 1,
+                }}
+              />
+              <span
+                style={{
+                  width: menuOpen ? '20px' : '24px',
+                  height: '1px',
+                  background: 'currentColor',
+                  display: 'block',
+                  transition: 'width 0.3s, transform 0.3s',
+                  transform: menuOpen ? 'rotate(-45deg) translate(4px, -4px)' : 'none',
+                  transformOrigin: 'left',
+                }}
+              />
+            </span>
+            {menuOpen ? 'CLOSE' : 'MENU'}
+          </button>
+        </div>
       </nav>
 
       {/* Fullscreen Navigation Overlay */}
