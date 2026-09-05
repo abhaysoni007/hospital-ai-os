@@ -193,7 +193,7 @@ export function AppSidebar({
           </div>
           {!isCollapsed && (
             <div className={styles.brandTitles}>
-              <span className={styles.brandTitle}>Hospital AI OS</span>
+              <span className={styles.brandTitle}>Medora</span>
               <span className={styles.brandSubtitle}>
                 {user?.role ? `${ROLE_DISPLAY_NAMES[user.role]} workspace` : 'Clinical OS'}
               </span>

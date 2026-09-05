@@ -31,7 +31,7 @@ export function AccessRestricted({ requiredPermission, className = '' }: AccessR
         <h1 className={styles.title}>Access Restricted</h1>
         <p className={styles.description}>
           Your account does not have the required permissions to view this resource. Access policies
-          in Hospital AI OS are strictly regulated by role-based access control (RBAC).
+          in Medora are strictly regulated by role-based access control (RBAC).
         </p>
 
         {user && (

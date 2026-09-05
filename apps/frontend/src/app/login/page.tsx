@@ -84,13 +84,13 @@ function LoginForm() {
             <div className={styles.brandLogoBox}>
               <HeartPulse size={32} />
             </div>
-            <span className={styles.brandName}>Hospital AI OS</span>
+            <span className={styles.brandName}>Medora</span>
           </div>
 
           <h1 className={styles.brandHeroTitle}>Intelligent operations for modern care.</h1>
 
           <p className={styles.brandHeroSubtitle}>
-            Hospital AI OS provides real-time clinical workflows, automated diagnostic coordination,
+            Medora provides real-time clinical workflows, automated diagnostic coordination,
             and secure AI-assisted chart documentation for authorized healthcare staff.
           </p>
 
@@ -112,7 +112,7 @@ function LoginForm() {
         </div>
 
         <div className={styles.brandFooter}>
-          <span>Hospital AI OS · Every clinical action is audited</span>
+          <span>Medora · Every clinical action is audited</span>
         </div>
       </div>
 

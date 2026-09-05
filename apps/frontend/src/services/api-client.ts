@@ -1,5 +1,5 @@
 /**
- * Hospital AI OS — Frontend Typed API Client
+ * Medora — Frontend Typed API Client
  *
  * Handles HTTP requests, in-memory token injection, and structured error responses.
  * Never writes access tokens or secrets to persistent storage (localStorage / sessionStorage).
@@ -189,7 +189,7 @@ export async function apiClient<T>(endpoint: string, options: RequestOptions = {
     } catch {
       throw new ApiError(0, {
         code: 'NETWORK_ERROR',
-        message: 'Unable to connect to Hospital AI OS server. Please check your network.',
+        message: 'Unable to connect to Medora server. Please check your network.',
       });
     }
 

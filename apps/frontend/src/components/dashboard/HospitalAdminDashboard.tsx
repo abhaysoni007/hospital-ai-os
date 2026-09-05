@@ -209,7 +209,7 @@ export function HospitalAdminDashboard() {
         >
           <div style={{ padding: 'var(--space-3)' }}>
             <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: 'var(--space-2)' }}>
-              Active clinical units in Hospital AI OS:
+              Active clinical units in Medora:
             </p>
             <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '6px' }}>
               {CLINICAL_DEPARTMENTS.map((d) => (
