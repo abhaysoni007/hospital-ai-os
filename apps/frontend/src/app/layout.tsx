@@ -1,6 +1,6 @@
 import React from 'react';
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
+import { Inter, Syne, Space_Grotesk } from 'next/font/google';
 import Script from 'next/script';
 import { AuthProvider } from '../context/AuthContext';
 import { ThemeProvider, THEME_STORAGE_KEY } from '../context/ThemeContext';
@@ -13,10 +13,24 @@ const inter = Inter({
   variable: '--font-inter',
 });
 
+const syne = Syne({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-syne',
+  weight: ['400', '500', '600', '700', '800'],
+});
+
+const spaceGrotesk = Space_Grotesk({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-space-grotesk',
+  weight: ['300', '400', '500', '600', '700'],
+});
+
 export const metadata: Metadata = {
-  title: 'Hospital AI OS — Clinical & Operational Mission Control',
+  title: 'MEDORA — The Intelligent Operating System for Modern Healthcare',
   description:
-    'Enterprise AI Operating System for Hospital Management, Clinical Intelligence, and Telemetry',
+    'MEDORA connects clinical teams, diagnostic infrastructure, operational workflows, and intelligence systems into a unified digital environment.',
 };
 
 /**
@@ -45,7 +59,11 @@ const themeBootstrap = `
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={inter.variable} suppressHydrationWarning>
+    <html
+      lang="en"
+      className={`${inter.variable} ${syne.variable} ${spaceGrotesk.variable}`}
+      suppressHydrationWarning
+    >
       <head>
         <Script id="haios-theme-bootstrap" strategy="beforeInteractive">
           {themeBootstrap}
