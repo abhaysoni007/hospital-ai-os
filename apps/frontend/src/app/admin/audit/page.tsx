@@ -36,7 +36,6 @@ import {
   truncateHash,
   sanitizeActionDetail,
   type AuditCategory,
-  type AuditSeverity,
 } from '../../../utils/audit-helpers';
 import styles from './audit.module.css';
 
