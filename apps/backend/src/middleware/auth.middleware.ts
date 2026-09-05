@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { config } from '../config';
-import { AuthenticatedPrincipal, resolveKeyPath } from '../modules/auth/auth.service';
+import { AuthenticatedPrincipal, resolveKeyPath, formatAsPem } from '../modules/auth/auth.service';
 import fs from 'fs';
 
 /* eslint-disable @typescript-eslint/no-namespace */
@@ -37,7 +37,8 @@ export const authMiddleware = (req: Request, res: Response, next: NextFunction) 
       return;
     }
 
-    const publicKey = fs.readFileSync(keyPath, 'utf-8');
+    const rawPublicKey = fs.readFileSync(keyPath, 'utf-8');
+    const publicKey = formatAsPem(rawPublicKey, 'PUBLIC');
 
     // Strict RS256 algorithm enforcement
     const decoded = jwt.verify(token, publicKey, { algorithms: ['RS256'] }) as jwt.JwtPayload;

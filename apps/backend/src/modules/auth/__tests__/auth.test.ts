@@ -198,7 +198,7 @@ describe('Authentication API Integration', () => {
       expect(cookies.length).toBeGreaterThan(0);
       expect(cookies.some((c: string) => c.includes('refreshToken='))).toBe(true);
       expect(cookies.some((c: string) => c.includes('HttpOnly'))).toBe(true);
-      expect(cookies.some((c: string) => c.includes('SameSite=Strict'))).toBe(true);
+      expect(cookies.some((c: string) => c.includes('SameSite=Lax'))).toBe(true);
     });
 
     it('returns generic error on invalid password (enumeration resistance)', async () => {

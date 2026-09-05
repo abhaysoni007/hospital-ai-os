@@ -30,13 +30,22 @@ export function resolveKeyPath(configuredPath: string): string {
   return fromCwd;
 }
 
+export function formatAsPem(key: string, type: 'PRIVATE' | 'PUBLIC'): string {
+  const trimmed = key.trim();
+  if (trimmed.includes('-----BEGIN')) return trimmed;
+  const clean = trimmed.replace(/\s+/g, '');
+  const chunks = clean.match(/.{1,64}/g) || [];
+  return `-----BEGIN ${type} KEY-----\n${chunks.join('\n')}\n-----END ${type} KEY-----\n`;
+}
+
 export class AuthService {
   private static parsePrivateKey(): string {
     const keyPath = resolveKeyPath(config.JWT_PRIVATE_KEY_PATH);
     if (!fs.existsSync(keyPath)) {
       throw new Error(`JWT private key file not found at: ${config.JWT_PRIVATE_KEY_PATH}`);
     }
-    return fs.readFileSync(keyPath, 'utf-8');
+    const raw = fs.readFileSync(keyPath, 'utf-8');
+    return formatAsPem(raw, 'PRIVATE');
   }
 
   static generateAccessToken(principal: AuthenticatedPrincipal): string {
