@@ -28,7 +28,7 @@ export const signalInputSchema = z.object({
   signal_type: signalTypeEnumSchema,
   severity: signalSeverityEnumSchema,
   age_minutes: z.number().min(0),
-  metadata: z.record(z.any()).default({}), // Keep it minimal, zero-phi
+  metadata: z.record(z.string(), z.any()).default({}), // Keep it minimal, zero-phi
 });
 
 export const operationalFeaturesInputSchema = z.object({
@@ -85,9 +85,18 @@ export class HospitalAnalyticsClient {
   private baseUrl: string;
   private readonly timeoutMs = 3000;
 
-  constructor() {
-    this.baseUrl = process.env.HOSPITAL_ANALYTICS_URL || 'http://localhost:8001';
-    // Ensure no trailing slash
+  constructor(baseUrl?: string) {
+    const configured = baseUrl !== undefined
+      ? baseUrl
+      : (process.env.HOSPITAL_ANALYTICS_URL ?? 'http://localhost:8001');
+    this.baseUrl = (configured || '').trim();
+    if (this.baseUrl.endsWith('/')) {
+      this.baseUrl = this.baseUrl.slice(0, -1);
+    }
+  }
+
+  setBaseUrl(url: string) {
+    this.baseUrl = (url || '').trim();
     if (this.baseUrl.endsWith('/')) {
       this.baseUrl = this.baseUrl.slice(0, -1);
     }
@@ -95,15 +104,50 @@ export class HospitalAnalyticsClient {
 
   /**
    * Safely calls Python Analytics Sidecar.
+   * Supports both object-based AnalyzeRequest and (signals, operationalFeatures) arguments.
    * Enforces 3000ms timeout and catches all errors to never throw in main workflow.
    * Performs Zod validation of input and output.
    */
-  async analyze(request: AnalyzeRequest): Promise<AnalyzeResponse | null> {
-    try {
-      // 1. Validate request (ensures zero-PHI at the boundary)
-      const validatedRequest = analyzeRequestSchema.parse(request);
+  async analyze(
+    requestOrSignals: AnalyzeRequest | SignalInput[],
+    operationalFeatures?: OperationalFeaturesInput,
+    options?: { analysisId?: string; correlationId?: string; scope?: string; departmentId?: string | null }
+  ): Promise<AnalyzeResponse | null> {
+    const correlationId = Array.isArray(requestOrSignals)
+      ? options?.correlationId
+      : requestOrSignals?.correlation_id;
 
-      // 2. Timeout controller
+    if (!this.baseUrl) {
+      logger.warn({ correlationId }, 'HospitalAnalyticsClient: missing URL configuration, skipping sidecar analysis');
+      return null;
+    }
+
+    try {
+      let rawRequest: AnalyzeRequest;
+      if (Array.isArray(requestOrSignals)) {
+        rawRequest = {
+          analysis_id: options?.analysisId,
+          correlation_id: options?.correlationId,
+          scope: options?.scope || 'department',
+          department_id: options?.departmentId,
+          signals: requestOrSignals,
+          operational_features: operationalFeatures || {
+            active_encounters: 0,
+            pending_diagnostic_orders: 0,
+            unacknowledged_critical_results: 0,
+            encounters_without_clinical_record: 0,
+            stalled_orders_over_sla: 0,
+            average_pending_age_minutes: 0,
+          },
+        };
+      } else {
+        rawRequest = requestOrSignals;
+      }
+
+      // 1. Validate request (ensures zero-PHI at the boundary)
+      const validatedRequest = analyzeRequestSchema.parse(rawRequest);
+
+      // 2. Timeout controller (hard 3000ms SLA)
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), this.timeoutMs);
 
@@ -119,7 +163,10 @@ export class HospitalAnalyticsClient {
         });
 
         if (!response.ok) {
-          logger.warn(`HospitalAnalyticsClient: non-2xx response ${response.status}`, { correlationId: request.correlation_id });
+          logger.warn(
+            { correlationId, status: response.status },
+            'HospitalAnalyticsClient: non-2xx response from sidecar',
+          );
           return null;
         }
 
@@ -133,15 +180,14 @@ export class HospitalAnalyticsClient {
       }
     } catch (error: any) {
       if (error.name === 'AbortError') {
-        logger.warn('HospitalAnalyticsClient: timeout after 3000ms', { correlationId: request.correlation_id });
+        logger.warn({ correlationId }, 'HospitalAnalyticsClient: timeout after 3000ms');
       } else if (error instanceof z.ZodError) {
-        logger.warn('HospitalAnalyticsClient: schema validation failed', { 
-          correlationId: request.correlation_id, 
-        });
+        logger.warn({ correlationId }, 'HospitalAnalyticsClient: schema validation failed');
       } else {
-        logger.warn(`HospitalAnalyticsClient: unhandled fetch error: ${error?.message || 'unknown'}`, { 
-          correlationId: request.correlation_id 
-        });
+        logger.warn(
+          { correlationId, error: error?.message || 'unknown' },
+          'HospitalAnalyticsClient: unhandled fetch error',
+        );
       }
       return null;
     }

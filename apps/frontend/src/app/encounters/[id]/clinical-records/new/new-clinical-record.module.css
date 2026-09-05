@@ -3,6 +3,19 @@
   flex-direction: column;
   gap: var(--space-5);
   width: 100%;
+  max-width: 960px;
+  animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .fieldGroup {
@@ -11,28 +24,32 @@
 
 .label {
   display: block;
-  font-size: var(--font-size-body);
-  font-weight: 500;
+  font-size: var(--font-size-xs);
+  font-family: var(--font-mono, monospace);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
   color: var(--text-secondary);
-  margin-bottom: var(--space-1);
+  margin-bottom: var(--space-2);
 }
 
 .textarea {
   width: 100%;
   padding: var(--space-3);
-  border: 1px solid var(--border-strong);
+  border: 1px solid var(--hud-card-border);
   border-radius: var(--radius-md);
   font-size: var(--font-size-body);
   font-family: inherit;
   outline: none;
   resize: vertical;
-  background: var(--bg-surface);
+  background: var(--hud-card-bg);
   color: var(--text-primary);
+  transition: all var(--duration-fast) ease;
 }
 
 .textarea:focus {
-  border-color: var(--color-primary-500);
-  box-shadow: 0 0 0 2px var(--color-primary-100);
+  border-color: var(--hud-cyan);
+  box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.2);
 }
 
 .textarea:focus-visible {
@@ -43,23 +60,33 @@
 .input {
   width: 100%;
   padding: var(--space-2) var(--space-3);
-  border: 1px solid var(--border-strong);
+  border: 1px solid var(--hud-card-border);
   border-radius: var(--radius-md);
   font-size: var(--font-size-body);
   outline: none;
-  background: var(--bg-surface);
+  background: var(--hud-card-bg);
   color: var(--text-primary);
+  transition: all var(--duration-fast) ease;
 }
 
 .input:focus {
-  border-color: var(--color-primary-500);
-  box-shadow: 0 0 0 2px var(--color-primary-100);
+  border-color: var(--hud-cyan);
+  box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.2);
 }
 
 .vitalsGrid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: var(--space-4);
+  background: rgba(0, 0, 0, 0.02);
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--hud-card-border);
+}
+
+[data-theme='dark'] .vitalsGrid,
+.dark .vitalsGrid {
+  background: rgba(255, 255, 255, 0.02);
 }
 
 .mt {
@@ -69,8 +96,9 @@
 .fieldError {
   display: block;
   margin: 0 0 var(--space-3);
-  font-size: var(--font-size-body);
-  color: var(--color-danger-text);
+  font-size: var(--font-size-body-sm);
+  color: var(--hud-rose);
+  font-family: var(--font-mono, monospace);
 }
 
 .actions {
@@ -79,5 +107,5 @@
   gap: var(--space-3);
   margin-top: var(--space-4);
   padding-top: var(--space-4);
-  border-top: 1px solid var(--border-subtle);
+  border-top: 1px solid var(--hud-card-border);
 }

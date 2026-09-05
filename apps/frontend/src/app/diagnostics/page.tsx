@@ -113,6 +113,45 @@ export default function DiagnosticsQueuePage() {
           }
         />
 
+        <div className={styles.statGrid}>
+          <div className={`${styles.statCard} ${statCount > 0 ? styles.statCardStat : ''}`}>
+            <div className={styles.statLabel}>
+              <span className="tacticalDot danger" />
+              STAT Radar
+            </div>
+            <div className={`${styles.statVal} ${statCount > 0 ? styles.statValDanger : ''}`}>
+              {statCount}
+            </div>
+          </div>
+          <div className={styles.statCard}>
+            <div className={styles.statLabel}>
+              <span className="tacticalDot warning" />
+              Awaiting Collection
+            </div>
+            <div className={`${styles.statVal} ${styles.statValWarn}`}>
+              {orders.filter((o) => o.status === 'ordered').length}
+            </div>
+          </div>
+          <div className={styles.statCard}>
+            <div className={styles.statLabel}>
+              <span className="tacticalDot cyan" />
+              In Processing
+            </div>
+            <div className={`${styles.statVal} ${styles.statValCyan}`}>
+              {orders.filter((o) => o.status === 'in_progress' || o.status === 'sample_collected').length}
+            </div>
+          </div>
+          <div className={styles.statCard}>
+            <div className={styles.statLabel}>
+              <span className="tacticalDot success" />
+              Completed Total
+            </div>
+            <div className={`${styles.statVal} ${styles.statValSuccess}`}>
+              {orders.filter((o) => o.status === 'completed').length}
+            </div>
+          </div>
+        </div>
+
         <div className={styles.filters}>
           <Select
             id="dx-status"

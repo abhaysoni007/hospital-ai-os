@@ -3,21 +3,122 @@
   flex-direction: column;
   gap: var(--space-5);
   width: 100%;
+  animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Tactical Task Metric Grid */
+.statGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-3);
+  margin-bottom: var(--space-2);
+}
+
+@media (max-width: 900px) {
+  .statGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 500px) {
+  .statGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.statCard {
+  background: var(--hud-card-bg);
+  border: 1px solid var(--hud-card-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  box-shadow: var(--shadow-sm);
+  transition: all var(--duration-fast) ease;
+}
+
+.statCard:hover {
+  border-color: var(--hud-cyan);
+  transform: translateY(-1px);
+}
+
+.statCardCritical {
+  border-color: rgba(239, 68, 68, 0.4);
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.08) 0%, var(--hud-card-bg) 100%);
+}
+
+.statCardCritical:hover {
+  border-color: var(--hud-rose);
+  box-shadow: 0 0 16px rgba(239, 68, 68, 0.2);
+}
+
+.statLabel {
+  font-size: 11px;
+  font-family: var(--font-mono, monospace);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.statVal {
+  font-size: 1.75rem;
+  font-family: var(--font-mono, monospace);
+  font-weight: 700;
+  line-height: 1.1;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.statValRose {
+  color: var(--hud-rose);
+}
+
+.statValAmber {
+  color: var(--hud-amber);
+}
+
+.statValCyan {
+  color: var(--hud-cyan);
+}
+
+.statValEmerald {
+  color: var(--hud-emerald);
 }
 
 .headerControls {
   display: flex;
   gap: var(--space-4);
-  align-items: flex-end;
+  align-items: center;
   flex-wrap: wrap;
+  padding: var(--space-3) var(--space-4);
+  background: var(--hud-card-bg);
+  border: 1px solid var(--hud-card-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
 }
 
 .scopeTabs {
-  margin-bottom: 2px;
+  margin-bottom: 0;
 }
 
 .statusSelect {
-  width: 200px;
+  width: 220px;
 }
 
 .titleCell {
@@ -28,10 +129,21 @@
   min-width: 0;
 }
 
-.titleDescription {
-  margin-top: 2px;
+.titleCell strong {
   font-size: var(--font-size-body);
-  color: var(--text-secondary);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.titleDescription {
+  margin-top: 3px;
+  font-size: 11px;
+  font-family: var(--font-mono, monospace);
+  color: var(--text-tertiary);
+  max-width: 480px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .rowActions {
@@ -50,7 +162,7 @@
 
 .dialogNote {
   margin: 0;
-  font-size: var(--font-size-body);
+  font-size: var(--font-size-body-sm);
   color: var(--text-secondary);
 }
 
@@ -68,7 +180,8 @@
 .tableWrapper {
   padding: 0;
   overflow: hidden;
-  background-color: var(--bg-surface);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
+  background-color: var(--hud-card-bg);
+  border: 1px solid var(--hud-card-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
 }

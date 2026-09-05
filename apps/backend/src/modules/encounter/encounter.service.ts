@@ -59,7 +59,7 @@ export class EncounterService {
           patientId: payload.patientId,
           doctorId: payload.doctorId,
           departmentId: payload.departmentId,
-          encounterType: payload.encounterType,
+          encounterType: payload.encounterType as any,
           chiefComplaint: payload.chiefComplaint,
           status: 'registered',
           createdBy: creatorId,

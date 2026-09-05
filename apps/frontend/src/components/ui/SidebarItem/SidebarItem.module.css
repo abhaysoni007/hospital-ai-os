@@ -24,20 +24,22 @@
 
 .active {
   background-color: var(--sidebar-accent);
-  color: var(--sidebar-accent-foreground) !important;
+  color: #38bdf8 !important;
   font-weight: 600;
   opacity: 1;
+  box-shadow: inset 0 0 16px rgba(56, 189, 248, 0.12);
 }
 
 .active::before {
   content: '';
   position: absolute;
-  left: -8px;
+  left: 0;
   top: 6px;
   bottom: 6px;
   width: 3px;
-  background-color: var(--sidebar-primary);
+  background-color: #38bdf8;
   border-radius: 0 var(--radius-xs) var(--radius-xs) 0;
+  box-shadow: 0 0 8px #38bdf8;
 }
 
 .pending {

@@ -161,11 +161,12 @@ export function SignalStream({
           <input
             type="text"
             className={styles.searchInput}
-            placeholder="Search by title, reason, or record ID..."
+            placeholder="Search signals, reasons, or records..."
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
             aria-label="Filter detected signals"
           />
+          <span className={styles.searchShortcutHint} aria-hidden="true">/</span>
         </div>
 
         <div className={styles.categoryPills} role="tablist" aria-label="Signal Categories">
@@ -233,9 +234,21 @@ export function SignalStream({
                 id={`signal-card-${signal.signalId}`}
               >
                 <div className={styles.signalCardTop}>
-                  <Badge variant={getSeverityBadgeVariant(signal.severity)}>
-                    {signal.severity}
-                  </Badge>
+                  <div className="flex items-center gap-1.5">
+                    <span
+                      className={`w-1.5 h-1.5 rounded-full ${
+                        signal.severity === 'CRITICAL'
+                          ? 'bg-rose-500 animate-pulse'
+                          : signal.severity === 'HIGH'
+                            ? 'bg-amber-500'
+                            : 'bg-sky-500'
+                      }`}
+                      aria-hidden="true"
+                    />
+                    <Badge variant={getSeverityBadgeVariant(signal.severity)}>
+                      {signal.severity}
+                    </Badge>
+                  </div>
                   <span className="text-xs text-muted-foreground font-mono">
                     {formatRelativeTime(signal.detectedAt)}
                   </span>
@@ -247,10 +260,10 @@ export function SignalStream({
                 <div className={styles.signalCardFooter}>
                   <div className={styles.signalCardPills}>
                     <span
-                      className="inline-flex items-center gap-1 font-mono text-[11px] text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded"
+                      className="inline-flex items-center gap-1 font-mono text-[11px] text-muted-foreground bg-muted/60 px-1.5 py-0.5 rounded border border-border/40"
                       title={`${signal.evidenceRefs.length} real evidence records cited`}
                     >
-                      <Database size={11} aria-hidden="true" />
+                      <Database size={10} aria-hidden="true" />
                       <span>{signal.evidenceRefs.length} cited</span>
                     </span>
 
@@ -263,7 +276,7 @@ export function SignalStream({
                     )}
                   </div>
 
-                  <span className="text-[11px] text-muted-foreground font-mono">
+                  <span className="text-[10px] text-muted-foreground font-mono uppercase tracking-wider font-semibold">
                     {signal.signalType === 'PENDING_DIAGNOSTIC_RESULT'
                       ? 'DIAGNOSTIC'
                       : signal.signalType === 'CRITICAL_RESULT_UNACKNOWLEDGED'

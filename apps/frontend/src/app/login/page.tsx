@@ -171,6 +171,53 @@ function LoginForm() {
             </Button>
           </form>
 
+          {/* Tactical Quick Role Switcher for Demo/Dev */}
+          <div className={styles.quickRolesWrap}>
+            <span className={styles.quickRolesLabel}>Quick Demo Role Clearance</span>
+            <div className={styles.quickRolesList}>
+              <button
+                type="button"
+                className={styles.quickRoleBtn}
+                onClick={() => {
+                  setEmail('demo.physician@hospital.test');
+                  setPassword('DemoPhys#2026!');
+                }}
+              >
+                <span>Attending Physician</span>
+              </button>
+              <button
+                type="button"
+                className={styles.quickRoleBtn}
+                onClick={() => {
+                  setEmail('demo.admin@hospital.test');
+                  setPassword('DemoAdm#2026!');
+                }}
+              >
+                <span>Hospital Admin</span>
+              </button>
+              <button
+                type="button"
+                className={styles.quickRoleBtn}
+                onClick={() => {
+                  setEmail('demo.nurse@hospital.test');
+                  setPassword('DemoNurs#2026!');
+                }}
+              >
+                <span>Registered Nurse</span>
+              </button>
+              <button
+                type="button"
+                className={styles.quickRoleBtn}
+                onClick={() => {
+                  setEmail('demo.labtech@hospital.test');
+                  setPassword('DemoLab#2026!');
+                }}
+              >
+                <span>Lab Technician</span>
+              </button>
+            </div>
+          </div>
+
           <div className={styles.securityNotice}>
             <Lock size={14} className={styles.securityNoticeIcon} />
             <p>

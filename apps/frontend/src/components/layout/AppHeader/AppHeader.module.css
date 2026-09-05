@@ -1,7 +1,8 @@
 .header {
   height: var(--header-height);
-  background-color: var(--bg-surface);
-  border-bottom: 1px solid var(--border-subtle);
+  background-color: var(--hud-card-bg);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--hud-card-border);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -9,6 +10,18 @@
   position: sticky;
   top: 0;
   z-index: var(--z-sticky);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+}
+
+.header::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--hud-cyan), transparent);
+  opacity: 0.7;
 }
 
 .leftSection {
@@ -35,7 +48,7 @@
 }
 
 .mobileMenuButton:hover {
-  background-color: var(--bg-subtle);
+  background-color: var(--hud-card-subtle);
   color: var(--text-primary);
 }
 
@@ -50,6 +63,8 @@
   align-items: center;
   gap: var(--space-2);
   font-size: var(--font-size-sm);
+  font-family: var(--font-family-mono);
+  letter-spacing: 0.02em;
   list-style: none;
   min-width: 0;
   overflow: hidden;
@@ -64,15 +79,17 @@
 
 .breadcrumbSeparator {
   color: var(--text-tertiary);
+  opacity: 0.6;
 }
 
 .breadcrumbItem {
   color: var(--text-secondary);
+  transition: color var(--duration-fast) var(--ease-standard);
 }
 
 .breadcrumbActive {
-  color: var(--text-primary);
-  font-weight: 600;
+  color: var(--hud-cyan);
+  font-weight: 700;
 }
 
 .rightSection {
@@ -85,8 +102,8 @@
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  background-color: var(--bg-subtle);
-  border: 1px solid var(--border-subtle);
+  background-color: var(--hud-card-subtle);
+  border: 1px solid var(--hud-card-border);
   border-radius: var(--radius-md);
   padding: 6px var(--space-3);
   font-size: var(--font-size-sm);
@@ -95,17 +112,19 @@
   transition:
     background-color var(--duration-fast) var(--ease-standard),
     border-color var(--duration-fast) var(--ease-standard),
-    color var(--duration-fast) var(--ease-standard);
+    color var(--duration-fast) var(--ease-standard),
+    box-shadow var(--duration-fast) var(--ease-standard);
 }
 
 .searchTrigger:hover {
-  background-color: var(--bg-surface);
-  border-color: var(--border-strong);
+  background-color: var(--hud-card-elevated);
+  border-color: var(--hud-card-border-focus);
   color: var(--text-primary);
+  box-shadow: 0 0 12px var(--hud-cyan-glow);
 }
 
 .searchIcon {
-  color: var(--text-tertiary);
+  color: var(--hud-cyan);
   flex-shrink: 0;
 }
 
@@ -115,16 +134,18 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  font-size: 0.8125rem;
 }
 
 .searchKbd {
   font-family: var(--font-family-mono);
-  font-size: var(--font-size-caption);
-  background-color: var(--bg-surface);
-  border: 1px solid var(--border-strong);
-  padding: 1px 5px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  background-color: var(--hud-card-bg);
+  border: 1px solid var(--hud-card-border);
+  padding: 1px 6px;
   border-radius: var(--radius-xs);
-  color: var(--text-tertiary);
+  color: var(--hud-cyan);
 }
 
 /* Compact search entry for small viewports (trigger row collapses). */

@@ -1,27 +1,296 @@
+/* =========================================================================
+   Hospital AI OS — Encounters Command Center
+   Tactical Healthcare HUD & Queue Telemetry
+   ========================================================================= */
+
 .container {
   display: flex;
   flex-direction: column;
-  gap: var(--space-5);
+  gap: 1.25rem;
+  width: 100%;
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+/* --- Header HUD Bar --- */
+.headerCard {
+  background: var(--hud-card-bg);
+  border: 1px solid var(--hud-card-border);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem 1.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  box-shadow: var(--hud-card-shadow);
+  position: relative;
+  overflow: hidden;
+}
+
+.headerCard::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--hud-cyan), var(--hud-emerald), var(--hud-amber));
+  opacity: 0.9;
+}
+
+@media (min-width: 1024px) {
+  .headerCard {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+  }
+}
+
+.headerTitles {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.titleRow {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.titleIcon {
+  color: #ffffff;
+  background: linear-gradient(135deg, var(--hud-cyan), #2563eb);
+  padding: 0.5rem;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 10px var(--hud-cyan-glow);
+}
+
+:global([data-theme='dark']) .titleIcon,
+:global(.dark) .titleIcon {
+  background: linear-gradient(135deg, #0284c7, #38bdf8);
+  color: #070a13;
+  box-shadow: 0 0 16px var(--hud-cyan-glow);
+}
+
+.title {
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--text-primary);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.versionTag {
+  font-family: var(--font-family-mono);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  padding: 0.2rem 0.6rem;
+  border-radius: var(--radius-xs);
+  background: var(--hud-card-subtle);
+  border: 1px solid var(--hud-card-border);
+  color: var(--text-secondary);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.subtitle {
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+  margin: 0;
+  max-width: 650px;
+  line-height: 1.45;
+}
+
+/* --- Telemetry HUD Metrics Grid --- */
+.metricsGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+}
+
+@media (min-width: 1024px) {
+  .metricsGrid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.metricCard {
+  background: var(--hud-card-bg);
+  border: 1px solid var(--hud-card-border);
+  border-radius: var(--radius-md);
+  padding: 0.85rem 1.15rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  box-shadow: var(--hud-card-shadow);
+  transition: all var(--duration-fast) var(--ease-standard);
+  position: relative;
+  overflow: hidden;
+  text-align: left;
+}
+
+.metricCard::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 3px;
+  background: transparent;
+  transition: background 0.15s ease;
+}
+
+.metricCard:hover {
+  border-color: var(--hud-card-border-focus);
+  transform: translateY(-1px);
+}
+
+.metricActive::before { background: var(--hud-cyan); }
+.metricRegistered::before { background: var(--hud-amber); }
+.metricDischarge::before { background: var(--hud-emerald); }
+.metricTotal::before { background: var(--border-strong); }
+
+.metricLabel {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-tertiary);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.metricValue {
+  font-size: 1.65rem;
+  font-weight: 800;
+  font-family: var(--font-family-mono);
+  letter-spacing: -0.04em;
+  color: var(--text-primary);
+  line-height: 1.1;
+}
+
+.metricHint {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+}
+
+/* --- Controls & Filter HUD --- */
+.controlRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.filterPills {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.filterPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-family: var(--font-family-mono);
+  background: var(--hud-card-bg);
+  border: 1px solid var(--hud-card-border);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-standard);
+}
+
+.filterPill:hover {
+  border-color: var(--hud-card-border-focus);
+  color: var(--text-primary);
+}
+
+.filterPillActive {
+  background: var(--hud-cyan-bg);
+  border-color: var(--hud-cyan-border);
+  color: var(--hud-cyan);
+  box-shadow: 0 0 10px var(--hud-cyan-glow);
+}
+
+.filterCount {
+  font-size: 0.6875rem;
+  padding: 0.1rem 0.35rem;
+  border-radius: var(--radius-xs);
+  background: var(--hud-card-subtle);
+  border: 1px solid var(--hud-card-border);
 }
 
 .resultNote {
-  font-size: var(--font-size-sm);
+  font-size: 0.75rem;
+  font-family: var(--font-family-mono);
   color: var(--text-tertiary);
-  margin-bottom: var(--space-2);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .statusSelect {
-  min-width: 200px;
+  min-width: 220px;
 }
 
 .capitalize {
   text-transform: capitalize;
 }
 
+/* --- Table Card Wrapper --- */
 .tableWrapper {
   padding: 0;
   overflow: hidden;
-  background-color: var(--bg-surface);
-  border: 1px solid var(--border-subtle);
+  background-color: var(--hud-card-bg);
+  border: 1px solid var(--hud-card-border);
   border-radius: var(--radius-lg);
+  box-shadow: var(--hud-card-shadow);
+  position: relative;
+}
+
+.tableWrapper::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--hud-cyan), transparent);
+  opacity: 0.75;
+}
+
+.openButton {
+  font-family: var(--font-family-mono);
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.3rem 0.75rem;
+  border-radius: var(--radius-sm);
+  background: var(--hud-card-subtle);
+  border: 1px solid var(--hud-card-border);
+  color: var(--hud-cyan);
+  transition: all var(--duration-fast) var(--ease-standard);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.openButton:hover {
+  background: var(--hud-cyan);
+  color: #ffffff;
+  border-color: var(--hud-cyan);
+  box-shadow: 0 0 12px var(--hud-cyan-glow);
 }

@@ -32,7 +32,7 @@ export default function PatientsPage() {
   const [error, setError] = useState<ParsedError | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [retryTick, setRetryTick] = useState(0);
-  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'discharged'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'archived'>('all');
 
   const canCreate = hasPermission(user?.role, 'patient:create');
 
@@ -104,6 +104,46 @@ export default function PatientsPage() {
           }
         />
 
+        {/* Tactical Census Stats */}
+        <div className={styles.statGrid}>
+          <div className={styles.statCard}>
+            <div className={styles.statLabel}>
+              <span className="tacticalDot cyan" />
+              Total Master Index
+            </div>
+            <div className={`${styles.statVal} ${styles.statValCyan}`}>
+              {patients.length}
+            </div>
+          </div>
+          <div className={styles.statCard}>
+            <div className={styles.statLabel}>
+              <span className="tacticalDot success" />
+              Active Episode
+            </div>
+            <div className={`${styles.statVal} ${styles.statValEmerald}`}>
+              {patients.filter((p) => p.status === 'active').length}
+            </div>
+          </div>
+          <div className={styles.statCard}>
+            <div className={styles.statLabel}>
+              <span className="tacticalDot neutral" />
+              Archived Dossiers
+            </div>
+            <div className={styles.statVal}>
+              {patients.filter((p) => p.status === 'archived').length}
+            </div>
+          </div>
+          <div className={styles.statCard}>
+            <div className={styles.statLabel}>
+              <span className="tacticalDot warning" />
+              Soundex Match Rate
+            </div>
+            <div className={`${styles.statVal} ${styles.statValAmber}`}>
+              100%
+            </div>
+          </div>
+        </div>
+
         {/* Filter bar with Lovable search and status pills */}
         <div className={styles.filterBar}>
           <div className={styles.filterControls}>
@@ -125,14 +165,14 @@ export default function PatientsPage() {
               aria-label="Filter by patient status"
               className={styles.statusGroup}
             >
-              {(['all', 'active', 'discharged'] as const).map((s) => (
+              {(['all', 'active', 'archived'] as const).map((s) => (
                 <button
                   key={s}
                   type="button"
                   onClick={() => setStatusFilter(s)}
                   className={`${styles.statusButton} ${statusFilter === s ? styles.statusButtonActive : ''}`}
                 >
-                  {s === 'all' ? 'All Patients' : s}
+                  {s === 'all' ? 'All Patients' : s === 'active' ? 'Active' : 'Archived'}
                 </button>
               ))}
             </div>

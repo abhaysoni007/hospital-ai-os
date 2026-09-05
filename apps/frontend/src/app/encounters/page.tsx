@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { Stethoscope } from 'lucide-react';
 import { AppShell } from '../../components/layout/AppShell/AppShell';
 import { Select } from '../../components/ui/Input/Select';
-import { PageHeader } from '../../components/ui/PageHeader/PageHeader';
 import { EmptyState } from '../../components/ui/EmptyState/EmptyState';
 import { ErrorState } from '../../components/ui/ErrorState/ErrorState';
 import {
@@ -57,13 +56,32 @@ export default function EncountersPage() {
     void fetchEncounters();
   }, [fetchEncounters]);
 
+  const activeCount = encounters.filter((e) => e.status === 'active').length;
+  const registeredCount = encounters.filter((e) => e.status === 'registered').length;
+  const dischargeCount = encounters.filter((e) => e.status === 'discharge_initiated').length;
+  const totalCount = encounters.length;
+
   return (
     <AppShell breadcrumbs={['Operations', 'Encounters']} requiredPermission="encounter:read">
       <div className={styles.container}>
-        <PageHeader
-          title="Encounters"
-          description="Every consultation begins here — check-in creates an encounter, activation starts the clinical work."
-          meta={
+        {/* Tactical Header HUD */}
+        <div className={styles.headerCard}>
+          <div className={styles.headerTitles}>
+            <div className={styles.titleRow}>
+              <span className={styles.titleIcon} aria-hidden="true">
+                <Stethoscope size={20} />
+              </span>
+              <h1 className={styles.title}>
+                <span>Clinical Encounters</span>
+                <span className={styles.versionTag}>LIVE QUEUE</span>
+              </h1>
+            </div>
+            <p className={styles.subtitle}>
+              Every consultation begins here — check-in creates an encounter, activation starts the clinical work.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3">
             <Select
               id="status"
               label="Filter by status"
@@ -79,15 +97,78 @@ export default function EncountersPage() {
               ]}
               className={styles.statusSelect}
             />
-          }
-        />
+          </div>
+        </div>
 
-        {!loading && !error && encounters.length > 0 && (
-          <p className={styles.resultNote} aria-live="polite">
-            {encounters.length} encounter{encounters.length === 1 ? '' : 's'}
-            {status ? ' matching this filter' : ''}
-          </p>
-        )}
+        {/* Tactical Metrics Grid */}
+        <div className={styles.metricsGrid} role="region" aria-label="Encounter Queue Metrics">
+          <div className={`${styles.metricCard} ${styles.metricActive}`}>
+            <div className={styles.metricLabel}>
+              <span>Active Consultations</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-sky-500 animate-pulse" aria-hidden="true" />
+            </div>
+            <div className={styles.metricValue}>{activeCount}</div>
+            <div className={styles.metricHint}>Under active clinical care</div>
+          </div>
+
+          <div className={`${styles.metricCard} ${styles.metricRegistered}`}>
+            <div className={styles.metricLabel}>
+              <span>Awaiting Triage</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-500" aria-hidden="true" />
+            </div>
+            <div className={styles.metricValue}>{registeredCount}</div>
+            <div className={styles.metricHint}>Registered in queue</div>
+          </div>
+
+          <div className={`${styles.metricCard} ${styles.metricDischarge}`}>
+            <div className={styles.metricLabel}>
+              <span>Discharge Initiated</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" aria-hidden="true" />
+            </div>
+            <div className={styles.metricValue}>{dischargeCount}</div>
+            <div className={styles.metricHint}>Pending final summary</div>
+          </div>
+
+          <div className={`${styles.metricCard} ${styles.metricTotal}`}>
+            <div className={styles.metricLabel}>
+              <span>Total Census</span>
+              <span className="text-[10px] font-mono text-muted-foreground opacity-70">LIVE</span>
+            </div>
+            <div className={styles.metricValue}>{totalCount}</div>
+            <div className={styles.metricHint}>Total encounters loaded</div>
+          </div>
+        </div>
+
+        {/* Tactical Filter Pills */}
+        <div className={styles.controlRow}>
+          <div className={styles.filterPills}>
+            {[
+              { id: '', label: 'All Encounters', count: totalCount },
+              { id: 'active', label: 'Active', count: activeCount },
+              { id: 'registered', label: 'Registered', count: registeredCount },
+              { id: 'discharge_initiated', label: 'Discharge Initiated', count: dischargeCount },
+              { id: 'discharged', label: 'Discharged', count: encounters.filter(e => e.status === 'discharged').length },
+              { id: 'closed', label: 'Closed', count: encounters.filter(e => e.status === 'closed').length },
+            ].map((f) => (
+              <button
+                key={f.id}
+                type="button"
+                onClick={() => setStatus(f.id)}
+                className={`${styles.filterPill} ${status === f.id ? styles.filterPillActive : ''}`}
+              >
+                <span>{f.label}</span>
+                <span className={styles.filterCount}>{f.count}</span>
+              </button>
+            ))}
+          </div>
+
+          {!loading && !error && encounters.length > 0 && (
+            <p className={styles.resultNote} aria-live="polite">
+              <span>●</span>
+              <span>{encounters.length} encounter{encounters.length === 1 ? '' : 's'}{status ? ' matching filter' : ''}</span>
+            </p>
+          )}
+        </div>
 
         {loading ? (
           <TableSkeleton rows={6} />
@@ -109,15 +190,15 @@ export default function EncountersPage() {
             }
           />
         ) : (
-          
+          <div className={styles.tableWrapper}>
             <Table ariaLabel="Encounters">
               <THead>
                 <tr>
                   <TH>Patient</TH>
-                  <TH width="120px">Type</TH>
-                  <TH width="140px">Started</TH>
-                  <TH>Status</TH>
-                  <TH aria-label="Open" />
+                  <TH width="140px">Type</TH>
+                  <TH width="160px">Started</TH>
+                  <TH width="130px">Status</TH>
+                  <TH aria-label="Open" width="160px" align="right" />
                 </tr>
               </THead>
               <TBody>
@@ -135,16 +216,22 @@ export default function EncountersPage() {
                         mrn={enc.patient.mrn}
                       />
                     </TD>
-                    <TD className={styles.capitalize}>{enc.encounterType.replace('_', ' ')}</TD>
+                    <TD className={styles.capitalize}>
+                      <span className="font-mono text-xs font-semibold">
+                        {enc.encounterType.replace('_', ' ')}
+                      </span>
+                    </TD>
                     <TD>
-                      {enc.startedAt
-                        ? new Date(enc.startedAt).toLocaleString([], {
-                            month: 'short',
-                            day: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })
-                        : '—'}
+                      <span className="font-mono text-xs text-muted-foreground">
+                        {enc.startedAt
+                          ? new Date(enc.startedAt).toLocaleString([], {
+                              month: 'short',
+                              day: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })
+                          : '—'}
+                      </span>
                     </TD>
                     <TD>
                       <EncounterStatusBadge status={enc.status} size="sm" />
@@ -158,6 +245,7 @@ export default function EncountersPage() {
                 ))}
               </TBody>
             </Table>
+          </div>
         )}
       </div>
     </AppShell>

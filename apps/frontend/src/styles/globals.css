@@ -32,6 +32,8 @@ html {
 body {
   min-height: 100vh;
   background-color: var(--bg-app);
+  background-image: var(--hud-bg-grid);
+  background-size: var(--hud-bg-grid-size);
   color: var(--text-primary);
   overflow-x: hidden;
 }
@@ -105,12 +107,80 @@ button {
   letter-spacing: -0.01em;
 }
 
+/* Tactical HUD Utilities (Universal Cyber-Clinical Foundations) */
+.tacticalCard {
+  background: var(--hud-card-bg);
+  border: 1px solid var(--hud-card-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--hud-card-shadow);
+  transition: all var(--duration-fast) var(--ease-standard);
+  position: relative;
+  overflow: hidden;
+}
+
+.tacticalCard::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--hud-cyan), var(--hud-emerald), var(--hud-amber));
+  opacity: 0.85;
+}
+
+.tacticalCard:hover {
+  border-color: var(--hud-card-border-focus);
+  box-shadow: var(--hud-card-shadow-hover);
+}
+
+.tacticalPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.65rem;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-caption);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: var(--hud-card-subtle);
+  border: 1px solid var(--hud-card-border);
+  color: var(--text-secondary);
+}
+
+.tacticalDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.tacticalDotPulse::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 50%;
+  background: inherit;
+  opacity: 0.4;
+  animation: pulseDot 2s infinite ease-in-out;
+}
+
+@keyframes pulseDot {
+  0%, 100% { transform: scale(1); opacity: 0.4; }
+  50% { transform: scale(1.7); opacity: 0.8; }
+}
+
 /* Lovable Clinical Panel utility */
 .clinical-panel,
 .clinicalPanel {
-  background-color: var(--card, #ffffff);
-  border: 1px solid var(--border, var(--border-subtle));
+  background-color: var(--hud-card-bg);
+  border: 1px solid var(--hud-card-border);
   border-radius: var(--radius-lg, 12px);
+  box-shadow: var(--hud-card-shadow);
 }
 
 /* Lovable Page entrance animation */

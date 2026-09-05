@@ -1,7 +1,15 @@
+/* =========================================================================
+   Hospital AI OS — Diagnostic Lab Tracker
+   Tactical Laboratory HUD & Panic Alert Styling
+   ========================================================================= */
+
 .container {
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
 }
 
 .navRow {
@@ -14,39 +22,57 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: var(--font-size-body-sm);
-  color: var(--color-primary-600);
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  color: var(--hud-cyan);
   text-decoration: none;
-  font-weight: 500;
+  transition: all var(--duration-fast) ease;
 }
 
 .backLink:hover {
-  text-decoration: underline;
+  color: var(--text-primary);
+  transform: translateX(-2px);
 }
 
 .cardHeader {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: var(--space-4);
-  border-bottom: 1px solid var(--color-neutral-100);
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--hud-card-border);
+  background: var(--hud-card-subtle);
+  position: relative;
+}
+
+.cardHeader::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--hud-cyan), var(--hud-emerald));
 }
 
 .cardHeader h3 {
   margin: 0;
-  font-size: var(--font-size-subhead);
-  font-weight: 600;
+  font-size: 1.1rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
 }
 
 .cardHeader p {
   margin: 2px 0 0;
-  font-size: var(--font-size-caption);
-  color: var(--color-neutral-500);
+  font-size: 0.75rem;
+  color: var(--text-secondary);
 }
 
 .emptyNote {
-  padding: var(--space-6);
+  padding: var(--space-8);
   text-align: center;
-  color: var(--color-neutral-500);
-  font-size: var(--font-size-body-sm);
+  color: var(--text-tertiary);
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-sm);
 }

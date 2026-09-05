@@ -7,9 +7,15 @@
 
 .layout {
   display: grid;
-  grid-template-columns: minmax(240px, 300px) minmax(0, 1fr);
+  grid-template-columns: minmax(260px, 320px) minmax(0, 1fr);
   gap: var(--space-5);
   align-items: start;
+}
+
+@media (max-width: 900px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
 }
 
 .contextRail {
@@ -28,12 +34,16 @@
 }
 
 .sectionHeading {
+  font-family: var(--font-family-mono);
   font-size: var(--font-size-caption);
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.07em;
-  color: var(--status-ai-text);
+  letter-spacing: 0.08em;
+  color: var(--hud-cyan);
   margin-bottom: var(--space-2);
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
 }
 
 /* Card header bars */
@@ -42,15 +52,31 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--space-3);
-  padding: var(--space-3) var(--space-5);
-  border-bottom: 1px solid var(--border-subtle);
+  padding: 0.85rem 1.25rem;
+  border-bottom: 1px solid var(--hud-card-border);
+  background: var(--hud-card-subtle);
   flex-wrap: wrap;
+  position: relative;
+}
+
+.cardBar::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--hud-cyan), transparent);
+  opacity: 0.8;
 }
 
 .cardTitle {
-  font-size: var(--font-size-h4);
-  font-weight: 600;
+  font-size: 1rem;
+  font-weight: 700;
   color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .cardActions {
@@ -60,11 +86,11 @@
   flex-wrap: wrap;
 }
 
-/* Lifecycle timeline */
+/* Lifecycle timeline (Tactical Stage Stepper) */
 .timeline {
   list-style: none;
   margin: 0;
-  padding: 0;
+  padding: 0.5rem 0;
   display: flex;
   flex-direction: column;
 }
@@ -72,8 +98,10 @@
 .timelineItem {
   position: relative;
   padding: var(--space-2) 0 var(--space-2) var(--space-6);
-  font-size: var(--font-size-body);
+  font-size: var(--font-size-sm);
+  font-family: var(--font-family-mono);
   color: var(--text-tertiary);
+  transition: all var(--duration-fast) ease;
 }
 
 .timelineItem::before {
@@ -85,7 +113,8 @@
   width: 8px;
   height: 8px;
   border-radius: var(--radius-full);
-  background-color: var(--color-neutral-300);
+  background-color: var(--hud-card-border);
+  transition: all 0.2s ease;
 }
 
 .timelineItem::after {
@@ -93,9 +122,9 @@
   position: absolute;
   left: 11.5px;
   top: calc(50% + 8px);
-  bottom: -12px;
+  bottom: -8px;
   width: 1px;
-  background-color: var(--border-subtle);
+  background-color: var(--hud-card-border);
 }
 
 .timelineItem:last-child::after {
@@ -107,17 +136,19 @@
 }
 
 .timelineDone::before {
-  background-color: var(--color-success-main);
+  background-color: var(--hud-emerald);
+  box-shadow: 0 0 8px var(--hud-emerald-glow);
 }
 
 .timelineCurrent {
-  color: var(--text-primary);
-  font-weight: 600;
+  color: var(--hud-cyan);
+  font-weight: 700;
 }
 
 .timelineCurrent::before {
-  background-color: var(--color-primary-600);
-  box-shadow: 0 0 0 4px var(--color-primary-100);
+  background-color: var(--hud-cyan);
+  box-shadow: 0 0 10px var(--hud-cyan-glow);
+  transform: translateY(-50%) scale(1.2);
 }
 
 /* Detail list */
@@ -126,6 +157,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
+  padding: 0.75rem 1.25rem;
 }
 
 .detailRow {

@@ -276,6 +276,46 @@ export default function TasksPage() {
           }
         />
 
+        {/* Tactical Task Metric Grid */}
+        <div className={styles.statGrid}>
+          <div className={`${styles.statCard} ${tasks.filter(isOverdue).length > 0 ? styles.statCardCritical : ''}`}>
+            <div className={styles.statLabel}>
+              <span className="tacticalDot danger" />
+              Overdue Escalations
+            </div>
+            <div className={`${styles.statVal} ${styles.statValRose}`}>
+              {tasks.filter(isOverdue).length}
+            </div>
+          </div>
+          <div className={styles.statCard}>
+            <div className={styles.statLabel}>
+              <span className="tacticalDot warning" />
+              In Progress
+            </div>
+            <div className={`${styles.statVal} ${styles.statValAmber}`}>
+              {tasks.filter((t) => t.status === 'in_progress' || t.status === 'assigned').length}
+            </div>
+          </div>
+          <div className={styles.statCard}>
+            <div className={styles.statLabel}>
+              <span className="tacticalDot cyan" />
+              Awaiting Action
+            </div>
+            <div className={`${styles.statVal} ${styles.statValCyan}`}>
+              {tasks.filter((t) => t.status === 'created' || t.status === 'awaiting_approval').length}
+            </div>
+          </div>
+          <div className={styles.statCard}>
+            <div className={styles.statLabel}>
+              <span className="tacticalDot success" />
+              Resolved &amp; Closed
+            </div>
+            <div className={`${styles.statVal} ${styles.statValEmerald}`}>
+              {tasks.filter((t) => t.status === 'completed').length}
+            </div>
+          </div>
+        </div>
+
         {actionError && (
           <AlertBanner
             severity="critical"

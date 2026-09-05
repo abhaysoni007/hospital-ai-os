@@ -3,6 +3,18 @@
   flex-direction: column;
   gap: var(--space-5);
   width: 100%;
+  animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .loadingWrap {
@@ -10,14 +22,16 @@
 }
 
 .metaItem {
-  font-size: var(--font-size-sm);
-  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+  font-family: var(--font-mono, monospace);
+  color: var(--text-tertiary);
+  letter-spacing: 0.04em;
 }
 
 .grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-5);
+  gap: var(--space-4);
 }
 
 .fullWidth {
@@ -33,6 +47,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
+  padding: var(--space-2) 0;
 }
 
 .infoRow {
@@ -40,7 +55,7 @@
   justify-content: space-between;
   gap: var(--space-4);
   padding-bottom: var(--space-3);
-  border-bottom: 1px solid var(--border-subtle);
+  border-bottom: 1px solid var(--hud-card-border);
 }
 
 .infoRow:last-child {
@@ -49,16 +64,20 @@
 }
 
 .infoLabel {
-  font-size: var(--font-size-sm);
+  font-size: 11px;
+  font-family: var(--font-mono, monospace);
   color: var(--text-tertiary);
-  font-weight: 500;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
   flex-shrink: 0;
 }
 
 .infoValue {
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-body-sm);
+  font-family: var(--font-mono, monospace);
   color: var(--text-primary);
-  font-weight: 500;
+  font-weight: 600;
   text-align: right;
 }
 
@@ -67,26 +86,31 @@
   align-items: center;
   justify-content: space-between;
   padding: var(--space-4) var(--space-5);
-  border-bottom: 1px solid var(--border-subtle);
+  border-bottom: 1px solid var(--hud-card-border);
+  background: var(--hud-card-bg);
 }
 
 .sectionTitleGroup h3 {
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
-  font-size: var(--font-size-h4);
-  font-weight: 600;
+  font-size: var(--font-size-sm);
+  font-family: var(--font-mono, monospace);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
   color: var(--text-primary);
 }
 
 .sectionTitleGroup svg {
-  color: var(--color-primary-600);
+  color: var(--hud-cyan);
 }
 
 .sectionSub {
-  font-size: var(--font-size-caption);
+  font-size: 11px;
+  font-family: var(--font-mono, monospace);
   color: var(--text-tertiary);
-  margin-top: 1px;
+  margin-top: 2px;
 }
 
 @media (max-width: 900px) {

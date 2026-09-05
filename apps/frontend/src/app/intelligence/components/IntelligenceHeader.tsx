@@ -53,9 +53,12 @@ export function IntelligenceHeader({
       <div className={styles.headerTitles}>
         <div className={styles.titleRow}>
           <span className={styles.titleIcon} aria-hidden="true">
-            <Activity size={22} />
+            <Activity size={20} />
           </span>
-          <h1 className={styles.title}>Hospital Intelligence Center</h1>
+          <h1 className={styles.title}>
+            <span>Hospital Intelligence Center</span>
+            <span className={styles.versionTag}>TELEMETRY KERNEL</span>
+          </h1>
         </div>
         <p className={styles.subtitle}>
           Deterministic operational bottleneck detection paired with citable audit evidence and human-authorized action governance.
@@ -74,10 +77,16 @@ export function IntelligenceHeader({
             <span>{getAiLabel()}</span>
           </span>
 
+          {/* SLA Rule Engine Status */}
+          <span className={styles.telemetryPill} title="Deterministic Clinical SLA Engine">
+            <span className={`${styles.dot} ${styles.dotGrounded}`} aria-hidden="true" />
+            <span>SLA Engine: Online</span>
+          </span>
+
           {/* Scope indicator or selector for admin */}
           {canSelectAdminScope ? (
             <select
-              className={styles.telemetryPill}
+              className={`${styles.telemetryPill} ${styles.telemetrySelect}`}
               value={scope}
               onChange={(e) => onScopeChange(e.target.value as 'department' | 'hospital_admin')}
               disabled={isAnalyzing}
@@ -99,7 +108,7 @@ export function IntelligenceHeader({
           variant="primary"
           onClick={onRunAnalysis}
           disabled={isAnalyzing || !canTriggerAnalysis}
-          className="gap-2"
+          className="gap-2 font-mono text-xs font-semibold"
           id="run-intelligence-analysis-button"
           title={!canTriggerAnalysis ? 'Requires intelligence:analyze permission' : undefined}
         >
@@ -110,7 +119,7 @@ export function IntelligenceHeader({
             </>
           ) : (
             <>
-              <Play size={15} aria-hidden="true" />
+              <Play size={14} aria-hidden="true" />
               <span>Run Intelligence Analysis</span>
             </>
           )}

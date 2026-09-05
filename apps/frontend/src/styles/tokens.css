@@ -247,80 +247,157 @@
   --sidebar-accent-foreground: #ffffff;
   --sidebar-border: #334155;
   --sidebar-ring: #38bdf8;
+
+  /* =========================================================================
+     13. Tactical HUD & Cyber-Clinical Tokens (Light Mode)
+     ========================================================================= */
+  --hud-bg-grid: radial-gradient(rgba(2, 132, 199, 0.08) 1px, transparent 1px);
+  --hud-bg-grid-size: 24px 24px;
+  --hud-card-bg: #ffffff;
+  --hud-card-subtle: #f8fafc;
+  --hud-card-elevated: #ffffff;
+  --hud-card-border: #cbd5e1;
+  --hud-card-border-subtle: #e2e8f0;
+  --hud-card-border-focus: #0284c7;
+  --hud-card-shadow: 0 1px 3px rgba(15, 23, 42, 0.06), 0 4px 12px rgba(15, 23, 42, 0.04);
+  --hud-card-shadow-hover: 0 4px 16px rgba(2, 132, 199, 0.12), 0 0 0 1px rgba(2, 132, 199, 0.25);
+
+  --hud-cyan: #0284c7;
+  --hud-cyan-glow: rgba(2, 132, 199, 0.25);
+  --hud-cyan-bg: rgba(2, 132, 199, 0.08);
+  --hud-cyan-border: rgba(2, 132, 199, 0.35);
+
+  --hud-emerald: #059669;
+  --hud-emerald-glow: rgba(5, 150, 105, 0.25);
+  --hud-emerald-bg: rgba(5, 150, 105, 0.08);
+  --hud-emerald-border: rgba(5, 150, 105, 0.35);
+
+  --hud-rose: #e11d48;
+  --hud-rose-glow: rgba(225, 29, 72, 0.25);
+  --hud-rose-bg: rgba(225, 29, 72, 0.08);
+  --hud-rose-border: rgba(225, 29, 72, 0.35);
+
+  --hud-amber: #d97706;
+  --hud-amber-glow: rgba(217, 119, 6, 0.25);
+  --hud-amber-bg: rgba(217, 119, 6, 0.08);
+  --hud-amber-border: rgba(217, 119, 6, 0.35);
+
+  --hud-violet: #7c3aed;
+  --hud-violet-glow: rgba(124, 58, 237, 0.25);
+  --hud-violet-bg: rgba(124, 58, 237, 0.08);
+  --hud-violet-border: rgba(124, 58, 237, 0.35);
 }
 
 /* =========================================================================
     11. Dark Mode Foundations
     ========================================================================= */
-[data-theme='dark'] {
-  --bg-app: #090d16;
-  --bg-surface: #0f172a;
-  --bg-subtle: #1e293b;
-  --border-subtle: #334155;
-  --border-strong: #475569;
+[data-theme='dark'],
+.dark {
+  --bg-app: #070a13;
+  --bg-surface: #0c1220;
+  --bg-subtle: #11192c;
+  --border-subtle: #1e2b42;
+  --border-strong: #2e3f5e;
   --text-primary: #f8fafc;
   --text-secondary: #94a3b8;
   --text-tertiary: #64748b;
 
-  --color-primary-500: #3b82f6;
-  --color-primary-600: #2563eb;
+  --color-primary-500: #38bdf8;
+  --color-primary-600: #0284c7;
 
-  --status-critical-bg: rgba(220, 38, 38, 0.15);
-  --status-critical-border: #ef4444;
-  --status-critical-text: #fca5a5;
+  --status-critical-bg: rgba(244, 63, 94, 0.15);
+  --status-critical-border: #f43f5e;
+  --status-critical-text: #fda4af;
 
-  --status-urgent-bg: rgba(234, 88, 12, 0.15);
-  --status-urgent-border: #f97316;
-  --status-urgent-text: #fdba74;
+  --status-urgent-bg: rgba(245, 158, 11, 0.15);
+  --status-urgent-border: #f59e0b;
+  --status-urgent-text: #fcd34d;
 
-  --status-stable-bg: rgba(22, 163, 74, 0.15);
-  --status-stable-border: #4ade80;
-  --status-stable-text: #86efac;
+  --status-stable-bg: rgba(16, 185, 129, 0.15);
+  --status-stable-border: #10b981;
+  --status-stable-text: #6ee7b7;
 
-  --status-ai-bg: rgba(124, 58, 237, 0.15);
+  --status-ai-bg: rgba(167, 139, 250, 0.15);
   --status-ai-border: #a78bfa;
   --status-ai-text: #ddd6fe;
 
   /* Lovable UI Semantic Tokens (Dark Mode) */
-  --background: #090d16;
+  --background: #070a13;
   --foreground: #f8fafc;
-  --surface: #0f172a;
+  --surface: #0c1220;
   --surface-foreground: #f8fafc;
-  --card: #0f172a;
+  --card: #0c1220;
   --card-foreground: #f8fafc;
-  --popover: #0f172a;
+  --popover: #0c1220;
   --popover-foreground: #f8fafc;
   --primary: #38bdf8;
-  --primary-foreground: #0f172a;
-  --secondary: #1e293b;
+  --primary-foreground: #070a13;
+  --secondary: #11192c;
   --secondary-foreground: #f8fafc;
-  --muted: #1e293b;
+  --muted: #11192c;
   --muted-foreground: #94a3b8;
-  --accent: #1e3a8a;
+  --accent: #0c1f38;
   --accent-foreground: #e0f2fe;
-  --destructive: #ef4444;
+  --destructive: #f43f5e;
   --destructive-foreground: #ffffff;
-  --critical: #ef4444;
+  --critical: #f43f5e;
   --critical-foreground: #ffffff;
   --warning: #f59e0b;
-  --warning-foreground: #0f172a;
-  --success: #22c55e;
-  --success-foreground: #0f172a;
+  --warning-foreground: #070a13;
+  --success: #10b981;
+  --success-foreground: #070a13;
   --info: #38bdf8;
-  --info-foreground: #0f172a;
+  --info-foreground: #070a13;
   --ai: #a78bfa;
-  --ai-foreground: #0f172a;
-  --ai-surface: rgba(124, 58, 237, 0.15);
-  --border: #334155;
-  --input: #334155;
+  --ai-foreground: #070a13;
+  --ai-surface: rgba(167, 139, 250, 0.15);
+  --border: #1e2b42;
+  --input: #1e2b42;
   --ring: #38bdf8;
 
-  --sidebar: #090d16;
+  --sidebar: #070a13;
   --sidebar-foreground: #f8fafc;
   --sidebar-primary: #38bdf8;
-  --sidebar-primary-foreground: #0f172a;
-  --sidebar-accent: #1e293b;
+  --sidebar-primary-foreground: #070a13;
+  --sidebar-accent: #11192c;
   --sidebar-accent-foreground: #ffffff;
-  --sidebar-border: #1e293b;
+  --sidebar-border: #1e2b42;
   --sidebar-ring: #38bdf8;
+
+  /* Tactical HUD & Cyber-Clinical Tokens (Dark Mode) */
+  --hud-bg-grid: radial-gradient(rgba(56, 189, 248, 0.12) 1px, transparent 1px);
+  --hud-bg-grid-size: 24px 24px;
+  --hud-card-bg: #0c1220;
+  --hud-card-subtle: #11192c;
+  --hud-card-elevated: #162035;
+  --hud-card-border: #1e2b42;
+  --hud-card-border-subtle: rgba(30, 43, 66, 0.8);
+  --hud-card-border-focus: #38bdf8;
+  --hud-card-shadow: 0 4px 20px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.04);
+  --hud-card-shadow-hover: 0 0 24px rgba(56, 189, 248, 0.25), 0 4px 16px rgba(0, 0, 0, 0.6);
+
+  --hud-cyan: #38bdf8;
+  --hud-cyan-glow: rgba(56, 189, 248, 0.35);
+  --hud-cyan-bg: rgba(56, 189, 248, 0.12);
+  --hud-cyan-border: rgba(56, 189, 248, 0.35);
+
+  --hud-emerald: #10b981;
+  --hud-emerald-glow: rgba(16, 185, 129, 0.35);
+  --hud-emerald-bg: rgba(16, 185, 129, 0.12);
+  --hud-emerald-border: rgba(16, 185, 129, 0.35);
+
+  --hud-rose: #f43f5e;
+  --hud-rose-glow: rgba(244, 63, 94, 0.4);
+  --hud-rose-bg: rgba(244, 63, 94, 0.14);
+  --hud-rose-border: rgba(244, 63, 94, 0.4);
+
+  --hud-amber: #f59e0b;
+  --hud-amber-glow: rgba(245, 158, 11, 0.35);
+  --hud-amber-bg: rgba(245, 158, 11, 0.12);
+  --hud-amber-border: rgba(245, 158, 11, 0.35);
+
+  --hud-violet: #a78bfa;
+  --hud-violet-glow: rgba(167, 139, 250, 0.35);
+  --hud-violet-bg: rgba(167, 139, 250, 0.14);
+  --hud-violet-border: rgba(167, 139, 250, 0.35);
 }

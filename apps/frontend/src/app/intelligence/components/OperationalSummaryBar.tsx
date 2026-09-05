@@ -43,8 +43,14 @@ export function OperationalSummaryBar({
         aria-pressed={activeFilter === 'all'}
       >
         <div className={styles.summaryLabel}>
-          <span>Active Bottlenecks</span>
-          <Layers size={14} className="text-muted-foreground" aria-hidden="true" />
+          <span className="flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-sky-500 inline-block" aria-hidden="true" />
+            <span>Active Bottlenecks</span>
+          </span>
+          <div className="flex items-center gap-1">
+            <span className="text-[10px] font-mono text-muted-foreground opacity-70">1</span>
+            <Layers size={13} className="text-muted-foreground" aria-hidden="true" />
+          </div>
         </div>
         <div className={styles.summaryValue} id="summary-total-count">
           {totalCount}
@@ -62,8 +68,14 @@ export function OperationalSummaryBar({
         aria-pressed={activeFilter === 'critical'}
       >
         <div className={styles.summaryLabel}>
-          <span className="text-rose-600 dark:text-rose-400">Critical SLA Alerts</span>
-          <AlertCircle size={14} className="text-rose-600 dark:text-rose-400" aria-hidden="true" />
+          <span className="text-rose-600 dark:text-rose-400 flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-rose-500 inline-block animate-pulse" aria-hidden="true" />
+            <span>Critical SLA Alerts</span>
+          </span>
+          <div className="flex items-center gap-1">
+            <span className="text-[10px] font-mono text-rose-500 opacity-80">2</span>
+            <AlertCircle size={13} className="text-rose-600 dark:text-rose-400" aria-hidden="true" />
+          </div>
         </div>
         <div className={`${styles.summaryValue} text-rose-600 dark:text-rose-400`} id="summary-critical-count">
           {criticalCount}
@@ -81,8 +93,14 @@ export function OperationalSummaryBar({
         aria-pressed={activeFilter === 'diagnostic'}
       >
         <div className={styles.summaryLabel}>
-          <span>Diagnostic Blockers</span>
-          <Clock size={14} className="text-blue-600 dark:text-blue-400" aria-hidden="true" />
+          <span className="flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-sky-500 inline-block" aria-hidden="true" />
+            <span>Diagnostic Blockers</span>
+          </span>
+          <div className="flex items-center gap-1">
+            <span className="text-[10px] font-mono text-muted-foreground opacity-70">3</span>
+            <Clock size={13} className="text-sky-600 dark:text-sky-400" aria-hidden="true" />
+          </div>
         </div>
         <div className={styles.summaryValue} id="summary-diagnostic-count">
           {diagnosticCount}
@@ -100,8 +118,14 @@ export function OperationalSummaryBar({
         aria-pressed={activeFilter === 'documentation'}
       >
         <div className={styles.summaryLabel}>
-          <span>Documentation Gaps</span>
-          <FileWarning size={14} className="text-amber-600 dark:text-amber-400" aria-hidden="true" />
+          <span className="text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 inline-block" aria-hidden="true" />
+            <span>Documentation Gaps</span>
+          </span>
+          <div className="flex items-center gap-1">
+            <span className="text-[10px] font-mono text-amber-500 opacity-80">4</span>
+            <FileWarning size={13} className="text-amber-600 dark:text-amber-400" aria-hidden="true" />
+          </div>
         </div>
         <div className={styles.summaryValue} id="summary-documentation-count">
           {documentationCount}

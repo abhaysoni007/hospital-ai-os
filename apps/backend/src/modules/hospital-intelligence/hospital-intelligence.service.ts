@@ -129,23 +129,45 @@ export class HospitalIntelligenceService {
 
     // 3.5. Zero-PHI Operational Analytics (Safe Fallback if Python is unavailable)
     let analyticsResult: AnalyzeResponse | null = null;
-    if (detectedSignals.length > 0) {
-      const analyticsSignals: SignalInput[] = detectedSignals.map(s => ({
+    try {
+      const analyticsSignals: SignalInput[] = detectedSignals.map((s) => ({
         signal_id: s.signalId,
-        signal_type: s.type as SignalInput['signal_type'],
+        signal_type: (s.signalType || (s as any).type) as SignalInput['signal_type'],
         severity: s.severity as SignalInput['severity'],
         age_minutes: s.detectedAt ? Math.max(0, (Date.now() - new Date(s.detectedAt).getTime()) / 60000) : 0,
-        metadata: {}, // strict zero-PHI boundary
+        metadata: {}, // strict zero-PHI boundary: no patient or clinical data
       }));
 
       // Calculate operational features based on authoritative detection
+      const pendingOrders = detectedSignals.filter((s) => (s.signalType || (s as any).type) === 'PENDING_DIAGNOSTIC_RESULT');
+      const criticalResults = detectedSignals.filter((s) => (s.signalType || (s as any).type) === 'CRITICAL_RESULT_UNACKNOWLEDGED');
+      const undocumentedEncounters = detectedSignals.filter((s) => (s.signalType || (s as any).type) === 'ENCOUNTER_WITHOUT_CLINICAL_RECORD');
+
+      let activeEncounters = 0;
+      try {
+        const deptFilter = detectorScope.departmentId
+          ? sql`AND department_id = ${detectorScope.departmentId}`
+          : sql``;
+        const res = (await db.execute(
+          sql`SELECT COUNT(*)::int AS count FROM encounters WHERE status = 'active' ${deptFilter}`,
+        )) as unknown as { count: number }[];
+        if (res && res[0]?.count !== undefined) {
+          activeEncounters = Number(res[0].count);
+        }
+      } catch {
+        // Safe fallback in mock or non-Postgres test environments
+      }
+
       const features: OperationalFeaturesInput = {
-        active_encounters: 0, // In M19.6, we rely on signals to compute counts, or leave defaults if unsupported
-        pending_diagnostic_orders: detectedSignals.filter(s => s.type === 'PENDING_DIAGNOSTIC_RESULT').length,
-        unacknowledged_critical_results: detectedSignals.filter(s => s.type === 'CRITICAL_RESULT_UNACKNOWLEDGED').length,
-        encounters_without_clinical_record: detectedSignals.filter(s => s.type === 'ENCOUNTER_WITHOUT_CLINICAL_RECORD').length,
-        stalled_orders_over_sla: 0,
-        average_pending_age_minutes: analyticsSignals.length > 0 ? analyticsSignals.reduce((acc, curr) => acc + curr.age_minutes, 0) / analyticsSignals.length : 0,
+        active_encounters: activeEncounters,
+        pending_diagnostic_orders: pendingOrders.length,
+        unacknowledged_critical_results: criticalResults.length,
+        encounters_without_clinical_record: undocumentedEncounters.length,
+        stalled_orders_over_sla: pendingOrders.filter((s) => s.severity === 'CRITICAL' || s.severity === 'HIGH').length,
+        average_pending_age_minutes:
+          analyticsSignals.length > 0
+            ? analyticsSignals.reduce((acc, curr) => acc + curr.age_minutes, 0) / analyticsSignals.length
+            : 0,
       };
 
       analyticsResult = await hospitalAnalyticsClient.analyze({
@@ -156,9 +178,12 @@ export class HospitalIntelligenceService {
         signals: analyticsSignals,
         operational_features: features,
       });
-      
-      // We can use analytics factors to optionally prioritize signals, 
-      // but we do NOT modify safety semantics or clinical authority.
+
+      // Python output is strictly advisory:
+      // We do NOT modify safety semantics or clinical authority.
+    } catch {
+      // Sidecar failure must never crash Hospital Intelligence
+      analyticsResult = null;
     }
 
     let aiSuccesses = 0;
