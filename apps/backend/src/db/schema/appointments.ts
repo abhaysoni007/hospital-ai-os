@@ -46,6 +46,7 @@ export const encounters = pgTable(
     departmentIdx: index('idx_encounters_department').on(table.departmentId),
     statusIdx: index('idx_encounters_status').on(table.status),
     createdIdx: index('idx_encounters_created').on(table.createdAt),
+    paginationIdx: index('idx_encounters_pagination').on(table.createdAt, table.id),
   }),
 );
 
@@ -85,6 +86,7 @@ export const appointments = pgTable(
     tokenIdx: uniqueIndex('idx_appointments_token')
       .on(table.doctorId, table.scheduledDate, table.tokenNumber)
       .where(sql`token_number IS NOT NULL`),
+    paginationIdx: index('idx_appointments_pagination').on(table.createdAt, table.id),
   }),
 );
 

@@ -54,6 +54,7 @@ export const diagnosticOrders = pgTable(
     idempotencyIdx: index('idx_diagnostic_orders_idempotency')
       .on(table.encounterId, table.clientRequestId)
       .where(sql`client_request_id IS NOT NULL`),
+    paginationIdx: index('idx_diagnostic_orders_pagination').on(table.createdAt, table.id),
   }),
 );
 

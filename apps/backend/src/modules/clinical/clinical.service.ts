@@ -298,7 +298,7 @@ export class ClinicalService {
 
     const rows = await db.query.clinicalRecords.findMany({
       where: eq(clinicalRecords.encounterId, encounterId),
-      orderBy: [desc(clinicalRecords.createdAt)],
+      orderBy: [desc(clinicalRecords.createdAt), desc(clinicalRecords.id)],
       limit,
       offset,
     });

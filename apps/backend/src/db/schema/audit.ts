@@ -42,5 +42,6 @@ export const auditEvents = pgTable(
     createdIdx: index('idx_audit_events_created').on(table.createdAt),
     sequenceIdx: uniqueIndex('idx_audit_events_sequence').on(table.sequenceNumber),
     correlationIdx: index('idx_audit_events_correlation').on(table.correlationId),
+    paginationIdx: index('idx_audit_events_pagination').on(table.createdAt, table.id),
   }),
 );

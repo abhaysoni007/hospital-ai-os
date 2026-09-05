@@ -262,50 +262,6 @@
   color: var(--hud-cyan);
 }
 
-.quickRolesWrap {
-  margin-top: var(--space-5);
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.quickRolesLabel {
-  font-family: var(--font-family-mono);
-  font-size: 0.6875rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  color: var(--text-tertiary);
-  letter-spacing: 0.05em;
-}
-
-.quickRolesList {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 0.4rem;
-}
-
-.quickRoleBtn {
-  font-family: var(--font-family-mono);
-  font-size: 0.6875rem;
-  font-weight: 600;
-  padding: 0.35rem 0.5rem;
-  border-radius: var(--radius-sm);
-  background: var(--hud-card-subtle);
-  border: 1px solid var(--hud-card-border);
-  color: var(--text-secondary);
-  text-align: left;
-  cursor: pointer;
-  transition: all var(--duration-fast) var(--ease-standard);
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-}
-
-.quickRoleBtn:hover {
-  border-color: var(--hud-card-border-focus);
-  color: var(--hud-cyan);
-  background: var(--hud-cyan-bg);
-}
 
 @media (max-width: 1024px) {
   .brandPanel {

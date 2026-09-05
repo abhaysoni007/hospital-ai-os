@@ -41,5 +41,6 @@ export const patients = pgTable(
     statusIdx: index('idx_patients_status')
       .on(table.status)
       .where(sql`deleted_at IS NULL`),
+    paginationIdx: index('idx_patients_pagination').on(table.createdAt, table.id),
   }),
 );

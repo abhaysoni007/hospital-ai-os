@@ -34,5 +34,6 @@ export const clinicalRecords = pgTable(
     patientIdx: index('idx_clinical_records_patient').on(table.patientId),
     typeIdx: index('idx_clinical_records_type').on(table.recordType),
     statusIdx: index('idx_clinical_records_status').on(table.status),
+    paginationIdx: index('idx_clinical_records_pagination').on(table.createdAt, table.id),
   }),
 );

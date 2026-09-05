@@ -63,6 +63,7 @@ function OrderDetailContent() {
   // M12.2 Part D — human-readable staff identity (server-projected).
   const [enteredByName, setEnteredByName] = useState<string | null>(null);
   const [verifiedByName, setVerifiedByName] = useState<string | null>(null);
+  const [acknowledgedByName, setAcknowledgedByName] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const [verifying, setVerifying] = useState(false);
@@ -93,7 +94,11 @@ function OrderDetailContent() {
     setLoading(true);
     setError(null);
     try {
-      const orderRes = await diagnosticsService.getOrder(orderId);
+      // Fetch order + result in parallel — cuts one full round-trip from the waterfall.
+      const [orderRes, resultRes] = await Promise.all([
+        diagnosticsService.getOrder(orderId),
+        diagnosticsService.getResult(orderId).catch(() => null),
+      ]);
       setOrder(orderRes.data);
 
       let fetchedTask: TaskResponse | null = null;
@@ -107,11 +112,10 @@ function OrderDetailContent() {
         }
       }
 
-      try {
-        const resRes = await diagnosticsService.getResult(orderId);
-        setResult(resRes.data); // result may legitimately not exist yet
+      if (resultRes) {
+        setResult(resultRes.data);
 
-        const idsToFetch = [resRes.data.enteredBy, resRes.data.verifiedBy];
+        const idsToFetch = [resultRes.data.enteredBy, resultRes.data.verifiedBy, resultRes.data.acknowledgedBy];
         if (fetchedTask?.assignedTo) {
           idsToFetch.push(fetchedTask.assignedTo);
         }
@@ -119,14 +123,17 @@ function OrderDetailContent() {
         const ids = await getStaffIdentities(
           idsToFetch.filter((id): id is string => typeof id === 'string'),
         );
-        setEnteredByName(ids.get(resRes.data.enteredBy)?.displayName ?? null);
+        setEnteredByName(ids.get(resultRes.data.enteredBy)?.displayName ?? null);
         setVerifiedByName(
-          resRes.data.verifiedBy ? (ids.get(resRes.data.verifiedBy)?.displayName ?? null) : null,
+          resultRes.data.verifiedBy ? (ids.get(resultRes.data.verifiedBy)?.displayName ?? null) : null,
+        );
+        setAcknowledgedByName(
+          resultRes.data.acknowledgedBy ? (ids.get(resultRes.data.acknowledgedBy)?.displayName ?? null) : null,
         );
         if (fetchedTask?.assignedTo) {
           setTaskAssigneeName(ids.get(fetchedTask.assignedTo)?.displayName ?? null);
         }
-      } catch {
+      } else {
         setResult(null);
         if (fetchedTask?.assignedTo) {
           const ids = await getStaffIdentities([fetchedTask.assignedTo]);
@@ -216,6 +223,9 @@ function OrderDetailContent() {
     try {
       const res = await diagnosticsService.acknowledgeResult(orderId!);
       setResult(res.data);
+      // Optimistically set the name from the current logged-in user.
+      const fullName = [user?.firstName, user?.lastName].filter(Boolean).join(' ');
+      setAcknowledgedByName(fullName || null);
     } catch (err) {
       setAcknowledgeError((err as Error).message || 'Failed to acknowledge result.');
     } finally {
@@ -513,7 +523,8 @@ function OrderDetailContent() {
               <div className={styles.acknowledgedNotice} role="status">
                 <CheckCircle2 size={16} aria-hidden="true" />
                 <span>
-                  CLINICALLY ACKNOWLEDGED — a physician or nurse has reviewed this result and confirmed
+                  CLINICALLY ACKNOWLEDGED —{' '}
+                  {acknowledgedByName ?? 'a clinician'} has reviewed this result and confirmed
                   appropriate clinical action has been taken.
                   {result.acknowledgedAt && (
                     <> ({new Date(result.acknowledgedAt).toLocaleString()})</>

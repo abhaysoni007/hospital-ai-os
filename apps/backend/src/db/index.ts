@@ -9,5 +9,5 @@ dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 const connectionString =
   process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:55432/hospital_ai_os';
 
-const client = postgres(connectionString);
+const client = postgres(connectionString, { max: 20 });
 export const db = drizzle(client, { schema });

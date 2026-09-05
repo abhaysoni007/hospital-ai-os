@@ -10,6 +10,7 @@ import {
   AppointmentListItem,
   BookingOptionsResponse,
 } from 'shared';
+import { redisService } from '../../utils/redis';
 import {
   ConflictError,
   NotFoundError,
@@ -183,7 +184,7 @@ export class AppointmentService {
 
     const rows = await db.query.appointments.findMany({
       where: conditions.length > 0 ? and(...conditions) : undefined,
-      orderBy: [desc(appointments.createdAt)],
+      orderBy: [desc(appointments.createdAt), desc(appointments.id)],
       limit,
       offset,
     });
@@ -407,6 +408,12 @@ export class AppointmentService {
     departmentId: string;
   }): Promise<BookingOptionsResponse> {
     const scoped = authContext.role !== 'hospital_admin';
+    const cacheKey = `hospital-ai-os:booking-options:role:${authContext.role}:dept:${authContext.departmentId}`;
+    
+    const cached = await redisService.get<BookingOptionsResponse>(cacheKey);
+    if (cached) {
+      return cached;
+    }
 
     const deptRows = await db.query.departments.findMany({
       where: scoped
@@ -427,7 +434,10 @@ export class AppointmentService {
       columns: { id: true, firstName: true, lastName: true, departmentId: true },
     });
 
-    return { departments: deptRows, physicians };
+    const result = { departments: deptRows, physicians };
+    await redisService.set(cacheKey, result, 900); // 15 minutes TTL
+
+    return result;
   }
 }
 

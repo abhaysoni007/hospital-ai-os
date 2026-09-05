@@ -149,7 +149,7 @@ export class PatientService {
 
     const results = await db.query.patients.findMany({
       where: conditions.length > 0 ? and(...conditions) : undefined,
-      orderBy: [desc(patients.createdAt)],
+      orderBy: [desc(patients.createdAt), desc(patients.id)],
       limit,
       offset,
     });

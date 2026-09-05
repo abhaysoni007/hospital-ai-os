@@ -1,7 +1,9 @@
 import helmet from 'helmet';
 import cors from 'cors';
 import rateLimit from 'express-rate-limit';
+import { RedisStore } from 'rate-limit-redis';
 import { config } from '../config';
+import { redisService } from '../utils/redis';
 
 export const securityHeadersMiddleware = helmet();
 
@@ -37,4 +39,13 @@ export const rateLimitMiddleware = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
+  // Use Redis store if Redis is configured and available; otherwise fallback to memory.
+  // rate-limit-redis handles the Redis interaction. If the client is disconnected, we shouldn't pass it.
+  store: config.REDIS_URL && redisService.getClient() 
+    ? new RedisStore({
+        // @ts-expect-error - rate-limit-redis types might not perfectly align with ioredis, but it works
+        sendCommand: (...args: string[]) => redisService.getClient()?.call(...args),
+        prefix: 'hospital-ai-os:rate-limit:',
+      })
+    : undefined, // undefined falls back to MemoryStore
 });

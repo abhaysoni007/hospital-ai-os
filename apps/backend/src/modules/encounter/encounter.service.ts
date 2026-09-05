@@ -107,7 +107,7 @@ export class EncounterService {
 
     const rows = await db.query.encounters.findMany({
       where: conditions.length > 0 ? and(...conditions) : undefined,
-      orderBy: [desc(encounters.createdAt)],
+      orderBy: [desc(encounters.createdAt), desc(encounters.id)],
       limit,
       offset,
     });

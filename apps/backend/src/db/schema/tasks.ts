@@ -45,6 +45,7 @@ export const tasks = pgTable(
     uniqueReferenceIdx: uniqueIndex('idx_tasks_unique_reference')
       .on(table.referenceType, table.referenceId, table.taskType)
       .where(sql`reference_id IS NOT NULL`),
+    paginationIdx: index('idx_tasks_pagination').on(table.createdAt, table.id),
   }),
 );
 
@@ -73,5 +74,6 @@ export const notifications = pgTable(
     priorityIdx: index('idx_notifications_priority')
       .on(table.priority)
       .where(sql`priority = 'critical'`),
+    paginationIdx: index('idx_notifications_pagination').on(table.createdAt, table.id),
   }),
 );

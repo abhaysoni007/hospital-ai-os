@@ -174,7 +174,7 @@ export class DiagnosticsService {
 
     const rows = await db.query.diagnosticOrders.findMany({
       where: eq(diagnosticOrders.encounterId, encounterId),
-      orderBy: [desc(diagnosticOrders.createdAt)],
+      orderBy: [desc(diagnosticOrders.createdAt), desc(diagnosticOrders.id)],
     });
     return { data: rows.map(toOrderResponse) };
   }
@@ -199,7 +199,7 @@ export class DiagnosticsService {
       .from(diagnosticOrders)
       .innerJoin(encounters, eq(diagnosticOrders.encounterId, encounters.id))
       .where(and(...conditions))
-      .orderBy(desc(diagnosticOrders.createdAt))
+      .orderBy(desc(diagnosticOrders.createdAt), desc(diagnosticOrders.id))
       .limit(limit)
       .offset(offset);
 
@@ -767,6 +767,20 @@ export class DiagnosticsService {
         correlationId,
         tx,
       );
+
+      // Auto-acknowledge the related critical_lab_alert notification for this
+      // result so the dashboard banner clears immediately — no separate step needed.
+      await tx
+        .update(notificationsTable)
+        .set({ status: 'acknowledged', acknowledgedAt: now })
+        .where(
+          and(
+            eq(notificationsTable.recipientId, acknowledgerId),
+            eq(notificationsTable.notificationType, 'critical_lab_alert'),
+            eq(notificationsTable.referenceId, result.id),
+            inArray(notificationsTable.status, ['dispatched', 'delivered']),
+          ),
+        );
 
       return toResultResponse(updated[0]);
     });

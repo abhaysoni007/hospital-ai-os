@@ -68,7 +68,7 @@ export class NotificationService {
 
     const rows = await db.query.notifications.findMany({
       where,
-      orderBy: [desc(notifications.createdAt)],
+      orderBy: [desc(notifications.createdAt), desc(notifications.id)],
       limit,
       offset,
     });

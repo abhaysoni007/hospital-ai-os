@@ -22,7 +22,7 @@ export class AuditController {
 
       const results = await db.query.auditEvents.findMany({
         where: conditions.length > 0 ? and(...conditions) : undefined,
-        orderBy: [desc(auditEvents.createdAt)],
+        orderBy: [desc(auditEvents.createdAt), desc(auditEvents.id)],
         limit,
         offset,
       });

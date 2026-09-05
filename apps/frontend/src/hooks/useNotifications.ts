@@ -77,8 +77,23 @@ export function useNotifications(pageSize = 20): NotificationsState {
   useEffect(() => {
     mounted.current = true;
     void reload();
+
+    // Silently re-fetch when the user returns to the tab (e.g. after
+    // acknowledging a critical result on the diagnostics page).
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        void reload({ silent: true });
+      }
+    };
+    const handleFocus = () => void reload({ silent: true });
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+
     return () => {
       mounted.current = false;
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
     };
   }, [reload]);
 
