@@ -228,69 +228,70 @@ export default function Navbar() {
           opacity: 0,
           position: 'fixed',
           inset: 0,
-          background: 'rgba(4, 7, 12, 0.97)',
+          background: 'rgba(4, 7, 12, 0.98)',
           backdropFilter: 'blur(24px)',
           zIndex: 999,
           flexDirection: 'column',
-          alignItems: 'flex-start',
-          justifyContent: 'flex-end',
-          padding: 'clamp(3rem, 6vh, 6rem) clamp(1.5rem, 4vw, 5rem)',
-          overflow: 'hidden',
+          alignItems: 'stretch',
+          justifyContent: 'flex-start',
+          padding: 'clamp(5.5rem, 12vh, 8rem) clamp(1.5rem, 4vw, 5rem) clamp(2rem, 4vh, 3.5rem)',
+          overflowY: 'auto',
+          overflowX: 'hidden',
         }}
         onClick={(e) => {
           if (e.target === overlayRef.current) closeMenu();
         }}
       >
-        {/* Decorative horizontal line */}
-        <div
-          style={{
-            position: 'absolute',
-            top: '50%',
-            left: 0,
-            right: 0,
-            height: '1px',
-            background: 'var(--m-line)',
-            pointerEvents: 'none',
-          }}
-        />
-
         {/* Label top-right */}
         <div
           style={{
             position: 'absolute',
-            top: 'clamp(1.5rem, 3vh, 3rem)',
-            right: 'clamp(1.5rem, 4vw, 5rem)',
+            top: 'clamp(1.5rem, 3vh, 2.5rem)',
+            right: 'clamp(6rem, 8vw, 10rem)',
             fontFamily: 'var(--m-font-label)',
             fontSize: '0.65rem',
             letterSpacing: '0.12em',
             textTransform: 'uppercase',
             color: 'var(--m-text-tertiary)',
+            pointerEvents: 'none',
           }}
         >
           INTELLIGENT HEALTHCARE SYSTEM
         </div>
 
-        {/* Navigation items */}
-        <ul
+        {/* Inner container to ensure full scrollability and proper spacing */}
+        <div
           style={{
-            listStyle: 'none',
-            padding: 0,
-            margin: 0,
+            minHeight: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
             width: '100%',
+            maxWidth: '1400px',
+            margin: '0 auto',
           }}
-          role="list"
         >
-          {NAV_ITEMS.map((item, i) => (
-            <li
-              key={item.num}
-              ref={(el) => {
-                itemsRef.current[i] = el;
-              }}
-              style={{
-                borderTop: '1px solid var(--m-line)',
-                padding: 'clamp(0.75rem, 2vh, 1.5rem) 0',
-              }}
-            >
+          {/* Navigation items */}
+          <ul
+            style={{
+              listStyle: 'none',
+              padding: 0,
+              margin: '0 0 2rem 0',
+              width: '100%',
+            }}
+            role="list"
+          >
+            {NAV_ITEMS.map((item, i) => (
+              <li
+                key={item.num}
+                ref={(el) => {
+                  itemsRef.current[i] = el;
+                }}
+                style={{
+                  borderTop: '1px solid var(--m-line)',
+                  padding: 'clamp(0.4rem, 1.2vh, 0.9rem) 0',
+                }}
+              >
               <a
                 href={item.href}
                 onClick={closeMenu}
@@ -343,10 +344,10 @@ export default function Navbar() {
                   className="nav-label"
                   style={{
                     fontFamily: 'var(--m-font-display)',
-                    fontSize: 'clamp(2.5rem, 6vw, 7rem)',
+                    fontSize: 'clamp(1.8rem, min(4.6vw, 5.8vh), 4.2rem)',
                     fontWeight: 700,
                     letterSpacing: '-0.03em',
-                    lineHeight: 1,
+                    lineHeight: 1.05,
                     willChange: 'transform',
                   }}
                 >
@@ -361,7 +362,7 @@ export default function Navbar() {
         <div
           style={{
             borderTop: '1px solid var(--m-line)',
-            paddingTop: '1.5rem',
+            paddingTop: '1.25rem',
             width: '100%',
             display: 'flex',
             justifyContent: 'space-between',
@@ -395,6 +396,7 @@ export default function Navbar() {
             REQUEST ACCESS →
           </a>
         </div>
+      </div>
       </div>
     </>
   );
