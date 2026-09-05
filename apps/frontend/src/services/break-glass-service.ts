@@ -21,12 +21,20 @@ export const breakGlassService = {
       body: payload,
     }),
 
-  listSessions: (params: { page?: number; limit?: number; status?: 'active' | 'revoked' | 'expired' } = {}) => {
+  listSessions: async (params: { page?: number; limit?: number; status?: 'active' | 'revoked' | 'expired' } = {}) => {
     const search = new URLSearchParams();
     if (params.page) search.set('page', params.page.toString());
     if (params.limit) search.set('limit', params.limit.toString());
     if (params.status) search.set('status', params.status);
-    return apiClient<{ data: BreakGlassSessionResponse[]; meta: { total: number } }>(`/break-glass/sessions?${search.toString()}`);
+    const raw = await apiClient<BreakGlassSessionResponse[] | { data?: BreakGlassSessionResponse[]; meta?: { total: number } }>(`/break-glass/sessions?${search.toString()}`);
+    const items: BreakGlassSessionResponse[] = Array.isArray(raw)
+      ? raw
+      : Array.isArray(raw?.data)
+        ? raw.data
+        : [];
+    const filtered = params.status ? items.filter((s) => s.status === params.status) : items;
+    const total = (!Array.isArray(raw) && typeof raw?.meta?.total === 'number') ? raw.meta.total : filtered.length;
+    return { data: filtered, meta: { total } };
   },
 
   revokeSession: (id: string, reason: string) =>

@@ -273,6 +273,27 @@
   font-weight: 500;
 }
 
+.acknowledgedNotice {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid rgba(5, 150, 105, 0.3);
+  border-left: 4px solid var(--hud-emerald);
+  background: rgba(5, 150, 105, 0.06);
+  border-radius: var(--radius-md);
+  color: var(--hud-emerald);
+  font-size: var(--font-size-body-sm);
+  font-weight: 500;
+}
+
+:global([data-theme='dark']) .acknowledgedNotice,
+:global(.dark) .acknowledgedNotice {
+  background: rgba(5, 150, 105, 0.10);
+  border-color: rgba(5, 150, 105, 0.4);
+  box-shadow: 0 0 12px rgba(5, 150, 105, 0.15);
+}
+
 .actionsBar {
   display: flex;
   justify-content: flex-end;

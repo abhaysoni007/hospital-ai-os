@@ -89,6 +89,7 @@ export default function EncounterLabsPage() {
   const [, setAckLoadingOrderId] = useState<string | null>(null);
 
   const canOrder = hasPermission(user?.role, 'diagnostic_order:create');
+  const canReadDx = hasPermission(user?.role, 'diagnostic_order:read');
   const mounted = useRef(true);
 
   /**
@@ -100,6 +101,9 @@ export default function EncounterLabsPage() {
    * - 403 / 500 / network: Service failure — must NOT silently present as "no critical result".
    */
   const probeCriticalResults = useCallback(async (completedOrders: DiagnosticOrderResponse[]) => {
+    if (!canReadDx && !hasPermission(user?.role, 'diagnostic_result:read')) {
+      return;
+    }
     if (completedOrders.length === 0) {
       setCriticalResults([]);
       setProbeError(null);
@@ -155,6 +159,10 @@ export default function EncounterLabsPage() {
   }, [user?.id]);
 
   useEffect(() => {
+    if (!canReadDx) {
+      setLoading(false);
+      return;
+    }
     mounted.current = true;
     let cancelled = false;
     setLoading(true);
@@ -183,7 +191,7 @@ export default function EncounterLabsPage() {
       cancelled = true;
       mounted.current = false;
     };
-  }, [encounterId, probeCriticalResults]);
+  }, [encounterId, canReadDx, probeCriticalResults]);
 
   /**
    * Acknowledge a critical result using the server-authoritative task acknowledgment service.

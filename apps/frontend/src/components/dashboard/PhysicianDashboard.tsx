@@ -144,7 +144,11 @@ export function PhysicianDashboard() {
       appointmentService
         .getAppointments({ page: 1, pageSize: 100 })
         .then((res) => {
-          if (mounted.current) setAppointmentsToday({ state: 'ready', data: res.data.length });
+          if (mounted.current)
+            setAppointmentsToday({
+              state: 'ready',
+              data: Array.isArray(res?.data) ? res.data.length : 0,
+            });
         })
         .catch(() => {
           if (mounted.current) setAppointmentsToday({ state: 'error', data: null });

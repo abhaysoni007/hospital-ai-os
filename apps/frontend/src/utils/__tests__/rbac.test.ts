@@ -97,4 +97,48 @@ describe('M13 navigation contract', () => {
   it('returns empty nav for unauthenticated users rather than leaking structure', () => {
     expect(getNavItemsForRole(undefined)).toEqual([]);
   });
+
+  describe('strict least-privilege RBAC matrix', () => {
+    it('appointment:create is granted ONLY to receptionist', () => {
+      expect(hasPermission('receptionist', 'appointment:create')).toBe(true);
+      expect(hasPermission('physician', 'appointment:create')).toBe(false);
+      expect(hasPermission('nurse', 'appointment:create')).toBe(false);
+      expect(hasPermission('lab_technician', 'appointment:create')).toBe(false);
+      expect(hasPermission('pharmacist', 'appointment:create')).toBe(false);
+      expect(hasPermission('hospital_admin', 'appointment:create')).toBe(false);
+      expect(hasPermission('security_admin', 'appointment:create')).toBe(false);
+    });
+
+    it('diagnostic_order:read is granted ONLY to clinical order consumers', () => {
+      expect(hasPermission('physician', 'diagnostic_order:read')).toBe(true);
+      expect(hasPermission('nurse', 'diagnostic_order:read')).toBe(true);
+      expect(hasPermission('lab_technician', 'diagnostic_order:read')).toBe(true);
+
+      // Non-clinical or non-ordering roles must NEVER hold diagnostic_order:read
+      expect(hasPermission('hospital_admin', 'diagnostic_order:read')).toBe(false);
+      expect(hasPermission('security_admin', 'diagnostic_order:read')).toBe(false);
+      expect(hasPermission('pharmacist', 'diagnostic_order:read')).toBe(false);
+      expect(hasPermission('receptionist', 'diagnostic_order:read')).toBe(false);
+    });
+
+    it('security_admin never holds clinical read permissions', () => {
+      expect(hasPermission('security_admin', 'audit_event:read')).toBe(true);
+      expect(hasPermission('security_admin', 'break_glass:review')).toBe(true);
+      expect(hasPermission('security_admin', 'task:read')).toBe(true);
+
+      expect(hasPermission('security_admin', 'diagnostic_order:read')).toBe(false);
+      expect(hasPermission('security_admin', 'encounter:read')).toBe(false);
+      expect(hasPermission('security_admin', 'clinical_record:read')).toBe(false);
+      expect(hasPermission('security_admin', 'appointment:create')).toBe(false);
+    });
+
+    it('hospital_admin holds operational oversight but not clinical ordering or booking creation', () => {
+      expect(hasPermission('hospital_admin', 'appointment:read')).toBe(true);
+      expect(hasPermission('hospital_admin', 'encounter:read')).toBe(true);
+      expect(hasPermission('hospital_admin', 'staff:manage')).toBe(true);
+
+      expect(hasPermission('hospital_admin', 'appointment:create')).toBe(false);
+      expect(hasPermission('hospital_admin', 'diagnostic_order:read')).toBe(false);
+    });
+  });
 });

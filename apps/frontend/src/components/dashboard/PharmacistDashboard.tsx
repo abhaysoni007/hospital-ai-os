@@ -34,7 +34,7 @@ export function PharmacistDashboard() {
     try {
       const taskRes = await taskService.listTasks({ page: 1, pageSize: 50 });
       if (!mounted.current) return;
-      setTasks(taskRes.data);
+      setTasks(Array.isArray(taskRes?.data) ? taskRes.data : []);
     } catch {
       if (!mounted.current) return;
       setError('Could not load pharmacy tasks.');

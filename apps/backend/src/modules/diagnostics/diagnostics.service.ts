@@ -56,6 +56,8 @@ function toResultResponse(row: any): DiagnosticResultResponse {
     enteredBy: row.enteredBy,
     verifiedBy: row.verifiedBy ?? null,
     verifiedAt: row.verifiedAt ? new Date(row.verifiedAt).toISOString() : null,
+    acknowledgedBy: row.acknowledgedBy ?? null,
+    acknowledgedAt: row.acknowledgedAt ? new Date(row.acknowledgedAt).toISOString() : null,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   };
@@ -678,6 +680,88 @@ export class DiagnosticsService {
             orderId,
             previousStatus: result.status,
             enteredBy: result.enteredBy,
+          },
+        },
+        correlationId,
+        tx,
+      );
+
+      return toResultResponse(updated[0]);
+    });
+  }
+
+  /**
+   * M-ACK: Physician / nurse acknowledges a verified or critical-flagged result.
+   *
+   * - Idempotent: re-acknowledging by the same or a different clinician is
+   *   permitted (records the LATEST acknowledger).
+   * - Only available once a result exists (preliminary, verified, or critical_flagged).
+   * - Acknowledger must have `diagnostic_result:acknowledge` permission (physician / nurse).
+   */
+  async acknowledgeResult(
+    orderId: string,
+    acknowledgerId: string,
+    correlationId: string,
+    authContext: AuthContext,
+  ) {
+    const allowed = ['physician', 'nurse'];
+    if (!allowed.includes(authContext.role)) {
+      throw new AuthorizationError('Only physicians and nurses may acknowledge diagnostic results.');
+    }
+
+    return await db.transaction(async (tx) => {
+      const rows = await tx
+        .select({ result: diagnosticResults, dept: encounters.departmentId })
+        .from(diagnosticResults)
+        .innerJoin(diagnosticOrders, eq(diagnosticResults.orderId, diagnosticOrders.id))
+        .innerJoin(encounters, eq(diagnosticOrders.encounterId, encounters.id))
+        .where(eq(diagnosticResults.orderId, orderId))
+        .for('update');
+
+      if (rows.length === 0) {
+        throw new NotFoundError('Result not found', { code: 'RESULT_NOT_FOUND' });
+      }
+
+      const result = rows[0].result;
+
+      // Fetch the order for scope/access-check.
+      const order = await tx.query.diagnosticOrders.findFirst({
+        where: eq(diagnosticOrders.id, orderId),
+      });
+      if (!order) throw new NotFoundError('Order not found', { code: 'ORDER_NOT_FOUND' });
+
+      await this.assertReadScope(
+        rows[0].dept,
+        order.patientId,
+        order.encounterId,
+        acknowledgerId,
+        authContext,
+      );
+
+      const now = new Date();
+      const updated = await tx
+        .update(diagnosticResults)
+        .set({
+          acknowledgedBy: acknowledgerId,
+          acknowledgedAt: now,
+          updatedAt: now,
+        })
+        .where(eq(diagnosticResults.id, result.id))
+        .returning();
+
+      await auditService.logEvent(
+        {
+          eventType: 'LAB_RESULT_ACKNOWLEDGED',
+          actorId: acknowledgerId,
+          actorRole: authContext.role,
+          actorDepartment: authContext.departmentId,
+          targetType: 'DIAGNOSTIC_RESULT',
+          targetId: result.id,
+          patientId: result.patientId,
+          actionDetail: {
+            orderId,
+            resultStatus: result.status,
+            isCritical: result.isCritical,
           },
         },
         correlationId,

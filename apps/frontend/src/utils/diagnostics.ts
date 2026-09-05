@@ -56,6 +56,15 @@ export function canVerifyResults(role?: StaffRole): boolean {
   return role === 'lab_technician' && hasPermission(role, 'diagnostic_result:verify');
 }
 
+/**
+ * M-ACK: Physicians and nurses may acknowledge a critical or verified result
+ * to confirm they have clinically reviewed and acted on it.
+ */
+export function canAcknowledgeCritical(role?: StaffRole): boolean {
+  return (role === 'physician' || role === 'nurse') &&
+    hasPermission(role, 'diagnostic_result:acknowledge');
+}
+
 /** Four-eyes (ADR-016 D6): the enterer may never see a Verify action. */
 export function isResultEnterer(record: { enteredBy: string }, userId?: string): boolean {
   return !!userId && record.enteredBy === userId;

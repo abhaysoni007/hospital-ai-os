@@ -50,12 +50,12 @@ export function LabTechnicianDashboard() {
         diagnosticsService.getLabQueue({ page: 1, status: 'completed', pageSize: 1 }),
       ]);
       if (!mounted.current) return;
-      setOrders(allRes.data);
+      setOrders(Array.isArray(allRes?.data) ? allRes.data : []);
       setCounts({
-        ordered: orderedRes.meta.total,
-        sample_collected: collectedRes.meta.total,
-        in_progress: inProgressRes.meta.total,
-        completed: completedRes.meta.total,
+        ordered: typeof orderedRes?.meta?.total === 'number' ? orderedRes.meta.total : 0,
+        sample_collected: typeof collectedRes?.meta?.total === 'number' ? collectedRes.meta.total : 0,
+        in_progress: typeof inProgressRes?.meta?.total === 'number' ? inProgressRes.meta.total : 0,
+        completed: typeof completedRes?.meta?.total === 'number' ? completedRes.meta.total : 0,
       });
     } catch {
       if (!mounted.current) return;

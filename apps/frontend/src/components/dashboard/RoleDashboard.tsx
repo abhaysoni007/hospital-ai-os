@@ -33,8 +33,9 @@ export function RoleDashboard() {
     case 'hospital_admin':
       return <HospitalAdminDashboard />;
     case 'physician':
-    default:
       return <PhysicianDashboard />;
+    default:
+      return null;
   }
 }
 

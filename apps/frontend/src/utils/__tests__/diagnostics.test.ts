@@ -9,6 +9,7 @@ import {
   canCancelOrders,
   canEnterResults,
   canVerifyResults,
+  canAcknowledgeCritical,
   isResultEnterer,
   buildResultPayload,
 } from '../diagnostics';
@@ -66,6 +67,16 @@ describe('M10 permission gating (UX-only mirrors)', () => {
       expect(canEnterResults(role)).toBe(false);
       expect(canVerifyResults(role)).toBe(false);
     }
+  });
+
+  it('physicians and nurses can clinically acknowledge results; lab_tech and others cannot', () => {
+    expect(canAcknowledgeCritical('physician' as Role)).toBe(true);
+    expect(canAcknowledgeCritical('nurse' as Role)).toBe(true);
+    expect(canAcknowledgeCritical('lab_technician' as Role)).toBe(false);
+    expect(canAcknowledgeCritical('receptionist' as Role)).toBe(false);
+    expect(canAcknowledgeCritical('hospital_admin' as Role)).toBe(false);
+    expect(canAcknowledgeCritical('security_admin' as Role)).toBe(false);
+    expect(canAcknowledgeCritical(undefined)).toBe(false);
   });
 
   it('missing role fails closed', () => {

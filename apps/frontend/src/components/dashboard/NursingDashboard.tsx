@@ -44,9 +44,9 @@ export function NursingDashboard() {
         diagnosticsService.getLabQueue({ page: 1, status: 'ordered', pageSize: 1 }),
       ]);
       if (!mounted.current) return;
-      setEncounters(encRes.data);
-      setTasks(taskRes.data);
-      setPendingSpecimens(labRes.meta.total);
+      setEncounters(Array.isArray(encRes?.data) ? encRes.data : []);
+      setTasks(Array.isArray(taskRes?.data) ? taskRes.data : []);
+      setPendingSpecimens(typeof labRes?.meta?.total === 'number' ? labRes.meta.total : 0);
     } catch {
       if (!mounted.current) return;
       setError('Could not load nursing ward data.');

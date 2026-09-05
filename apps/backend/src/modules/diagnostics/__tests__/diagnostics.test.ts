@@ -572,4 +572,50 @@ describe('M10 Diagnostics Module', () => {
     );
     expect(queueB.data.some((o) => o.id === order.id)).toBe(false);
   });
+
+  it('L. Acknowledge result: physician/nurse allowed; lab_tech denied; sets acknowledgedBy/at; audited', async () => {
+    const order = await createOrder(physicianAId, deptAId);
+    await collect(order.id, techAId, deptAId);
+    await diagnosticsService.enterResult(
+      order.id,
+      { resultValues: CRITICAL_VALUES },
+      techAId,
+      crypto.randomUUID(),
+      ctx('lab_technician'),
+    );
+
+    // 1. Lab technician cannot acknowledge (only physician & nurse)
+    await expect(
+      diagnosticsService.acknowledgeResult(
+        order.id,
+        techAId,
+        crypto.randomUUID(),
+        ctx('lab_technician'),
+      ),
+    ).rejects.toMatchObject({ code: 'AUTHORIZATION_ERROR' });
+
+    // 2. Physician successfully acknowledges
+    const correlationId = crypto.randomUUID();
+    const acked = await diagnosticsService.acknowledgeResult(
+      order.id,
+      physicianAId,
+      correlationId,
+      ctx('physician'),
+    );
+    expect(acked.acknowledgedBy).toBe(physicianAId);
+    expect(acked.acknowledgedAt).toBeTruthy();
+
+    // 3. Audit log contains LAB_RESULT_ACKNOWLEDGED
+    const audit = await db.query.auditEvents.findFirst({
+      where: eq(auditEvents.correlationId, correlationId),
+    });
+    expect(audit?.eventType).toBe('LAB_RESULT_ACKNOWLEDGED');
+    expect(audit?.actorId).toBe(physicianAId);
+
+    // 4. Reads return the acknowledged fields
+    const fetched = await diagnosticsService.getResult(order.id, physicianAId, ctx('physician'));
+    expect(fetched.acknowledgedBy).toBe(physicianAId);
+    expect(fetched.acknowledgedAt).toBe(acked.acknowledgedAt);
+  });
 });
+

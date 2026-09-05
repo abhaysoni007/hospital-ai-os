@@ -17,6 +17,8 @@ import {
 } from '../../../../../components/ui/SemanticBadges/SemanticBadges';
 import { buildResultPayload, type RowFieldErrors } from '../../../../../utils/diagnostics';
 import { usePatient } from '../../../../../hooks/usePatient';
+import { useAuth } from '../../../../../hooks/useAuth';
+import { hasPermission } from '../../../../../utils/rbac';
 import { diagnosticsService } from '../../../../../services/diagnostics-service';
 import { AlertTriangle, X } from 'lucide-react';
 import type { DiagnosticOrderResponse } from 'shared';
@@ -50,15 +52,21 @@ export default function ResultEntryPage() {
   // M17 — patient identity band; the order payload only carries patientId.
   const { patient, error: patientError, reload: reloadPatient } = usePatient(order?.patientId);
 
+  const { user } = useAuth();
+  const canEnter = hasPermission(user?.role, 'diagnostic_result:enter');
+
   useEffect(() => {
-    if (!orderId) return;
+    if (!orderId || !canEnter) {
+      if (!canEnter) setLoading(false);
+      return;
+    }
     setLoading(true);
     diagnosticsService
       .getOrder(orderId)
       .then((res) => setOrder(res.data))
       .catch((err) => setError(err as Error))
       .finally(() => setLoading(false));
-  }, [orderId]);
+  }, [orderId, canEnter]);
 
   const updateRow = (idx: number, patch: Partial<Row>) => {
     setRows((prev) => prev.map((r, i) => (i === idx ? { ...r, ...patch } : r)));

@@ -13,6 +13,8 @@ import { AlertBanner } from '../../../../components/ui/Alert/AlertBanner';
 import { Skeleton } from '../../../../components/ui/Skeleton/Skeleton';
 import { encounterService } from '../../../../services/encounter-service';
 import { computeAgeYears } from '../../../../utils/dashboard';
+import { useAuth } from '../../../../hooks/useAuth';
+import { hasPermission } from '../../../../utils/rbac';
 import type { EncounterDetailResponse } from 'shared';
 import styles from './discharge.module.css';
 
@@ -20,6 +22,8 @@ export default function EncounterDischargePage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const encounterId = params?.id as string;
+  const { user } = useAuth();
+  const canDischarge = hasPermission(user?.role, 'encounter:discharge');
 
   const [encounter, setEncounter] = useState<EncounterDetailResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -28,6 +32,10 @@ export default function EncounterDischargePage() {
   const [summary, setSummary] = useState('');
 
   useEffect(() => {
+    if (!canDischarge) {
+      setLoading(false);
+      return;
+    }
     let cancelled = false;
     setLoading(true);
     encounterService
@@ -45,7 +53,7 @@ export default function EncounterDischargePage() {
     return () => {
       cancelled = true;
     };
-  }, [encounterId]);
+  }, [encounterId, canDischarge]);
 
   const handleDischarge = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -180,7 +180,9 @@ export class TaskService {
   }
 
   /**
-   * Completes a task: status in_progress -> completed.
+   * Completes a task: status (created | assigned | in_progress) -> completed.
+   * Accepting all non-terminal states supports one-click "Done" workflows where
+   * the user has not explicitly acknowledged or started the task first.
    */
   async completeTask(
     id: string,
@@ -199,11 +201,16 @@ export class TaskService {
       const updated = await tx
         .update(tasks)
         .set({ status: 'completed', completedAt: now, updatedAt: now })
-        .where(and(eq(tasks.id, id), eq(tasks.status, 'in_progress')))
+        .where(
+          and(
+            eq(tasks.id, id),
+            inArray(tasks.status, ['created', 'assigned', 'in_progress']),
+          ),
+        )
         .returning();
 
       if (updated.length === 0) {
-        throw new ConflictError('Only in-progress tasks can be completed.', {
+        throw new ConflictError('Task is already completed or cancelled.', {
           code: 'INVALID_TRANSITION',
         });
       }

@@ -83,4 +83,11 @@ export const diagnosticsService = {
       body: {},
     });
   },
+
+  async acknowledgeResult(orderId: string): Promise<{ data: DiagnosticResultResponse }> {
+    return apiClient(`/diagnostic-orders/${orderId}/result/acknowledge`, {
+      method: 'POST',
+      body: {},
+    });
+  },
 };

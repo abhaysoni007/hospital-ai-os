@@ -2,8 +2,6 @@
 
 import React, { useEffect, useState, useCallback } from 'react';
 import { AppShell } from '../../../components/layout/AppShell/AppShell';
-import { PageHeader } from '../../../components/ui/PageHeader/PageHeader';
-import { Card, CardContent } from '../../../components/ui/Card/Card';
 import { Table, THead, TH, TBody, TR, TD } from '../../../components/ui/Table/Table';
 import { Badge } from '../../../components/ui/Badge/Badge';
 import { Button } from '../../../components/ui/Button/Button';
@@ -14,6 +12,7 @@ import { EmptyState } from '../../../components/ui/EmptyState/EmptyState';
 import { AlertBanner } from '../../../components/ui/Alert/AlertBanner';
 import { breakGlassService, BreakGlassSessionResponse } from '../../../services/break-glass-service';
 import { Shield } from 'lucide-react';
+import styles from './security.module.css';
 
 
 export default function SecurityAdminPage() {
@@ -35,7 +34,7 @@ export default function SecurityAdminPage() {
     setError(null);
     try {
       const res = await breakGlassService.listSessions({ limit: 100 });
-      setSessions(res.data);
+      setSessions(Array.isArray(res?.data) ? res.data : []);
     } catch {
       setError('Could not load break-glass sessions.');
     } finally {
@@ -70,7 +69,7 @@ export default function SecurityAdminPage() {
     setReviewData(null);
     setReviewLoading(true);
     setReviewError(null);
-    
+
     try {
       const res = await breakGlassService.reviewSession(id);
       setReviewData(res.data);
@@ -81,35 +80,55 @@ export default function SecurityAdminPage() {
     }
   };
 
+  const activeCount = sessions.filter((s) => s.status === 'active').length;
+
   return (
     <AppShell breadcrumbs={['Administration', 'Security']} requiredPermission="break_glass:review">
-      <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '2rem' }}>
-        <PageHeader
-          title="Security Administration"
-          description="Monitor and review Break-Glass emergency access sessions."
-        />
+      <div className={styles.container}>
 
-        <Card elevation="xs" padding="none">
-          <div style={{ padding: '1.5rem', borderBottom: '1px solid var(--border)' }}>
-            <h3 style={{ margin: 0, fontSize: '1.125rem', fontWeight: 600 }}>Active & Recent Sessions</h3>
+        {/* Tactical Header */}
+        <div className={styles.headerCard}>
+          <span className={styles.headerIcon} aria-hidden="true">
+            <Shield size={18} />
+          </span>
+          <div className={styles.headerContent}>
+            <h1 className={styles.title}>
+              Security Administration
+              <span className={styles.versionTag}>GOVERNANCE</span>
+            </h1>
+            <p className={styles.subtitle}>
+              Monitor and review Break-Glass emergency access sessions. All actions are immutably audit-logged.
+            </p>
           </div>
-          
+        </div>
+
+        {/* Sessions Table Card */}
+        <div className={styles.tableCard}>
+          <div className={styles.cardBar}>
+            <h2 className={styles.cardTitle}>
+              Active &amp; Recent Sessions
+            </h2>
+            <span className={styles.liveCount}>
+              {activeCount} active
+            </span>
+          </div>
+
           {loading ? (
-            <CardContent>
+            <div style={{ padding: '1.5rem' }}>
               <Skeleton variant="rectangular" height={200} />
-            </CardContent>
+            </div>
           ) : error ? (
-            <CardContent>
+            <div style={{ padding: '1.5rem' }}>
               <ErrorState title="Error Loading Data" message={error} onRetry={() => void fetchSessions()} />
-            </CardContent>
+            </div>
           ) : sessions.length === 0 ? (
-            <CardContent>
+            <div style={{ padding: '1.5rem' }}>
               <EmptyState
                 icon={<Shield size={32} />}
                 title="No Break-Glass Sessions"
                 description="There are currently no active or recent emergency access sessions."
               />
-            </CardContent>
+            </div>
           ) : (
             <Table ariaLabel="Break Glass Sessions">
               <THead>
@@ -130,10 +149,10 @@ export default function SecurityAdminPage() {
                         {s.status.toUpperCase()}
                       </Badge>
                     </TD>
-                    <TD>{s.actorId}</TD>
-                    <TD>{s.patientId}</TD>
+                    <TD><span style={{ fontFamily: 'var(--font-family-mono)', fontSize: '0.8125rem' }}>{s.actorId}</span></TD>
+                    <TD><span style={{ fontFamily: 'var(--font-family-mono)', fontSize: '0.8125rem' }}>{s.patientId}</span></TD>
                     <TD>{s.reason.replace(/_/g, ' ')}</TD>
-                    <TD>{new Date(s.createdAt).toLocaleString()}</TD>
+                    <TD><span style={{ fontFamily: 'var(--font-family-mono)', fontSize: '0.8125rem' }}>{new Date(s.createdAt).toLocaleString()}</span></TD>
                     <TD align="right">
                       <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
                         <Button variant="secondary" size="sm" onClick={() => void handleReview(s.id)}>
@@ -151,7 +170,7 @@ export default function SecurityAdminPage() {
               </TBody>
             </Table>
           )}
-        </Card>
+        </div>
 
         {/* Revoke Modal */}
         {revokingId && (
@@ -163,29 +182,23 @@ export default function SecurityAdminPage() {
             onConfirm={() => void handleRevoke()}
             onCancel={() => { setRevokingId(null); setRevokeError(null); }}
           >
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              <p>
-                Are you sure you want to forcibly revoke this active Break-Glass session?
-                The clinician will immediately lose emergency access to this patient's records.
+            <div className={styles.dialogBody}>
+              <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
+                Forcibly revoking this session immediately removes emergency access to the patient&apos;s records.
               </p>
               {revokeError && (
                 <AlertBanner severity="critical" title="Revocation failed" dismissible onDismiss={() => setRevokeError(null)}>
                   {revokeError}
                 </AlertBanner>
               )}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                <label htmlFor="revoke-reason" style={{ fontSize: '0.875rem', fontWeight: 500 }}>Revocation Reason</label>
+              <div>
+                <label htmlFor="revoke-reason" className={styles.dialogLabel}>Revocation Reason</label>
                 <input
                   id="revoke-reason"
+                  className={styles.reasonInput}
                   value={revokeReason}
                   onChange={(e) => setRevokeReason(e.target.value)}
                   placeholder="e.g. Unauthorized access, emergency concluded"
-                  style={{
-                    padding: '0.625rem',
-                    borderRadius: 'var(--radius-md)',
-                    border: '1px solid var(--border)',
-                    width: '100%',
-                  }}
                 />
               </div>
             </div>
@@ -201,42 +214,43 @@ export default function SecurityAdminPage() {
             onConfirm={() => setReviewingId(null)}
             onCancel={() => setReviewingId(null)}
           >
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <div className={styles.dialogBody}>
               {reviewLoading ? (
                 <Skeleton variant="text" />
               ) : reviewError ? (
                 <AlertBanner severity="warning" title="Could not load justification">{reviewError}</AlertBanner>
               ) : reviewData ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                  <div>
-                    <h4 style={{ margin: '0 0 0.5rem', fontSize: '0.875rem', color: 'var(--text-muted)' }}>CLINICAL JUSTIFICATION</h4>
-                    <div style={{ padding: '1rem', background: 'var(--surface-sunken)', borderRadius: 'var(--radius-md)', fontStyle: 'italic' }}>
-                      "{reviewData.justification}"
+                <>
+                  <div className={styles.reviewSection}>
+                    <span className={styles.reviewLabel}>Clinical Justification</span>
+                    <div className={styles.justificationBlock}>
+                      &quot;{reviewData.justification}&quot;
                     </div>
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                    <div>
-                      <h4 style={{ margin: '0 0 0.25rem', fontSize: '0.875rem', color: 'var(--text-muted)' }}>Actor ID</h4>
-                      <div>{reviewData.actorId}</div>
+                  <div className={styles.reviewGrid}>
+                    <div className={styles.reviewSection}>
+                      <span className={styles.reviewLabel}>Actor ID</span>
+                      <span className={styles.reviewValue} style={{ fontFamily: 'var(--font-family-mono)' }}>{reviewData.actorId}</span>
                     </div>
-                    <div>
-                      <h4 style={{ margin: '0 0 0.25rem', fontSize: '0.875rem', color: 'var(--text-muted)' }}>Patient ID</h4>
-                      <div>{reviewData.patientId}</div>
+                    <div className={styles.reviewSection}>
+                      <span className={styles.reviewLabel}>Patient ID</span>
+                      <span className={styles.reviewValue} style={{ fontFamily: 'var(--font-family-mono)' }}>{reviewData.patientId}</span>
                     </div>
                   </div>
                   {reviewData.revokedAt && (
-                    <div>
-                      <h4 style={{ margin: '0 0 0.25rem', fontSize: '0.875rem', color: 'var(--text-muted)' }}>Revocation</h4>
-                      <div style={{ color: 'var(--danger-dark)' }}>
+                    <div className={styles.reviewSection}>
+                      <span className={styles.reviewLabel}>Revocation</span>
+                      <span className={styles.revokedNote}>
                         Revoked by {reviewData.revokedBy} at {new Date(reviewData.revokedAt).toLocaleString()}
-                      </div>
+                      </span>
                     </div>
                   )}
-                </div>
+                </>
               ) : null}
             </div>
           </ConfirmDialog>
         )}
+
       </div>
     </AppShell>
   );

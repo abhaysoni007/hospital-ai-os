@@ -26,6 +26,8 @@ export const ROLE_PERMISSIONS: Record<StaffRole, readonly Permission[]> = {
     // ADR-016 Decision 2 (mirror of backend matrix)
     'diagnostic_order:cancel',
     'diagnostic_result:read',
+    // M-ACK: Physicians clinically acknowledge critical results.
+    'diagnostic_result:acknowledge',
     'encounter:create',
     'encounter:read',
     'encounter:update',
@@ -44,6 +46,8 @@ export const ROLE_PERMISSIONS: Record<StaffRole, readonly Permission[]> = {
     'clinical_record:write',
     'diagnostic_order:read',
     'diagnostic_result:read',
+    // M-ACK: Nurses clinically acknowledge critical results.
+    'diagnostic_result:acknowledge',
     'encounter:read',
     'encounter:update',
     'ai_interaction:invoke',

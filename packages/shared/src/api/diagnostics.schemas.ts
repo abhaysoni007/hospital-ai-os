@@ -155,6 +155,9 @@ export interface DiagnosticResultResponse {
   enteredBy: string;
   verifiedBy: string | null;
   verifiedAt: string | null;
+  /** M-ACK: set when a physician/nurse clinically acknowledges a critical result. */
+  acknowledgedBy: string | null;
+  acknowledgedAt: string | null;
   createdAt: string;
   updatedAt: string;
 }

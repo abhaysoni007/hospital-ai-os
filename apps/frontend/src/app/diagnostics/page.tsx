@@ -18,6 +18,7 @@ import { diagnosticsService } from '../../services/diagnostics-service';
 import type { DiagnosticOrderResponse, DiagnosticOrderStatus, OrderPriority } from 'shared';
 import styles from './diagnostics.module.css';
 import { useAuth } from '../../hooks/useAuth';
+import { hasPermission } from '../../utils/rbac';
 import { canCollectSamples, canEnterResults } from '../../utils/diagnostics';
 
 /**
@@ -43,7 +44,13 @@ export default function DiagnosticsQueuePage() {
   const canCollect = canCollectSamples(role);
   const canEnter = canEnterResults(role);
 
+  const canReadOrders = hasPermission(role, 'diagnostic_order:read');
+
   const fetchQueue = useCallback(async () => {
+    if (!canReadOrders) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -60,7 +67,7 @@ export default function DiagnosticsQueuePage() {
     } finally {
       setLoading(false);
     }
-  }, [status, priority, date]);
+  }, [canReadOrders, status, priority, date]);
 
   useEffect(() => {
     void fetchQueue();

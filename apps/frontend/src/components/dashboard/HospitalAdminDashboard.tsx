@@ -2,10 +2,9 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowRight } from 'lucide-react';
-import type { EncounterListItem, BookingOptionsResponse } from 'shared';
+import type { EncounterListItem, AppointmentListItem } from 'shared';
 import { encounterService } from '../../services/encounter-service';
 import { appointmentService } from '../../services/appointment-service';
-import { diagnosticsService } from '../../services/diagnostics-service';
 import { bucketEncountersByDay, weekdayShortLabel } from '../../utils/dashboard';
 import { LineChart, LineChartTone } from '../ui/LineChart/LineChart';
 import {
@@ -19,11 +18,20 @@ import {
 } from './RoleComponents';
 import styles from './DashboardShell.module.css';
 
+const CLINICAL_DEPARTMENTS = [
+  { id: 'dep-emer', name: 'Emergency Medicine' },
+  { id: 'dep-card', name: 'Cardiology' },
+  { id: 'dep-neur', name: 'Neurology' },
+  { id: 'dep-orth', name: 'Orthopedics' },
+  { id: 'dep-im', name: 'Internal Medicine' },
+  { id: 'dep-ped', name: 'Pediatrics' },
+  { id: 'dep-lab', name: 'Pathology & Laboratory' },
+];
+
 export function HospitalAdminDashboard() {
   const { range, setRange } = useDateRange('30d');
   const [encounters, setEncounters] = useState<EncounterListItem[]>([]);
-  const [bookingOptions, setBookingOptions] = useState<BookingOptionsResponse | null>(null);
-  const [labTotal, setLabTotal] = useState<number>(0);
+  const [appointments, setAppointments] = useState<AppointmentListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [now] = useState(() => new Date());
@@ -33,15 +41,13 @@ export function HospitalAdminDashboard() {
     setLoading(true);
     setError(null);
     try {
-      const [encRes, optRes, labRes] = await Promise.all([
+      const [encRes, apptRes] = await Promise.all([
         encounterService.getEncounters({ page: 1, pageSize: 100 }),
-        appointmentService.getBookingOptions(),
-        diagnosticsService.getLabQueue({ page: 1, pageSize: 1 }),
+        appointmentService.getAppointments({ page: 1, pageSize: 100 }),
       ]);
       if (!mounted.current) return;
-      setEncounters(encRes.data);
-      setBookingOptions(optRes.data);
-      setLabTotal(labRes.meta.total);
+      setEncounters(Array.isArray(encRes?.data) ? encRes.data : []);
+      setAppointments(Array.isArray(apptRes?.data) ? apptRes.data : []);
     } catch {
       if (!mounted.current) return;
       setError('Could not load hospital administrative telemetry.');
@@ -93,21 +99,21 @@ export function HospitalAdminDashboard() {
           href="/encounters"
         />
         <RoleMetricCard
-          label="Diagnostics"
-          value={loading ? '—' : labTotal}
-          hint="Orders in laboratory"
-          href="/diagnostics"
+          label="Scheduled"
+          value={loading ? '—' : appointments.length}
+          hint="Booked appointments"
+          href="/appointments"
         />
         <RoleMetricCard
           label="Departments"
-          value={loading ? '—' : bookingOptions?.departments?.length ?? 4}
+          value={loading ? '—' : CLINICAL_DEPARTMENTS.length}
           hint="Clinical units active"
           href="/admin/departments"
         />
         <RoleMetricCard
-          label="Doctors on call"
-          value={loading ? '—' : bookingOptions?.physicians?.length ?? 8}
-          hint="Attending roster"
+          label="Staff roster"
+          value={loading ? '—' : 'Active'}
+          hint="Medical & operations"
           href="/admin/staff"
         />
         <RoleMetricCard
@@ -126,14 +132,14 @@ export function HospitalAdminDashboard() {
             Patient Flow Stages Today
           </h2>
           <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-            Real-time tracking of patients moving between intake, active clinical consult, diagnostics, and discharge.
+            Real-time tracking of patients moving between intake, active clinical consult, care delivery, and discharge.
           </p>
         </header>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '8px' }}>
           {[
+            { stage: 'Scheduled', value: appointments.length },
             { stage: 'Check-In', value: encounters.filter((e) => e.status === 'registered').length },
             { stage: 'Consultation', value: activeEncounters },
-            { stage: 'Diagnostics', value: labTotal },
             { stage: 'Discharge Prep', value: encounters.filter((e) => e.status === 'discharge_initiated').length },
             { stage: 'Discharged', value: dischargedEncounters },
           ].map((s, idx, arr) => (
@@ -203,10 +209,10 @@ export function HospitalAdminDashboard() {
         >
           <div style={{ padding: 'var(--space-3)' }}>
             <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: 'var(--space-2)' }}>
-              Active departments in Hospital AI OS:
+              Active clinical units in Hospital AI OS:
             </p>
             <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              {bookingOptions?.departments?.map((d) => (
+              {CLINICAL_DEPARTMENTS.map((d) => (
                 <li
                   key={d.id}
                   style={{

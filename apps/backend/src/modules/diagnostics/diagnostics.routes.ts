@@ -70,3 +70,9 @@ diagnosticOrderRoutes.post(
   requirePermission('diagnostic_result:verify'),
   diagnosticsController.verifyResult.bind(diagnosticsController),
 );
+
+diagnosticOrderRoutes.post(
+  '/:orderId/result/acknowledge',
+  requirePermission('diagnostic_result:acknowledge'),
+  diagnosticsController.acknowledgeResult.bind(diagnosticsController),
+);

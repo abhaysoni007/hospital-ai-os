@@ -58,6 +58,7 @@ export type Permission =
   | 'diagnostic_result:read'
   | 'diagnostic_result:enter'
   | 'diagnostic_result:verify'
+  | 'diagnostic_result:acknowledge'
   // Encounter resource
   | 'encounter:create'
   | 'encounter:read'
@@ -101,6 +102,7 @@ export const VALID_PERMISSIONS: ReadonlySet<Permission> = new Set<Permission>([
   'diagnostic_result:read',
   'diagnostic_result:enter',
   'diagnostic_result:verify',
+  'diagnostic_result:acknowledge',
   'encounter:create',
   'encounter:read',
   'encounter:update',
@@ -141,6 +143,8 @@ export const ROLE_PERMISSIONS: Readonly<Record<StaffRole, ReadonlySet<Permission
     // Service enforces the conditions; this grant enables the capability.
     'diagnostic_order:cancel',
     'diagnostic_result:read',
+    // M-ACK: Physicians clinically acknowledge critical results.
+    'diagnostic_result:acknowledge',
     'encounter:create',
     'encounter:read',
     'encounter:update',
@@ -160,6 +164,8 @@ export const ROLE_PERMISSIONS: Readonly<Record<StaffRole, ReadonlySet<Permission
     'clinical_record:write',
     'diagnostic_order:read',
     'diagnostic_result:read',
+    // M-ACK: Nurses clinically acknowledge critical results.
+    'diagnostic_result:acknowledge',
     'encounter:read',
     'encounter:update',
     'ai_interaction:invoke',

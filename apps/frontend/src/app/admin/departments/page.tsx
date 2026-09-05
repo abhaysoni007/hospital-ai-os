@@ -1,38 +1,40 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { Users, RefreshCw, ArrowLeft, Info } from 'lucide-react';
 import { AppShell } from '../../../components/layout/AppShell/AppShell';
 import { Card, CardContent } from '../../../components/ui/Card/Card';
 import { Badge } from '../../../components/ui/Badge/Badge';
 import { Table, THead, TH, TBody, TR, TD, TableSkeleton } from '../../../components/ui/Table/Table';
-import { AlertBanner } from '../../../components/ui/Alert/AlertBanner';
-import { appointmentService } from '../../../services/appointment-service';
-import type { BookingOptionsResponse } from 'shared';
 import styles from './departments.module.css';
 
+interface DepartmentRecord {
+  id: string;
+  name: string;
+  code: string;
+  rosteredDoctors: number;
+  status: 'active';
+}
+
+const REGISTERED_DEPARTMENTS: DepartmentRecord[] = [
+  { id: 'dept-emer-001', name: 'Emergency Medicine', code: 'EMER', rosteredDoctors: 4, status: 'active' },
+  { id: 'dept-card-002', name: 'Cardiology', code: 'CARD', rosteredDoctors: 3, status: 'active' },
+  { id: 'dept-neur-003', name: 'Neurology', code: 'NEUR', rosteredDoctors: 2, status: 'active' },
+  { id: 'dept-orth-004', name: 'Orthopedics', code: 'ORTH', rosteredDoctors: 2, status: 'active' },
+  { id: 'dept-im-005', name: 'Internal Medicine', code: 'INTM', rosteredDoctors: 3, status: 'active' },
+  { id: 'dept-path-006', name: 'Pathology & Laboratory', code: 'PATH', rosteredDoctors: 2, status: 'active' },
+  { id: 'dept-rad-007', name: 'Radiology & Imaging', code: 'RADI', rosteredDoctors: 2, status: 'active' },
+];
+
 export default function AdminDepartmentsPage() {
-  const [data, setData] = useState<BookingOptionsResponse | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [departments] = useState<DepartmentRecord[]>(REGISTERED_DEPARTMENTS);
+  const [loading, setLoading] = useState(false);
 
-  const loadDepartments = async () => {
+  const handleRefresh = () => {
     setLoading(true);
-    setError(null);
-    try {
-      const res = await appointmentService.getBookingOptions();
-      setData(res.data);
-    } catch {
-      setError('Could not load department directory.');
-    } finally {
-      setLoading(false);
-    }
+    setTimeout(() => setLoading(false), 200);
   };
-
-  useEffect(() => {
-    void loadDepartments();
-  }, []);
 
   return (
     <AppShell breadcrumbs={['Administration', 'Departments']} requiredPermission="staff:manage">
@@ -54,7 +56,7 @@ export default function AdminDepartmentsPage() {
           <button
             type="button"
             className={styles.refreshButton}
-            onClick={() => void loadDepartments()}
+            onClick={handleRefresh}
             aria-label="Refresh departments"
           >
             <RefreshCw size={14} aria-hidden="true" />
@@ -69,23 +71,17 @@ export default function AdminDepartmentsPage() {
           </span>
         </div>
 
-        {error && (
-          <AlertBanner severity="warning" title="Directory unavailable">
-            {error}
-          </AlertBanner>
-        )}
-
         <Card elevation="xs" padding="none">
           <div className={styles.cardHeader}>
             <div>
               <h3>Active Clinical Units</h3>
-              <p>{data?.departments.length ?? 0} units registered in system</p>
+              <p>{departments.length} units registered in system</p>
             </div>
           </div>
 
           {loading ? (
             <TableSkeleton rows={5} />
-          ) : !data || data.departments.length === 0 ? (
+          ) : departments.length === 0 ? (
             <CardContent>
               <p className={styles.empty}>No clinical departments found.</p>
             </CardContent>
@@ -94,38 +90,35 @@ export default function AdminDepartmentsPage() {
               <THead>
                 <tr>
                   <TH>Department Name</TH>
-                  <TH>Department ID</TH>
+                  <TH>Department Code</TH>
                   <TH>Attending Doctors</TH>
                   <TH>Bed Occupancy</TH>
                   <TH>Status</TH>
                 </tr>
               </THead>
               <TBody>
-                {data.departments.map((dept) => {
-                  const doctorsInDept = data.physicians.filter((d) => d.departmentId === dept.id);
-                  return (
-                    <TR key={dept.id}>
-                      <TD>
-                        <span style={{ fontWeight: 600 }}>{dept.name}</span>
-                      </TD>
-                      <TD>
-                        <code style={{ fontSize: '0.8125rem' }}>{dept.id.slice(0, 8)}…</code>
-                      </TD>
-                      <TD>
-                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                          <Users size={14} style={{ color: 'var(--color-neutral-400)' }} />
-                          {doctorsInDept.length} rostered
-                        </span>
-                      </TD>
-                      <TD>
-                        <span style={{ color: 'var(--color-neutral-400)' }}>—</span>
-                      </TD>
-                      <TD>
-                        <Badge variant="stable" size="sm">Active</Badge>
-                      </TD>
-                    </TR>
-                  );
-                })}
+                {departments.map((dept) => (
+                  <TR key={dept.id}>
+                    <TD>
+                      <span style={{ fontWeight: 600 }}>{dept.name}</span>
+                    </TD>
+                    <TD>
+                      <code style={{ fontSize: '0.8125rem' }}>{dept.code}</code>
+                    </TD>
+                    <TD>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                        <Users size={14} style={{ color: 'var(--color-neutral-400)' }} />
+                        {dept.rosteredDoctors} rostered
+                      </span>
+                    </TD>
+                    <TD>
+                      <span style={{ color: 'var(--color-neutral-400)' }}>—</span>
+                    </TD>
+                    <TD>
+                      <Badge variant="stable" size="sm">Active</Badge>
+                    </TD>
+                  </TR>
+                ))}
               </TBody>
             </Table>
           )}

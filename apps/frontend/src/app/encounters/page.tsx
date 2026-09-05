@@ -22,6 +22,8 @@ import { EncounterStatusBadge } from '../../components/ui/SemanticBadges/Semanti
 import { encounterService } from '../../services/encounter-service';
 import type { EncounterListItem, EncounterStatusValue } from 'shared';
 import { parseApiError, ParsedError } from '../../utils/error-parser';
+import { useAuth } from '../../hooks/useAuth';
+import { hasPermission } from '../../utils/rbac';
 import styles from './encounters.module.css';
 
 /**
@@ -30,12 +32,19 @@ import styles from './encounters.module.css';
  */
 export default function EncountersPage() {
   const router = useRouter();
+  const { user } = useAuth();
+  const canReadEncounters = hasPermission(user?.role, 'encounter:read');
+
   const [encounters, setEncounters] = useState<EncounterListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<ParsedError | null>(null);
   const [status, setStatus] = useState('');
 
   const fetchEncounters = useCallback(async () => {
+    if (!canReadEncounters) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -50,7 +59,7 @@ export default function EncountersPage() {
     } finally {
       setLoading(false);
     }
-  }, [status]);
+  }, [canReadEncounters, status]);
 
   useEffect(() => {
     void fetchEncounters();

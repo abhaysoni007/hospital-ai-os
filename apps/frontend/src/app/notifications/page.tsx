@@ -9,9 +9,15 @@ import { Badge } from '../../components/ui/Badge/Badge';
 import { AlertBanner } from '../../components/ui/Alert/AlertBanner';
 import { TableSkeleton } from '../../components/ui/Table/Table';
 import { useNotifications } from '../../hooks/useNotifications';
+import { useAuth } from '../../hooks/useAuth';
+import { hasPermission } from '../../utils/rbac';
 import styles from './notifications.module.css';
 
 export default function NotificationsPage() {
+  const { user } = useAuth();
+  const canReadDx =
+    hasPermission(user?.role, 'diagnostic_order:read') ||
+    hasPermission(user?.role, 'diagnostic_result:read');
   const { items, unreadCount, isLoading, error, acknowledge, reload } = useNotifications(100);
   const [filter, setFilter] = useState<'all' | 'critical' | 'unread'>('all');
   const [acknowledgingId, setAcknowledgingId] = useState<string | null>(null);
@@ -152,7 +158,7 @@ export default function NotificationsPage() {
                       </span>
 
                       <div className={styles.actionLinks}>
-                        {n.relatedOrderId && (
+                        {n.relatedOrderId && canReadDx && (
                           <Link href={`/diagnostics/${n.relatedOrderId}`} className={styles.linkCta}>
                             Review Result <ArrowUpRight size={14} />
                           </Link>

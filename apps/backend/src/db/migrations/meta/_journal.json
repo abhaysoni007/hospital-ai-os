@@ -78,6 +78,13 @@
       "when": 1788800000000,
       "tag": "0010_hospital_intelligence",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1788900000000,
+      "tag": "0011_critical_result_acknowledge",
+      "breakpoints": true
     }
   ]
 }

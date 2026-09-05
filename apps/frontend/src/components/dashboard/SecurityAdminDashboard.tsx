@@ -41,8 +41,8 @@ export function SecurityAdminDashboard() {
         breakGlassService.listSessions({ limit: 1 }),
       ]);
       if (!mounted.current) return;
-      setActiveSessions(activeRes.data);
-      setTotalCount(allRes.meta.total);
+      setActiveSessions(Array.isArray(activeRes?.data) ? activeRes.data : []);
+      setTotalCount(typeof allRes?.meta?.total === 'number' ? allRes.meta.total : 0);
     } catch {
       if (!mounted.current) return;
       setError('Could not load break-glass audit sessions from security service.');
@@ -58,6 +58,8 @@ export function SecurityAdminDashboard() {
       mounted.current = false;
     };
   }, [loadData]);
+
+  const activeCount = (activeSessions ?? []).length;
 
   return (
     <div className="space-y-4">
@@ -77,9 +79,9 @@ export function SecurityAdminDashboard() {
       <MetricGrid columns={4}>
         <RoleMetricCard
           label="Active break-glass"
-          value={loading ? '—' : activeSessions.length}
-          hint={activeSessions.length === 0 ? 'No emergency overrides active' : 'Supervisor review required'}
-          tone={activeSessions.length > 0 ? 'critical' : 'success'}
+          value={loading ? '—' : activeCount}
+          hint={activeCount === 0 ? 'No emergency overrides active' : 'Supervisor review required'}
+          tone={activeCount > 0 ? 'critical' : 'success'}
           href="/admin/security"
         />
         <RoleMetricCard
@@ -112,11 +114,11 @@ export function SecurityAdminDashboard() {
         >
           <div style={{ padding: 'var(--space-3)' }}>
             <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: 'var(--space-2)' }}>
-              {activeSessions.length} active emergency override session(s) in progress.
+              {activeCount} active emergency override session(s) in progress.
             </p>
             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-              <span className="num" style={{ padding: '4px 8px', borderRadius: '4px', background: activeSessions.length > 0 ? 'var(--color-danger-bg)' : 'var(--color-success-bg)', color: activeSessions.length > 0 ? 'var(--color-danger-text)' : 'var(--color-success-text)', fontSize: '0.75rem', fontWeight: 600 }}>
-                {activeSessions.length > 0 ? `${activeSessions.length} Active Overrides` : 'All Clear — 0 Active'}
+              <span className="num" style={{ padding: '4px 8px', borderRadius: '4px', background: activeCount > 0 ? 'var(--color-danger-bg)' : 'var(--color-success-bg)', color: activeCount > 0 ? 'var(--color-danger-text)' : 'var(--color-success-text)', fontSize: '0.75rem', fontWeight: 600 }}>
+                {activeCount > 0 ? `${activeCount} Active Overrides` : 'All Clear — 0 Active'}
               </span>
             </div>
           </div>
@@ -158,7 +160,7 @@ export function SecurityAdminDashboard() {
 
         {loading ? (
           <TableSkeleton rows={3} />
-        ) : activeSessions.length === 0 ? (
+        ) : activeCount === 0 ? (
           <div className={styles.quietEmpty}>No active break-glass emergency sessions right now.</div>
         ) : (
           <Table ariaLabel="Active Break-Glass Sessions">
@@ -173,7 +175,7 @@ export function SecurityAdminDashboard() {
               </TR>
             </THead>
             <TBody>
-              {activeSessions.slice(0, 5).map((session) => (
+              {(activeSessions ?? []).slice(0, 5).map((session) => (
                 <TR key={session.id}>
                   <TD>
                     <span className="num" style={{ fontWeight: 600 }}>

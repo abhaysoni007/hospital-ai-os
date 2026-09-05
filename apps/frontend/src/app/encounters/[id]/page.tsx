@@ -118,8 +118,13 @@ export default function EncounterDetailPage() {
     [user?.role],
   );
 
+  const canReadEncounter = hasPermission(role, 'encounter:read');
+
   const fetchEncounter = useCallback(async () => {
-    if (!encounterId) return;
+    if (!encounterId || !canReadEncounter) {
+      if (!canReadEncounter) setLoading(false);
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -131,7 +136,7 @@ export default function EncounterDetailPage() {
     } finally {
       setLoading(false);
     }
-  }, [encounterId]);
+  }, [encounterId, canReadEncounter]);
 
   const fetchRecords = useCallback(async () => {
     if (!encounterId || !canReadClinical) return;

@@ -32,6 +32,7 @@ import { taskService } from '../../services/task-service';
 import { getStaffIdentities } from '../../services/staff-service';
 import type { TaskResponse, TaskStatusEnum } from 'shared';
 import { parseApiError, ParsedError } from '../../utils/error-parser';
+import { hasPermission } from '../../utils/rbac';
 import styles from './tasks.module.css';
 
 const STATUS_FILTERS: Array<{ value: string; label: string }> = [
@@ -211,12 +212,17 @@ export default function TasksPage() {
     }
   };
 
-  /** Navigation target for a task's clinical context, if one exists. */
+  const canReadDx =
+    hasPermission(user?.role, 'diagnostic_order:read') ||
+    hasPermission(user?.role, 'diagnostic_result:read');
+  const canReadEncounter = hasPermission(user?.role, 'encounter:read');
+
+  /** Navigation target for a task's clinical context, if one exists and user has permission. */
   const taskContextHref = (task: TaskResponse): string | null => {
-    if (task.referenceType === 'DiagnosticOrder' && task.referenceId) {
+    if (task.referenceType === 'DiagnosticOrder' && task.referenceId && canReadDx) {
       return `/diagnostics/${task.referenceId}?taskId=${task.id}`;
     }
-    if (task.encounterId) return `/encounters/${task.encounterId}`;
+    if (task.encounterId && canReadEncounter) return `/encounters/${task.encounterId}`;
     return null;
   };
 

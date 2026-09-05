@@ -39,7 +39,7 @@ export function ReceptionistDashboard() {
       const today = todayIsoDate();
       const res = await appointmentService.getAppointments({ page: 1, date: today, pageSize: 50 });
       if (!mounted.current) return;
-      setAppointments(res.data);
+      setAppointments(Array.isArray(res?.data) ? res.data : []);
     } catch {
       if (!mounted.current) return;
       setError('Could not load appointments for today.');

@@ -85,6 +85,8 @@ function makeResult(
     enteredBy: 'tech-1',
     verifiedBy: null,
     verifiedAt: null,
+    acknowledgedBy: null,
+    acknowledgedAt: null,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   };

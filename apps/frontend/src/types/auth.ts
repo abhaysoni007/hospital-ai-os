@@ -41,6 +41,7 @@ export type Permission =
   | 'diagnostic_result:read'
   | 'diagnostic_result:enter'
   | 'diagnostic_result:verify'
+  | 'diagnostic_result:acknowledge'
   // Encounter resource
   | 'encounter:create'
   | 'encounter:read'

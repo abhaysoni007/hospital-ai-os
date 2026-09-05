@@ -170,6 +170,22 @@ export class DiagnosticsController {
       next(error);
     }
   }
+
+  async acknowledgeResult(req: Request, res: Response, next: NextFunction) {
+    try {
+      const user = requireUser(req);
+      const orderId = uuidParam(req.params.orderId, 'orderId');
+      const result = await diagnosticsService.acknowledgeResult(
+        orderId,
+        user.staffId,
+        correlation(req),
+        ctx(user),
+      );
+      res.status(200).json({ data: result });
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 export const diagnosticsController = new DiagnosticsController();

@@ -109,6 +109,9 @@ export const diagnosticResults = pgTable(
       .references(() => staff.id),
     verifiedBy: uuid('verified_by').references(() => staff.id),
     verifiedAt: timestamp('verified_at', { withTimezone: true }),
+    // M-ACK: Physician/nurse acknowledges critical result after clinical review.
+    acknowledgedBy: uuid('acknowledged_by').references(() => staff.id),
+    acknowledgedAt: timestamp('acknowledged_at', { withTimezone: true }),
     aiSummary: text('ai_summary'),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),

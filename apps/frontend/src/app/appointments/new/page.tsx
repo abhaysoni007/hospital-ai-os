@@ -12,6 +12,8 @@ import { AlertBanner } from '../../../components/ui/Alert/AlertBanner';
 import { Skeleton } from '../../../components/ui/Skeleton/Skeleton';
 import { appointmentService } from '../../../services/appointment-service';
 import { patientService } from '../../../services/patient-service';
+import { useAuth } from '../../../hooks/useAuth';
+import { hasPermission } from '../../../utils/rbac';
 import { createAppointmentSchema } from 'shared';
 import type { PatientResponse } from 'shared';
 import styles from './new-appointment.module.css';
@@ -74,8 +76,15 @@ function BookingFlow() {
     scheduledTime: '09:00',
   });
 
+  const { user } = useAuth();
+  const canCreate = hasPermission(user?.role, 'appointment:create');
+
   // Load booking options (ADR-014).
   useEffect(() => {
+    if (!canCreate) {
+      setOptionsLoading(false);
+      return;
+    }
     appointmentService
       .getBookingOptions()
       .then((res) => {
@@ -84,7 +93,7 @@ function BookingFlow() {
       })
       .catch(() => setOptionsError('Booking options could not be loaded. Retry shortly.'))
       .finally(() => setOptionsLoading(false));
-  }, []);
+  }, [canCreate]);
 
   // Support ?patientId= handoff from the patient chart.
   useEffect(() => {

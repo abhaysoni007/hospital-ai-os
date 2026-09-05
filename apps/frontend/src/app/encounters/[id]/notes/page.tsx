@@ -34,8 +34,13 @@ export default function EncounterNotesPage() {
   const [showAiDraft, setShowAiDraft] = useState(false);
 
   const canWrite = hasPermission(user?.role, 'clinical_record:write');
+  const canRead = hasPermission(user?.role, 'clinical_record:read');
 
   useEffect(() => {
+    if (!canRead) {
+      setLoading(false);
+      return;
+    }
     let cancelled = false;
     setLoading(true);
     Promise.all([
@@ -58,7 +63,7 @@ export default function EncounterNotesPage() {
     return () => {
       cancelled = true;
     };
-  }, [encounterId]);
+  }, [encounterId, canRead]);
 
   return (
     <AppShell

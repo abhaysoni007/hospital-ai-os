@@ -19,14 +19,15 @@ import {
   TaskStatusBadge,
 } from '../../../components/ui/SemanticBadges/SemanticBadges';
 import { usePatient } from '../../../hooks/usePatient';
-import { Lock, AlertTriangle, RefreshCw } from 'lucide-react';
+import { Lock, AlertTriangle, RefreshCw, CheckCircle2 } from 'lucide-react';
 import { diagnosticsService } from '../../../services/diagnostics-service';
 import { getStaffIdentities } from '../../../services/staff-service';
 import { taskService } from '../../../services/task-service';
 import type { DiagnosticOrderResponse, DiagnosticResultResponse, TaskResponse } from 'shared';
 import styles from './order-detail.module.css';
 import { useAuth } from '../../../hooks/useAuth';
-import { canEnterResults, canVerifyResults, canCollectSamples } from '../../../utils/diagnostics';
+import { hasPermission } from '../../../utils/rbac';
+import { canEnterResults, canVerifyResults, canCollectSamples, canAcknowledgeCritical } from '../../../utils/diagnostics';
 import { DiagnosticTrend } from '../../../components/intelligence/DiagnosticTrend';
 
 export default function DiagnosticOrderDetailPage() {
@@ -69,6 +70,8 @@ function OrderDetailContent() {
   const [verifyError, setVerifyError] = useState<string | null>(null);
   const [conflict, setConflict] = useState(false);
   const [collecting, setCollecting] = useState(false);
+  const [acknowledging, setAcknowledging] = useState(false);
+  const [acknowledgeError, setAcknowledgeError] = useState<string | null>(null);
 
   const [task, setTask] = useState<TaskResponse | null>(null);
   const [taskAssigneeName, setTaskAssigneeName] = useState<string | null>(null);
@@ -78,8 +81,15 @@ function OrderDetailContent() {
   // M17 — patient identity band; the order payload only carries patientId.
   const { patient, error: patientError, reload: reloadPatient } = usePatient(order?.patientId);
 
+  const canReadDx =
+    hasPermission(role, 'diagnostic_order:read') || hasPermission(role, 'diagnostic_result:read');
+
   const fetchData = useCallback(async () => {
     if (!orderId) return;
+    if (!canReadDx) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -128,7 +138,7 @@ function OrderDetailContent() {
     } finally {
       setLoading(false);
     }
-  }, [orderId, taskId]);
+  }, [orderId, taskId, canReadDx]);
 
   useEffect(() => {
     fetchData();
@@ -200,10 +210,25 @@ function OrderDetailContent() {
     }
   };
 
+  const handleAcknowledge = async () => {
+    setAcknowledging(true);
+    setAcknowledgeError(null);
+    try {
+      const res = await diagnosticsService.acknowledgeResult(orderId!);
+      setResult(res.data);
+    } catch (err) {
+      setAcknowledgeError((err as Error).message || 'Failed to acknowledge result.');
+    } finally {
+      setAcknowledging(false);
+    }
+  };
+
   const critical = result?.isCritical === true || (result?.status as string) === 'critical_flagged';
   const verified = result?.status === 'verified';
   const isEnterer = !!result && user?.id === result.enteredBy;
   const showVerify = canVerifyResults(role) && !verified && !!result && !isEnterer;
+  const acknowledged = !!result?.acknowledgedBy;
+  const showAcknowledge = canAcknowledgeCritical(role) && !!result && !acknowledged;
 
   const snapshot = (result?.referenceRange ?? null) as {
     parameters?: Array<{
@@ -461,6 +486,16 @@ function OrderDetailContent() {
                   <span className={styles.metaLabel}>Verified at</span>
                   {result.verifiedAt ? new Date(result.verifiedAt).toLocaleString() : '—'}
                 </div>
+                <div>
+                  <span className={styles.metaLabel}>Acknowledged by</span>
+                  {result.acknowledgedBy
+                    ? <span className={styles.mono}>{result.acknowledgedBy.slice(0, 8)}…</span>
+                    : <span style={{ color: 'var(--text-tertiary)' }}>Not yet acknowledged</span>}
+                </div>
+                <div>
+                  <span className={styles.metaLabel}>Acknowledged at</span>
+                  {result.acknowledgedAt ? new Date(result.acknowledgedAt).toLocaleString() : '—'}
+                </div>
               </div>
             </Card>
 
@@ -472,6 +507,30 @@ function OrderDetailContent() {
                   be modified.
                 </span>
               </div>
+            )}
+
+            {acknowledged && (
+              <div className={styles.acknowledgedNotice} role="status">
+                <CheckCircle2 size={16} aria-hidden="true" />
+                <span>
+                  CLINICALLY ACKNOWLEDGED — a physician or nurse has reviewed this result and confirmed
+                  appropriate clinical action has been taken.
+                  {result.acknowledgedAt && (
+                    <> ({new Date(result.acknowledgedAt).toLocaleString()})</>
+                  )}
+                </span>
+              </div>
+            )}
+
+            {acknowledgeError && (
+              <AlertBanner
+                severity="critical"
+                title="Acknowledgement failed"
+                dismissible
+                onDismiss={() => setAcknowledgeError(null)}
+              >
+                {acknowledgeError}
+              </AlertBanner>
             )}
 
             {showVerify && (
@@ -492,6 +551,16 @@ function OrderDetailContent() {
               {showVerify && !confirmVerify && (
                 <Button variant="primary" onClick={() => setConfirmVerify(true)}>
                   Verify result
+                </Button>
+              )}
+              {showAcknowledge && (
+                <Button
+                  variant={critical ? 'danger' : 'primary'}
+                  isLoading={acknowledging}
+                  iconLeft={<CheckCircle2 size={16} />}
+                  onClick={() => void handleAcknowledge()}
+                >
+                  {critical ? 'Acknowledge critical result' : 'Acknowledge result'}
                 </Button>
               )}
               {!showVerify && !verified && result.status !== 'verified' && isEnterer && (
