@@ -54,18 +54,20 @@ export default function HumanAISection() {
       );
 
       // Headline
-      const headInner = headRef.current ? Array.from(headRef.current.querySelectorAll('.m-reveal-inner')) : [];
-      gsap.fromTo(
-        headInner,
-        { y: '105%' },
-        {
-          y: '0%',
-          duration: 1.2,
-          stagger: 0.1,
-          ease: 'power4.out',
-          scrollTrigger: { trigger: headRef.current, start: 'top 75%' },
-        }
-      );
+      if (headRef.current) {
+        const headInner = headRef.current.querySelectorAll('.m-reveal-inner');
+        gsap.fromTo(
+          headInner,
+          { y: '105%' },
+          {
+            y: '0%',
+            duration: 1.2,
+            stagger: 0.1,
+            ease: 'power4.out',
+            scrollTrigger: { trigger: headRef.current, start: 'top 75%' },
+          }
+        );
+      }
     }, sectionRef);
 
     return () => ctx.revert();

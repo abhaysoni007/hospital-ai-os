@@ -93,20 +93,20 @@ export default function FeaturesSection() {
   return (
     <section
       ref={sectionRef}
-      id="about"
+      id="intelligence"
       className="m-section"
       style={{
         background: 'var(--m-bg-deep)',
         padding: 'clamp(6rem, 14vh, 14rem) 0',
       }}
-      aria-label="Feature Overview"
+      aria-label="Core Capabilities"
     >
       <div className="m-container">
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 'clamp(4rem, 8vw, 10rem)', alignItems: 'start' }}>
           {/* Left sticky label */}
           <div style={{ position: 'sticky', top: '10rem' }}>
             <div className="m-label m-label-accent" style={{ marginBottom: '2rem' }}>
-              06 / Capabilities
+              04 / CORE INTELLIGENCE
             </div>
             <h2 className="m-section-head">
               Built for
