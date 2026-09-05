@@ -1,5 +1,9 @@
 'use client';
 
+/**
+ * Security Admin Audit Log Ledger Viewer
+ * Consumes existing GET /api/v1/audit endpoint with SHA-256 tamper-evident verification.
+ */
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Shield,
