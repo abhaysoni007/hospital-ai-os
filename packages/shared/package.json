@@ -10,6 +10,7 @@
     "test": "vitest run"
   },
   "devDependencies": {
+    "@types/node": "^20.0.0",
     "@types/uuid": "^11.0.0",
     "typescript": "^5.4.5",
     "vitest": "^4.1.11"
