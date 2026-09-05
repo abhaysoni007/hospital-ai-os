@@ -117,18 +117,19 @@ export default function CustomCursor() {
   useEffect(() => {
     const magnetics = document.querySelectorAll('[data-magnetic]');
 
-    const handlers: Array<{ el: Element; move: (e: MouseEvent) => void; leave: () => void }> = [];
+    const handlers: Array<{ el: Element; move: EventListener; leave: EventListener }> = [];
 
     magnetics.forEach((el) => {
       const htmlEl = el as HTMLElement;
       const strength = parseFloat(htmlEl.dataset.magnetic || '0.3');
 
-      function onMove(e: MouseEvent) {
+      function onMove(e: Event) {
+        const mouseEvent = e as MouseEvent;
         const rect = htmlEl.getBoundingClientRect();
         const cx = rect.left + rect.width / 2;
         const cy = rect.top + rect.height / 2;
-        const dx = (e.clientX - cx) * strength;
-        const dy = (e.clientY - cy) * strength;
+        const dx = (mouseEvent.clientX - cx) * strength;
+        const dy = (mouseEvent.clientY - cy) * strength;
         gsap.to(htmlEl, { x: dx, y: dy, duration: 0.3, ease: 'power2.out' });
       }
 
