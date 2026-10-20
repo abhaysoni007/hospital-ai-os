@@ -3,11 +3,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { NotificationItem } from 'shared';
 import { notificationService } from '../services/notification-service';
+import { useNotificationContext } from '../context/NotificationContext';
 
 /**
- * M12.2 — shared notification state for the header badge, notification panel
- * and dashboard work queue. Single fetch, no polling loops; consumers call
- * reload() after mutations.
+ * M12.2 / Phase 11 — shared notification state for header badge, notification panel,
+ * and dashboard work queue. When mounted within NotificationProvider, callers share
+ * a single fetch, avoiding duplicated requests and simultaneous polling storms.
  */
 
 export interface NotificationsState {
@@ -22,6 +23,14 @@ export interface NotificationsState {
 }
 
 export function useNotifications(pageSize = 20): NotificationsState {
+  const context = useNotificationContext();
+  if (context) {
+    return context;
+  }
+  return useStandaloneNotifications(pageSize);
+}
+
+function useStandaloneNotifications(pageSize = 20): NotificationsState {
   const [items, setItems] = useState<NotificationItem[]>([]);
   const [total, setTotal] = useState(0);
   const [isLoading, setIsLoading] = useState(true);

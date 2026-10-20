@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { Request, Response, NextFunction } from 'express';
-import { authMiddleware } from '../auth.middleware';
+import { authMiddleware, resetPublicKeyCache } from '../auth.middleware';
 import jwt from 'jsonwebtoken';
 import { config } from '../../config';
 import { resolveKeyPath } from '../../modules/auth/auth.service';
@@ -169,5 +169,36 @@ describe('Auth Middleware', () => {
 
     expect(res.status).toHaveBeenCalledWith(401);
     expect(next).not.toHaveBeenCalled();
+  });
+
+  it('caches the public key and avoids repeated filesystem reads on subsequent requests', () => {
+    resetPublicKeyCache();
+    const readSpy = vi.spyOn(fs, 'readFileSync');
+    const privateKey = getPrivateKey();
+    const token = jwt.sign(
+      { sub: 'staff-id', role: 'nurse', department_id: 'dept-id' },
+      privateKey,
+      { algorithm: 'RS256' },
+    );
+
+    const req1 = { headers: { authorization: `Bearer ${token}` } } as Request;
+    const res1 = { status: vi.fn().mockReturnThis(), json: vi.fn() } as unknown as Response;
+    const next1 = vi.fn() as NextFunction;
+
+    const req2 = { headers: { authorization: `Bearer ${token}` } } as Request;
+    const res2 = { status: vi.fn().mockReturnThis(), json: vi.fn() } as unknown as Response;
+    const next2 = vi.fn() as NextFunction;
+
+    const readsBefore = readSpy.mock.calls.length;
+    authMiddleware(req1, res1, next1);
+    const readsAfterFirst = readSpy.mock.calls.length;
+    authMiddleware(req2, res2, next2);
+    const readsAfterSecond = readSpy.mock.calls.length;
+
+    expect(next1).toHaveBeenCalled();
+    expect(next2).toHaveBeenCalled();
+    // First request may read key from disk, second request MUST use in-memory cache
+    expect(readsAfterSecond).toBe(readsAfterFirst);
+    readSpy.mockRestore();
   });
 });

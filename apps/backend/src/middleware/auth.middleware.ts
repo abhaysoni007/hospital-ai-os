@@ -14,6 +14,25 @@ declare global {
   }
 }
 
+let cachedPublicKey: string | null = null;
+
+export const getCachedPublicKey = (): string | null => {
+  if (cachedPublicKey) {
+    return cachedPublicKey;
+  }
+  const keyPath = resolveKeyPath(config.JWT_PUBLIC_KEY_PATH);
+  if (!fs.existsSync(keyPath)) {
+    return null;
+  }
+  const rawPublicKey = fs.readFileSync(keyPath, 'utf-8');
+  cachedPublicKey = formatAsPem(rawPublicKey, 'PUBLIC');
+  return cachedPublicKey;
+};
+
+export const resetPublicKeyCache = (): void => {
+  cachedPublicKey = null;
+};
+
 export const authMiddleware = (req: Request, res: Response, next: NextFunction) => {
   try {
     const authHeader = req.headers.authorization;
@@ -29,16 +48,13 @@ export const authMiddleware = (req: Request, res: Response, next: NextFunction) 
       return;
     }
 
-    const keyPath = resolveKeyPath(config.JWT_PUBLIC_KEY_PATH);
-    if (!fs.existsSync(keyPath)) {
+    const publicKey = getCachedPublicKey();
+    if (!publicKey) {
       res
         .status(500)
         .json({ error: { code: 'INTERNAL_ERROR', message: 'JWT configuration error' } });
       return;
     }
-
-    const rawPublicKey = fs.readFileSync(keyPath, 'utf-8');
-    const publicKey = formatAsPem(rawPublicKey, 'PUBLIC');
 
     // Strict RS256 algorithm enforcement
     const decoded = jwt.verify(token, publicKey, { algorithms: ['RS256'] }) as jwt.JwtPayload;

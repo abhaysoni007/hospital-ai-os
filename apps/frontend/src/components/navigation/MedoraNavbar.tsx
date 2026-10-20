@@ -1,453 +1,255 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
-import { usePathname } from 'next/navigation';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import gsap from 'gsap';
-
-const NAV_ITEMS = [
-  { num: '01', label: 'PLATFORM', href: '#platform' },
-  { num: '02', label: 'INTELLIGENCE', href: '#intelligence' },
-  { num: '03', label: 'WORKFLOWS', href: '#workflows' },
-  { num: '04', label: 'SECURITY', href: '#security' },
-  { num: '05', label: 'ABOUT', href: '#about' },
-  { num: '06', label: 'CONTACT', href: '#contact' },
-];
 
 interface MedoraNavbarProps {
-  isLoading?: boolean;
-  onEnter?: () => void;
+  onOpenDemo?: () => void;
 }
 
-export default function Navbar({ isLoading = false, onEnter }: MedoraNavbarProps) {
-  const [menuOpen, setMenuOpen] = useState(false);
+export default function MedoraNavbar({ onOpenDemo }: MedoraNavbarProps) {
   const [scrolled, setScrolled] = useState(false);
-  const overlayRef = useRef<HTMLDivElement>(null);
-  const itemsRef = useRef<(HTMLLIElement | null)[]>([]);
-  const pathname = usePathname();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
-    setMenuOpen(false);
-  }, [pathname]);
-
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 60);
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 20);
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Animate menu open/close
-  useEffect(() => {
-    const overlay = overlayRef.current;
-    if (!overlay) return;
-
-    const items = itemsRef.current.filter(Boolean);
-
-    if (menuOpen) {
-      // Lock body scroll
-      document.body.style.overflow = 'hidden';
-
-      // Open sequence
-      const tl = gsap.timeline();
-      tl.set(overlay, { display: 'flex' })
-        .to(overlay, {
-          opacity: 1,
-          duration: 0.5,
-          ease: 'power2.inOut',
-        })
-        .fromTo(
-          items,
-          { y: 60, opacity: 0 },
-          {
-            y: 0,
-            opacity: 1,
-            duration: 0.7,
-            stagger: 0.08,
-            ease: 'power3.out',
-          },
-          '-=0.2'
-        );
-    } else {
-      document.body.style.overflow = '';
-
-      // Close sequence
-      const tl = gsap.timeline();
-      tl.to(items, {
-        y: -40,
-        opacity: 0,
-        duration: 0.4,
-        stagger: 0.05,
-        ease: 'power2.in',
-      })
-        .to(
-          overlay,
-          {
-            opacity: 0,
-            duration: 0.4,
-            ease: 'power2.inOut',
-          },
-          '-=0.2'
-        )
-        .set(overlay, { display: 'none' });
-    }
-
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, [menuOpen]);
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && menuOpen) {
-        setMenuOpen(false);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [menuOpen]);
-
-  const closeMenu = () => setMenuOpen(false);
+  const navLinks = [
+    { label: 'Platform', href: '#platform' },
+    { label: 'Intelligence', href: '#intelligence' },
+    { label: 'Workflows', href: '#workflows' },
+    { label: 'Security', href: '#security' },
+    { label: 'About', href: '#human-ai' },
+  ];
 
   return (
-    <>
-      {/* Fixed Navbar */}
-      <nav
-        aria-label="MEDORA main navigation"
-        style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          zIndex: 1000,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '1.5rem clamp(1.5rem, 4vw, 5rem)',
-          background: scrolled
-            ? 'rgba(6, 10, 16, 0.85)'
-            : 'transparent',
-          backdropFilter: scrolled ? 'blur(12px)' : 'none',
-          borderBottom: scrolled ? '1px solid rgba(240,244,240,0.06)' : '1px solid transparent',
-          transition: 'background 0.5s, border-color 0.5s, backdrop-filter 0.5s',
-          pointerEvents: 'auto',
-        }}
-      >
-        {/* Logo */}
+    <header
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        zIndex: 100,
+        backgroundColor: scrolled ? 'rgba(239, 236, 230, 0.95)' : '#EFECE6',
+        backdropFilter: 'blur(12px)',
+        WebkitBackdropFilter: 'blur(12px)',
+        borderBottom: scrolled ? '1px solid #DDD7CD' : '1px solid transparent',
+        transition: 'all 0.2s ease',
+      }}
+    >
+      <div className="m-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '4.25rem' }}>
+        {/* Brand Logo */}
         <Link
           href="/"
           style={{
-            fontFamily: 'var(--m-font-label)',
-            fontSize: '0.75rem',
-            fontWeight: 600,
-            letterSpacing: '0.18em',
-            textTransform: 'uppercase',
-            color: 'var(--m-text-primary)',
+            display: 'inline-flex',
+            alignItems: 'baseline',
             textDecoration: 'none',
           }}
-          data-cursor-label="HOME"
-        >
-          MEDORA
-        </Link>
-
-        {/* Right side actions */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 'clamp(1rem, 2vw, 1.75rem)' }}>
-          {/* Top ENTER MEDORA CTA Button */}
-          <Link
-            href="/login"
-            data-cursor-label="ENTER"
-            onClick={(e) => {
-              if (isLoading) {
-                e.preventDefault();
-                return;
-              }
-              if (onEnter) {
-                onEnter();
-              }
-            }}
-            className={`m-nav-cta ${isLoading ? 'is-loading' : ''}`}
-            aria-busy={isLoading}
-          >
-            <span>ENTER MEDORA</span>
-            {isLoading ? (
-              <svg
-                className="m-spin"
-                style={{
-                  width: '1em',
-                  height: '1em',
-                  flexShrink: 0,
-                }}
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
-              >
-                <path d="M21 12a9 9 0 1 1-6.219-8.56" />
-              </svg>
-            ) : (
-              <span style={{ fontSize: '1.2em', lineHeight: 1 }} aria-hidden="true">
-                →
-              </span>
-            )}
-          </Link>
-
-          {/* Menu Toggle */}
-          <button
-            onClick={() => setMenuOpen(!menuOpen)}
-            aria-label={menuOpen ? 'Close navigation menu' : 'Open navigation menu'}
-            aria-expanded={menuOpen}
-            style={{
-              fontFamily: 'var(--m-font-label)',
-              fontSize: '0.7rem',
-              fontWeight: 500,
-              letterSpacing: '0.14em',
-              textTransform: 'uppercase',
-              color: 'var(--m-text-secondary)',
-              background: 'none',
-              border: 'none',
-              cursor: 'none',
-              padding: '0.5rem 0',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.75rem',
-              transition: 'color 0.3s',
-            }}
-            onMouseEnter={(e) => {
-              (e.currentTarget as HTMLButtonElement).style.color = 'var(--m-text-primary)';
-            }}
-            onMouseLeave={(e) => {
-              (e.currentTarget as HTMLButtonElement).style.color = 'var(--m-text-secondary)';
-            }}
-          >
-            {/* Hamburger Lines */}
-            <span
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '5px',
-              }}
-            >
-              <span
-                style={{
-                  width: menuOpen ? '20px' : '24px',
-                  height: '1px',
-                  background: 'currentColor',
-                  display: 'block',
-                  transition: 'width 0.3s, transform 0.3s',
-                  transform: menuOpen ? 'rotate(45deg) translate(4px, 4px)' : 'none',
-                  transformOrigin: 'left',
-                }}
-              />
-              <span
-                style={{
-                  width: '24px',
-                  height: '1px',
-                  background: 'currentColor',
-                  display: 'block',
-                  transition: 'opacity 0.3s',
-                  opacity: menuOpen ? 0 : 1,
-                }}
-              />
-              <span
-                style={{
-                  width: menuOpen ? '20px' : '24px',
-                  height: '1px',
-                  background: 'currentColor',
-                  display: 'block',
-                  transition: 'width 0.3s, transform 0.3s',
-                  transform: menuOpen ? 'rotate(-45deg) translate(4px, -4px)' : 'none',
-                  transformOrigin: 'left',
-                }}
-              />
-            </span>
-            {menuOpen ? 'CLOSE' : 'MENU'}
-          </button>
-        </div>
-      </nav>
-
-      {/* Fullscreen Navigation Overlay */}
-      <div
-        ref={overlayRef}
-        role="dialog"
-        aria-modal="true"
-        aria-label="Navigation menu"
-        style={{
-          display: 'none',
-          opacity: 0,
-          position: 'fixed',
-          inset: 0,
-          background: 'rgba(4, 7, 12, 0.98)',
-          backdropFilter: 'blur(24px)',
-          zIndex: 999,
-          flexDirection: 'column',
-          alignItems: 'stretch',
-          justifyContent: 'flex-start',
-          padding: 'clamp(5.5rem, 12vh, 8rem) clamp(1.5rem, 4vw, 5rem) clamp(2rem, 4vh, 3.5rem)',
-          overflowY: 'auto',
-          overflowX: 'hidden',
-        }}
-        onClick={(e) => {
-          if (e.target === overlayRef.current) closeMenu();
-        }}
-      >
-        {/* Label top-right */}
-        <div
-          style={{
-            position: 'absolute',
-            top: 'clamp(1.5rem, 3vh, 2.5rem)',
-            right: 'clamp(6rem, 8vw, 10rem)',
-            fontFamily: 'var(--m-font-label)',
-            fontSize: '0.65rem',
-            letterSpacing: '0.12em',
-            textTransform: 'uppercase',
-            color: 'var(--m-text-tertiary)',
-            pointerEvents: 'none',
-          }}
-        >
-          INTELLIGENT HEALTHCARE SYSTEM
-        </div>
-
-        {/* Inner container to ensure full scrollability and proper spacing */}
-        <div
-          style={{
-            minHeight: '100%',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'space-between',
-            width: '100%',
-            maxWidth: '1400px',
-            margin: '0 auto',
-          }}
-        >
-          {/* Navigation items */}
-          <ul
-            style={{
-              listStyle: 'none',
-              padding: 0,
-              margin: '0 0 2rem 0',
-              width: '100%',
-            }}
-            role="list"
-          >
-            {NAV_ITEMS.map((item, i) => (
-              <li
-                key={item.num}
-                ref={(el) => {
-                  itemsRef.current[i] = el;
-                }}
-                style={{
-                  borderTop: '1px solid var(--m-line)',
-                  padding: 'clamp(0.4rem, 1.2vh, 0.9rem) 0',
-                }}
-              >
-              <a
-                href={item.href}
-                onClick={closeMenu}
-                data-cursor-label="ENTER"
-                style={{
-                  display: 'flex',
-                  alignItems: 'baseline',
-                  gap: '2rem',
-                  textDecoration: 'none',
-                  color: 'var(--m-text-primary)',
-                  cursor: 'none',
-                }}
-                onMouseEnter={(e) => {
-                  const num = e.currentTarget.querySelector('.nav-num') as HTMLElement;
-                  const label = e.currentTarget.querySelector('.nav-label') as HTMLElement;
-                  gsap.to(label, {
-                    x: 24,
-                    color: 'var(--m-accent-light)',
-                    duration: 0.3,
-                    ease: 'power2.out',
-                  });
-                  gsap.to(num, { opacity: 1, duration: 0.3 });
-                }}
-                onMouseLeave={(e) => {
-                  const num = e.currentTarget.querySelector('.nav-num') as HTMLElement;
-                  const label = e.currentTarget.querySelector('.nav-label') as HTMLElement;
-                  gsap.to(label, {
-                    x: 0,
-                    color: 'var(--m-text-primary)',
-                    duration: 0.4,
-                    ease: 'power3.out',
-                  });
-                  gsap.to(num, { opacity: 0.4, duration: 0.3 });
-                }}
-              >
-                <span
-                  className="nav-num"
-                  style={{
-                    fontFamily: 'var(--m-font-label)',
-                    fontSize: 'clamp(0.65rem, 1vw, 0.75rem)',
-                    letterSpacing: '0.1em',
-                    color: 'var(--m-text-tertiary)',
-                    opacity: 0.4,
-                    minWidth: '2.5rem',
-                  }}
-                >
-                  {item.num}
-                </span>
-                <span
-                  className="nav-label"
-                  style={{
-                    fontFamily: 'var(--m-font-display)',
-                    fontSize: 'clamp(1.8rem, min(4.6vw, 5.8vh), 4.2rem)',
-                    fontWeight: 700,
-                    letterSpacing: '-0.03em',
-                    lineHeight: 1.05,
-                    willChange: 'transform',
-                  }}
-                >
-                  {item.label}
-                </span>
-              </a>
-            </li>
-          ))}
-        </ul>
-
-        {/* Footer row */}
-        <div
-          style={{
-            borderTop: '1px solid var(--m-line)',
-            paddingTop: '1.25rem',
-            width: '100%',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-          }}
+          aria-label="MEDORA"
         >
           <span
             style={{
-              fontFamily: 'var(--m-font-label)',
-              fontSize: '0.65rem',
-              letterSpacing: '0.1em',
-              color: 'var(--m-text-tertiary)',
-              textTransform: 'uppercase',
+              fontFamily: 'var(--m-font-sans)',
+              fontSize: '1.25rem',
+              fontWeight: 800,
+              letterSpacing: '-0.04em',
+              color: '#111827',
             }}
           >
-            MEDORA OS — v1.0
+            MEDORA
           </span>
-          <a
-            href="#contact"
-            onClick={closeMenu}
+          <span
             style={{
-              fontFamily: 'var(--m-font-label)',
-              fontSize: '0.65rem',
-              letterSpacing: '0.1em',
-              color: 'var(--m-accent-light)',
-              textTransform: 'uppercase',
+              width: '6px',
+              height: '6px',
+              borderRadius: '50%',
+              backgroundColor: '#E11D48',
+              display: 'inline-block',
+              marginLeft: '2px',
+            }}
+            aria-hidden="true"
+          />
+        </Link>
+
+        {/* Desktop Navigation Links */}
+        <nav
+          style={{
+            display: 'none',
+            alignItems: 'center',
+            gap: '2rem',
+          }}
+          className="desktop-nav"
+        >
+          {navLinks.map((link) => (
+            <a
+              key={link.label}
+              href={link.href}
+              style={{
+                fontSize: '0.85rem',
+                fontWeight: 500,
+                color: '#4B5563',
+                textDecoration: 'none',
+                transition: 'color 0.15s ease',
+              }}
+              onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = '#111827')}
+              onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = '#4B5563')}
+            >
+              {link.label}
+            </a>
+          ))}
+        </nav>
+
+        {/* Desktop Actions */}
+        <div
+          style={{
+            display: 'none',
+            alignItems: 'center',
+            gap: '1.25rem',
+          }}
+          className="desktop-actions"
+        >
+          <Link
+            href="/login"
+            style={{
+              fontSize: '0.85rem',
+              fontWeight: 500,
+              color: '#374151',
               textDecoration: 'none',
-              cursor: 'none',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.25rem',
             }}
           >
-            REQUEST ACCESS →
-          </a>
+            <span>Explore platform</span>
+            <span aria-hidden="true">→</span>
+          </Link>
+
+          <button
+            onClick={onOpenDemo}
+            className="m-btn-primary"
+            style={{
+              fontSize: '0.825rem',
+              padding: '0.55rem 1rem',
+              borderRadius: '0.375rem',
+            }}
+          >
+            <span>Request a demo</span>
+            <span aria-hidden="true">↗</span>
+          </button>
         </div>
+
+        {/* Mobile Hamburger Button */}
+        <button
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          aria-label={mobileMenuOpen ? 'Close Menu' : 'Open Menu'}
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            alignItems: 'center',
+            width: '2.5rem',
+            height: '2.5rem',
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            padding: 0,
+          }}
+          className="mobile-toggle"
+        >
+          <span
+            style={{
+              width: '1.25rem',
+              height: '2px',
+              backgroundColor: '#111827',
+              marginBottom: '4px',
+              transition: 'all 0.2s ease',
+              transform: mobileMenuOpen ? 'rotate(45deg) translate(3px, 4px)' : 'none',
+            }}
+          />
+          <span
+            style={{
+              width: '1.25rem',
+              height: '2px',
+              backgroundColor: '#111827',
+              transition: 'all 0.2s ease',
+              opacity: mobileMenuOpen ? 0 : 1,
+            }}
+          />
+          <span
+            style={{
+              width: '1.25rem',
+              height: '2px',
+              backgroundColor: '#111827',
+              marginTop: '4px',
+              transition: 'all 0.2s ease',
+              transform: mobileMenuOpen ? 'rotate(-45deg) translate(3px, -4px)' : 'none',
+            }}
+          />
+        </button>
       </div>
-      </div>
-    </>
+
+      {/* Mobile Drawer Menu */}
+      {mobileMenuOpen && (
+        <div
+          style={{
+            backgroundColor: '#EFECE6',
+            borderBottom: '1px solid #DDD7CD',
+            padding: '1.25rem clamp(1.25rem, 3.5vw, 2.5rem) 1.75rem',
+          }}
+        >
+          <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem', marginBottom: '1.25rem' }}>
+            {navLinks.map((link) => (
+              <a
+                key={link.label}
+                href={link.href}
+                onClick={() => setMobileMenuOpen(false)}
+                style={{
+                  fontSize: '0.95rem',
+                  fontWeight: 600,
+                  color: '#111827',
+                  textDecoration: 'none',
+                }}
+              >
+                {link.label}
+              </a>
+            ))}
+          </nav>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', paddingTop: '1rem', borderTop: '1px solid #DDD7CD' }}>
+            <Link
+              href="/login"
+              onClick={() => setMobileMenuOpen(false)}
+              className="m-btn-secondary"
+              style={{ width: '100%', justifyContent: 'center' }}
+            >
+              Explore platform →
+            </Link>
+            <button
+              onClick={() => {
+                setMobileMenuOpen(false);
+                if (onOpenDemo) onOpenDemo();
+              }}
+              className="m-btn-primary"
+              style={{ width: '100%', justifyContent: 'center' }}
+            >
+              Request a demo ↗
+            </button>
+          </div>
+        </div>
+      )}
+
+      <style>{`
+        @media (min-width: 860px) {
+          .desktop-nav { display: flex !important; }
+          .desktop-actions { display: flex !important; }
+          .mobile-toggle { display: none !important; }
+        }
+      `}</style>
+    </header>
   );
 }

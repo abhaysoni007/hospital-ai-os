@@ -1,102 +1,73 @@
 'use client';
 
-import { useState, useEffect, useCallback, Suspense } from 'react';
-import dynamic from 'next/dynamic';
+import { useState } from 'react';
 import '../../styles/medora-landing.css';
 
-// Motion infrastructure
-import SmoothScroll from '../../components/motion/SmoothScroll';
-import LoadingScreen from '../../components/motion/LoadingScreen';
-
-// Eager-loaded components
+// Section components
 import MedoraNavbar from '../../components/navigation/MedoraNavbar';
 import HeroSection from '../../components/sections/Hero';
+import ProofStrip from '../../components/sections/ProofStrip';
 import IntroductionSection from '../../components/sections/Introduction';
-import SystemSection from '../../components/sections/System';
-import WorkflowSection from '../../components/sections/Workflow';
-import SecuritySection from '../../components/sections/Security';
-import HumanAISection from '../../components/sections/HumanAI';
 import FeaturesSection from '../../components/sections/Features';
+import WorkflowSection from '../../components/sections/Workflow';
+import HumanAISection from '../../components/sections/HumanAI';
+import SecuritySection from '../../components/sections/Security';
 import MetricsSection from '../../components/sections/Metrics';
+import FinalCTA from '../../components/sections/FinalCTA';
 import Footer from '../../components/sections/Footer';
-
-// Dynamic imports for heavy/interactive components
-const FinalCTA = dynamic(() => import('../../components/sections/FinalCTA'), { ssr: false });
-const CustomCursor = dynamic(() => import('../../components/motion/CustomCursor'), { ssr: false });
+import RequestDemoModal from '../../components/modals/RequestDemoModal';
 
 export default function MedoraLanding() {
-  const [loading, setLoading] = useState(true);
-  const [mounted, setMounted] = useState(false);
-  const [isNavigating, setIsNavigating] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  const handleLoadComplete = useCallback(() => {
-    setLoading(false);
-  }, []);
-
-  const handleEnter = useCallback(() => {
-    setIsNavigating(true);
-  }, []);
+  const [isDemoOpen, setIsDemoOpen] = useState(false);
 
   return (
     <div
       data-marketing="true"
+      className="medora-root"
       style={{
-        background: 'var(--m-bg-void)',
-        color: 'var(--m-text-primary)',
+        backgroundColor: '#EFECE6',
+        color: '#111827',
         minHeight: '100vh',
       }}
     >
-      {/* Branded loading sequence */}
-      {loading && mounted && <LoadingScreen onComplete={handleLoadComplete} />}
+      {/* Fixed Navigation */}
+      <MedoraNavbar onOpenDemo={() => setIsDemoOpen(true)} />
 
-      {/* Custom cursor — desktop only, SSR-safe */}
-      {mounted && <CustomCursor />}
+      {/* Main Landing Flow */}
+      <main id="main-content">
+        {/* 01 — Hero with Realistic EMR Mockup & CTAs */}
+        <HeroSection onOpenDemo={() => setIsDemoOpen(true)} />
 
-      {!loading && (
-        <SmoothScroll>
-          {/* Fixed navigation */}
-          <MedoraNavbar isLoading={isNavigating} onEnter={handleEnter} />
+        {/* 02 — Key Proof & Compliance Strip */}
+        <ProofStrip />
 
-          {/* Main content */}
-          <main id="main-content">
-            {/* 01 — Hero with 3D core and scroll choreography */}
-            <HeroSection />
+        {/* 03 — The Fragmentation Problem & Connected Platform Architecture */}
+        <IntroductionSection />
 
-            {/* 02 — Introduction: masked line reveals */}
-            <IntroductionSection />
+        {/* 04 — Intelligent Workflow Modules: 5-Card Bento Grid */}
+        <FeaturesSection />
 
-            {/* 03 — Platform: animated SVG system network */}
-            <SystemSection />
+        {/* 05 — The Care Continuum: 6-Step Workflow */}
+        <WorkflowSection />
 
-            {/* 04 — Intelligence / Core Capabilities: interactive vertical sequence */}
-            <FeaturesSection />
+        {/* 06 — Human + AI Philosophy: High-Contrast Clinical Governance */}
+        <HumanAISection />
 
-            {/* 05 — Workflow: horizontal pinned scroll */}
-            <WorkflowSection />
+        {/* 07 — Security by Architecture & Data Pipeline */}
+        <SecuritySection />
 
-            {/* 06 — Metrics: architectural telemetry scale */}
-            <MetricsSection />
+        {/* 08 — Operational Command Center & Attention Queue */}
+        <MetricsSection />
 
-            {/* 07 — Security: grid and architectural trust */}
-            <SecuritySection />
+        {/* 09 — Radiant Royal Blue Closing CTA */}
+        <FinalCTA onOpenDemo={() => setIsDemoOpen(true)} />
+      </main>
 
-            {/* 08 — Human + AI: split convergence */}
-            <HumanAISection />
+      {/* 10 — Footer with Links & Regulatory Medical Disclaimer */}
+      <Footer />
 
-            {/* 09 — Final CTA: cinematic closing */}
-            <Suspense fallback={null}>
-              <FinalCTA isLoading={isNavigating} onEnter={handleEnter} />
-            </Suspense>
-          </main>
-
-          {/* Footer */}
-          <Footer />
-        </SmoothScroll>
-      )}
+      {/* Interactive Request a Demo Modal */}
+      <RequestDemoModal isOpen={isDemoOpen} onClose={() => setIsDemoOpen(false)} />
     </div>
   );
 }

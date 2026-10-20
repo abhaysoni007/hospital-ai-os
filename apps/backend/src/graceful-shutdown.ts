@@ -1,10 +1,7 @@
 import { Server } from 'http';
 import { logger } from './logger';
 import { abortInFlightAiCalls } from './modules/ai/orchestrator';
-
-// In a real app we might close postgres/redis connections here
-// But since we use Drizzle with a postgres client, we can export the connection to close it if needed.
-// For now, we simulate safe shutdown.
+import { dbClient } from './db';
 
 export const setupGracefulShutdown = (server: Server) => {
   const shutdown = async (signal: string) => {
@@ -25,9 +22,14 @@ export const setupGracefulShutdown = (server: Server) => {
       process.exit(1);
     }, 10000);
 
-    server.close(() => {
+    server.close(async () => {
       logger.info('HTTP server closed.');
-      // Add db connection close here if exposed
+      try {
+        await dbClient.end({ timeout: 5 });
+        logger.info('Database connections drained successfully.');
+      } catch (err) {
+        logger.warn({ err }, 'Error draining database connections (continuing)');
+      }
       process.exit(0);
     });
   };

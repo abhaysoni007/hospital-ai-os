@@ -1,114 +1,123 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
-import gsap from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
-
-gsap.registerPlugin(ScrollTrigger);
-
-const LINES = [
-  'Healthcare is complex.',
-  'MEDORA makes the',
-  'complexity intelligent.',
-];
-
 export default function IntroductionSection() {
-  const sectionRef = useRef<HTMLElement>(null);
-  const linesRef = useRef<(HTMLDivElement | null)[]>([]);
-  const labelRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const ctx = gsap.context(() => {
-      // Label reveal
-      gsap.fromTo(
-        labelRef.current,
-        { opacity: 0 },
-        {
-          opacity: 1,
-          duration: 0.8,
-          scrollTrigger: {
-            trigger: labelRef.current,
-            start: 'top 85%',
-          },
-        }
-      );
-
-      // Staggered masked line reveals
-      linesRef.current.forEach((line, i) => {
-        if (!line) return;
-        const inner = line.querySelector('.m-reveal-inner');
-        gsap.fromTo(
-          inner,
-          { y: '105%' },
-          {
-            y: '0%',
-            duration: 1.1,
-            ease: 'power4.out',
-            scrollTrigger: {
-              trigger: line,
-              start: 'top 82%',
-            },
-            delay: i * 0.08,
-          }
-        );
-      });
-    }, sectionRef);
-
-    return () => ctx.revert();
-  }, []);
-
   return (
     <section
-      ref={sectionRef}
-      id="introduction"
-      className="m-section"
+      id="platform"
+      className="m-section-pad"
       style={{
-        background: 'var(--m-bg-void)',
-        padding: 'clamp(8rem, 18vh, 18rem) 0',
+        backgroundColor: '#EFECE6',
       }}
-      aria-label="Introduction"
+      aria-label="The Fragmentation Problem"
     >
       <div className="m-container">
-        <div ref={labelRef} className="m-label m-label-accent" style={{ marginBottom: '4rem', opacity: 0 }}>
-          02 / Introduction
-        </div>
-
-        {LINES.map((line, i) => (
-          <div
-            key={i}
-            ref={(el) => {
-              linesRef.current[i] = el;
-            }}
-            className="m-reveal-mask"
-            style={{
-              marginBottom: i < LINES.length - 1 ? '0.15em' : 0,
-            }}
-          >
-            <span
-              className="m-reveal-inner m-section-head"
-              style={{
-                display: 'block',
-                color: i === 2 ? 'var(--m-accent-light)' : 'var(--m-text-primary)',
-              }}
-            >
-              {line}
-            </span>
-          </div>
-        ))}
-
-        {/* Supporting text */}
-        <p
-          className="m-body"
+        <div
+          className="m-grid-split"
           style={{
-            maxWidth: '55ch',
-            marginTop: 'clamp(3rem, 6vh, 5rem)',
-            paddingLeft: 'clamp(0px, 4vw, 8rem)',
+            display: 'grid',
+            gridTemplateColumns: '1.15fr 1fr',
+            gap: 'clamp(2.5rem, 5vw, 4.5rem)',
+            alignItems: 'center',
           }}
         >
-          From clinical workflows to operational intelligence — MEDORA brings
-          coherence to the inherent complexity of modern hospital systems,
-          without introducing friction into the care process.
-        </p>
+          {/* Left: Problem Statement */}
+          <div>
+            <div className="m-eyebrow m-eyebrow-coral">
+              <span
+                style={{
+                  width: '5px',
+                  height: '5px',
+                  borderRadius: '50%',
+                  backgroundColor: '#E11D48',
+                  display: 'inline-block',
+                }}
+              />
+              THE FRAGMENTATION PROBLEM
+            </div>
+
+            <h2
+              className="m-heading-section"
+              style={{
+                marginBottom: '1.25rem',
+                maxWidth: '18ch',
+              }}
+            >
+              Clinical context shouldn&apos;t live in silos.
+            </h2>
+
+            <p
+              className="m-subheading"
+              style={{
+                maxWidth: '46ch',
+                marginBottom: '1.5rem',
+              }}
+            >
+              Patient records, laboratory results and operational systems often tell separate parts of the same story. MEDORA brings relevant context into a shared working view, helping teams find what matters while clinical responsibility stays firmly with the people delivering care.
+            </p>
+          </div>
+
+          {/* Right: Circular Connected Node Graph from PDF */}
+          <div
+            style={{
+              backgroundColor: '#FFFFFF',
+              border: '1px solid #DDD7CD',
+              borderRadius: '0.5rem',
+              padding: 'clamp(1.5rem, 3vw, 2.5rem)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <svg
+              viewBox="0 0 380 320"
+              style={{ width: '100%', height: 'auto', maxHeight: '320px' }}
+              aria-label="Connected Context Diagram"
+            >
+              {/* Lines */}
+              <line x1="190" y1="160" x2="110" y2="85" stroke="#CBD5E1" strokeWidth="1.2" strokeDasharray="3 3" />
+              <line x1="190" y1="160" x2="285" y2="95" stroke="#CBD5E1" strokeWidth="1.2" strokeDasharray="3 3" />
+              <line x1="190" y1="160" x2="110" y2="235" stroke="#CBD5E1" strokeWidth="1.2" strokeDasharray="3 3" />
+              <line x1="190" y1="160" x2="280" y2="230" stroke="#CBD5E1" strokeWidth="1.2" strokeDasharray="3 3" />
+              <line x1="190" y1="160" x2="190" y2="265" stroke="#CBD5E1" strokeWidth="1.2" strokeDasharray="3 3" />
+
+              {/* Central Nucleus Node */}
+              <circle cx="190" cy="160" r="46" fill="#1D5BD8" />
+              <text x="190" y="156" textAnchor="middle" fill="#FFFFFF" fontSize="10" fontWeight="700" fontFamily="Plus Jakarta Sans, sans-serif">
+                CONNECTED
+              </text>
+              <text x="190" y="170" textAnchor="middle" fill="#FFFFFF" fontSize="10" fontWeight="700" fontFamily="Plus Jakarta Sans, sans-serif">
+                CONTEXT
+              </text>
+
+              {/* Satellite Node: Patient (Top Left) */}
+              <circle cx="110" cy="85" r="28" fill="#F8FAFC" stroke="#CBD5E1" strokeWidth="1.2" />
+              <text x="110" y="89" textAnchor="middle" fill="#1E293B" fontSize="9.5" fontWeight="600" fontFamily="Plus Jakarta Sans, sans-serif">
+                Patient
+              </text>
+
+              {/* Satellite Node: Labs (Top Right - Amber) */}
+              <circle cx="285" cy="95" r="30" fill="#D97706" />
+              <text x="285" y="99" textAnchor="middle" fill="#FFFFFF" fontSize="10" fontWeight="600" fontFamily="Plus Jakarta Sans, sans-serif">
+                Labs
+              </text>
+
+              {/* Satellite Node: Operations (Bottom Left - Coral) */}
+              <circle cx="110" cy="235" r="30" fill="#E11D48" />
+              <text x="110" y="239" textAnchor="middle" fill="#FFFFFF" fontSize="9" fontWeight="600" fontFamily="Plus Jakarta Sans, sans-serif">
+                Operations
+              </text>
+
+              {/* Satellite Node: Notes (Bottom Right) */}
+              <circle cx="280" cy="230" r="28" fill="#F8FAFC" stroke="#CBD5E1" strokeWidth="1.2" />
+              <text x="280" y="234" textAnchor="middle" fill="#1E293B" fontSize="9.5" fontWeight="600" fontFamily="Plus Jakarta Sans, sans-serif">
+                Notes
+              </text>
+
+              {/* Satellite Node: System (Bottom Center - Small Dark Navy) */}
+              <circle cx="190" cy="265" r="20" fill="#0F172A" />
+            </svg>
+          </div>
+        </div>
       </div>
     </section>
   );

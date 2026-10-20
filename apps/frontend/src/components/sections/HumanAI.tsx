@@ -1,248 +1,197 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
-import gsap from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
-
-gsap.registerPlugin(ScrollTrigger);
+import { ArrowRight } from 'lucide-react';
 
 export default function HumanAISection() {
-  const sectionRef = useRef<HTMLElement>(null);
-  const leftRef = useRef<HTMLDivElement>(null);
-  const rightRef = useRef<HTMLDivElement>(null);
-  const dividerRef = useRef<HTMLDivElement>(null);
-  const headRef = useRef<HTMLHeadingElement>(null);
-
-  useEffect(() => {
-    const ctx = gsap.context(() => {
-      // Split entry — left from left, right from right
-      gsap.fromTo(
-        leftRef.current,
-        { x: '-8%', opacity: 0 },
-        {
-          x: '0%',
-          opacity: 1,
-          duration: 1.2,
-          ease: 'power3.out',
-          scrollTrigger: { trigger: sectionRef.current, start: 'top 65%' },
-        }
-      );
-
-      gsap.fromTo(
-        rightRef.current,
-        { x: '8%', opacity: 0 },
-        {
-          x: '0%',
-          opacity: 1,
-          duration: 1.2,
-          ease: 'power3.out',
-          scrollTrigger: { trigger: sectionRef.current, start: 'top 65%' },
-          delay: 0.1,
-        }
-      );
-
-      // Divider fades and converges
-      gsap.fromTo(
-        dividerRef.current,
-        { scaleY: 0 },
-        {
-          scaleY: 1,
-          duration: 1,
-          ease: 'power4.out',
-          scrollTrigger: { trigger: sectionRef.current, start: 'top 60%' },
-        }
-      );
-
-      // Headline
-      if (headRef.current) {
-        const headInner = headRef.current.querySelectorAll('.m-reveal-inner');
-        gsap.fromTo(
-          headInner,
-          { y: '105%' },
-          {
-            y: '0%',
-            duration: 1.2,
-            stagger: 0.1,
-            ease: 'power4.out',
-            scrollTrigger: { trigger: headRef.current, start: 'top 75%' },
-          }
-        );
-      }
-    }, sectionRef);
-
-    return () => ctx.revert();
-  }, []);
+  const flowSteps = [
+    'clinical sources',
+    'governed synthesis',
+    'review by clinician',
+    'signed record',
+  ];
 
   return (
     <section
-      ref={sectionRef}
-      id="about"
-      className="m-section"
+      id="human-ai"
+      className="m-section-pad"
       style={{
-        background: 'var(--m-bg-mid)',
-        padding: 'clamp(8rem, 18vh, 18rem) 0',
+        backgroundColor: '#111827',
+        color: '#FFFFFF',
       }}
-      aria-label="Human and AI partnership"
+      aria-label="Human and AI Responsibility"
     >
       <div className="m-container">
-        <div className="m-label m-label-accent" style={{ marginBottom: '4rem' }}>
-          08 / Human + AI
-        </div>
-
-        <h2
-          ref={headRef}
-          className="m-section-head"
-          style={{ marginBottom: 'clamp(5rem, 10vh, 10rem)', maxWidth: '24ch' }}
-        >
-          <div className="m-reveal-mask"><span className="m-reveal-inner">Intelligence that</span></div>
-          <div className="m-reveal-mask"><span className="m-reveal-inner">works with</span></div>
-          <div className="m-reveal-mask"><span className="m-reveal-inner" style={{ color: 'var(--m-accent-light)' }}>people.</span></div>
-        </h2>
-
-        {/* Split panel */}
+        {/* Header Row */}
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: '1fr 1px 1fr',
-            gap: '0',
-            alignItems: 'start',
+            gridTemplateColumns: '1.2fr 1fr',
+            gap: 'clamp(2rem, 5vw, 4rem)',
+            alignItems: 'flex-end',
+            marginBottom: 'clamp(2.5rem, 5vw, 3.5rem)',
+          }}
+          className="m-grid-split"
+        >
+          <div>
+            <div
+              style={{
+                fontSize: '0.72rem',
+                fontWeight: 700,
+                color: '#38BDF8',
+                textTransform: 'uppercase',
+                letterSpacing: '0.08em',
+                marginBottom: '0.75rem',
+              }}
+            >
+              MISSION · 01
+            </div>
+
+            <h2
+              className="m-heading-section"
+              style={{
+                color: '#FFFFFF',
+                maxWidth: '16ch',
+              }}
+            >
+              Intelligence with a human hand on the record.
+            </h2>
+          </div>
+
+          <p
+            style={{
+              fontSize: '0.95rem',
+              color: '#9CA3AF',
+              lineHeight: 1.65,
+              fontWeight: 400,
+            }}
+          >
+            Useful AI helps teams prepare and review information. It does not make autonomous clinical decisions.
+          </p>
+        </div>
+
+        {/* 2 Comparison Cards */}
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+            gap: '1.25rem',
+            marginBottom: '2.5rem',
           }}
         >
-          {/* Left — Human */}
-          <div ref={leftRef} style={{ paddingRight: 'clamp(2rem, 5vw, 6rem)', opacity: 0 }}>
-            <div
-              style={{
-                fontFamily: 'var(--m-font-label)',
-                fontSize: '0.65rem',
-                letterSpacing: '0.14em',
-                textTransform: 'uppercase',
-                color: 'var(--m-text-tertiary)',
-                marginBottom: '2rem',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '1rem',
-              }}
-            >
-              <span style={{ width: '2rem', height: '1px', background: 'var(--m-line-strong)', display: 'inline-block' }} />
-              CLINICAL EXPERTISE
-            </div>
-
-            <div
-              style={{
-                fontFamily: 'var(--m-font-display)',
-                fontSize: 'clamp(1.5rem, 3vw, 3.5rem)',
-                fontWeight: 600,
-                color: 'var(--m-text-primary)',
-                letterSpacing: '-0.02em',
-                marginBottom: '2rem',
-                lineHeight: 1.1,
-              }}
-            >
-              The clinician
-              <br />
-              decides.
-            </div>
-
-            <p className="m-body">
-              MEDORA augments clinical judgment — it does not replace it. The
-              system surfaces what matters, when it matters, without
-              interrupting the human relationship at the center of care.
-            </p>
-
-            {/* Attributes */}
-            {['Contextual awareness', 'Non-intrusive support', 'Clinician-first design'].map((item) => (
-              <div
-                key={item}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '1rem',
-                  marginTop: '1.5rem',
-                  fontFamily: 'var(--m-font-label)',
-                  fontSize: '0.7rem',
-                  letterSpacing: '0.08em',
-                  color: 'var(--m-text-secondary)',
-                }}
-              >
-                <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--m-accent)', flexShrink: 0 }} />
-                {item.toUpperCase()}
-              </div>
-            ))}
-          </div>
-
-          {/* Divider */}
+          {/* Card 1: Accountability */}
           <div
-            ref={dividerRef}
             style={{
-              background: 'var(--m-line-strong)',
-              height: '100%',
-              minHeight: '400px',
-              transformOrigin: 'top',
-              transform: 'scaleY(0)',
+              backgroundColor: '#182234',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              borderRadius: '0.5rem',
+              padding: 'clamp(1.5rem, 3vw, 2.25rem)',
             }}
-          />
-
-          {/* Right — AI */}
-          <div ref={rightRef} style={{ paddingLeft: 'clamp(2rem, 5vw, 6rem)', opacity: 0 }}>
+          >
             <div
               style={{
-                fontFamily: 'var(--m-font-label)',
-                fontSize: '0.65rem',
-                letterSpacing: '0.14em',
+                fontSize: '0.68rem',
+                fontWeight: 700,
+                color: '#94A3B8',
                 textTransform: 'uppercase',
-                color: 'var(--m-text-tertiary)',
-                marginBottom: '2rem',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '1rem',
+                letterSpacing: '0.08em',
+                marginBottom: '0.6rem',
               }}
             >
-              <span style={{ width: '2rem', height: '1px', background: 'var(--m-line-strong)', display: 'inline-block' }} />
-              MACHINE INTELLIGENCE
+              01 / ACCOUNTABILITY
             </div>
 
+            <h3
+              style={{
+                fontSize: '1.35rem',
+                fontWeight: 800,
+                color: '#FFFFFF',
+                letterSpacing: '-0.02em',
+                marginBottom: '0.75rem',
+              }}
+            >
+              The clinician makes the call
+            </h3>
+
+            <p style={{ color: '#9CA3AF', fontSize: '0.875rem', lineHeight: 1.6 }}>
+              Clinicians remain responsible for decisions and clinical documentation. They review, correct and approve content before it becomes a signed record.
+            </p>
+          </div>
+
+          {/* Card 2: Assistance */}
+          <div
+            style={{
+              backgroundColor: '#182234',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              borderRadius: '0.5rem',
+              padding: 'clamp(1.5rem, 3vw, 2.25rem)',
+            }}
+          >
             <div
               style={{
-                fontFamily: 'var(--m-font-display)',
-                fontSize: 'clamp(1.5rem, 3vw, 3.5rem)',
-                fontWeight: 600,
-                color: 'var(--m-accent-light)',
-                letterSpacing: '-0.02em',
-                marginBottom: '2rem',
-                lineHeight: 1.1,
+                fontSize: '0.68rem',
+                fontWeight: 700,
+                color: '#38BDF8',
+                textTransform: 'uppercase',
+                letterSpacing: '0.08em',
+                marginBottom: '0.6rem',
               }}
             >
-              MEDORA
-              <br />
-              synthesizes.
+              02 / ASSISTANCE
             </div>
 
-            <p className="m-body">
-              Across thousands of simultaneous signals — clinical, diagnostic,
-              operational, and historical — MEDORA maintains coherence so
-              clinical teams can focus on what only humans can do.
-            </p>
+            <h3
+              style={{
+                fontSize: '1.35rem',
+                fontWeight: 800,
+                color: '#FFFFFF',
+                letterSpacing: '-0.02em',
+                marginBottom: '0.75rem',
+              }}
+            >
+              AI brings the context together
+            </h3>
 
-            {/* Attributes */}
-            {['Cross-system synthesis', 'Real-time signal processing', 'Adaptive to context'].map((item) => (
+            <p style={{ color: '#9CA3AF', fontSize: '0.875rem', lineHeight: 1.6 }}>
+              AI can draft, summarize, surface trends and flag missing documentation with source-grounded references for a person to verify.
+            </p>
+          </div>
+        </div>
+
+        {/* Bottom Connected Step Flow */}
+        <div
+          style={{
+            borderTop: '1px solid rgba(255, 255, 255, 0.1)',
+            paddingTop: '2rem',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: '0.75rem',
+          }}
+        >
+          {flowSteps.map((step, idx) => (
+            <div key={step} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flex: 1, minWidth: '180px' }}>
               <div
-                key={item}
                 style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '1rem',
-                  marginTop: '1.5rem',
-                  fontFamily: 'var(--m-font-label)',
-                  fontSize: '0.7rem',
-                  letterSpacing: '0.08em',
-                  color: 'var(--m-text-secondary)',
+                  backgroundColor: '#182234',
+                  border: '1px solid rgba(56, 189, 248, 0.3)',
+                  borderRadius: '0.375rem',
+                  padding: '0.75rem 1rem',
+                  color: '#F8FAFC',
+                  fontSize: '0.8rem',
+                  fontWeight: 600,
+                  width: '100%',
+                  textAlign: 'center',
+                  textTransform: 'lowercase',
                 }}
               >
-                <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--m-accent-light)', flexShrink: 0 }} />
-                {item.toUpperCase()}
+                {step}
               </div>
-            ))}
-          </div>
+              {idx < flowSteps.length - 1 && (
+                <ArrowRight size={16} color="#64748B" style={{ flexShrink: 0 }} />
+              )}
+            </div>
+          ))}
         </div>
       </div>
     </section>

@@ -1,9 +1,10 @@
 import React from 'react';
 import type { Metadata } from 'next';
 import { Inter, Syne, Space_Grotesk } from 'next/font/google';
-import Script from 'next/script';
 import { AuthProvider } from '../context/AuthContext';
-import { ThemeProvider, THEME_STORAGE_KEY } from '../context/ThemeContext';
+import { NotificationProvider } from '../context/NotificationContext';
+import { THEME_STORAGE_KEY } from '../context/theme-constants';
+import { ThemeProvider } from '../context/ThemeContext';
 import { ToastProvider } from '../components/ui/Toast/Toast';
 import '../styles/globals.css';
 
@@ -65,14 +66,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       suppressHydrationWarning
     >
       <head>
-        <Script id="haios-theme-bootstrap" strategy="beforeInteractive">
-          {themeBootstrap}
-        </Script>
+        <script
+          id="haios-theme-bootstrap"
+          dangerouslySetInnerHTML={{ __html: themeBootstrap }}
+        />
       </head>
       <body>
         <ThemeProvider>
           <ToastProvider>
-            <AuthProvider>{children}</AuthProvider>
+            <AuthProvider>
+              <NotificationProvider>{children}</NotificationProvider>
+            </AuthProvider>
           </ToastProvider>
         </ThemeProvider>
       </body>

@@ -39,13 +39,23 @@ export function formatAsPem(key: string, type: 'PRIVATE' | 'PUBLIC'): string {
 }
 
 export class AuthService {
+  private static cachedPrivateKey: string | null = null;
+
+  public static resetPrivateKeyCache(): void {
+    this.cachedPrivateKey = null;
+  }
+
   private static parsePrivateKey(): string {
+    if (this.cachedPrivateKey) {
+      return this.cachedPrivateKey;
+    }
     const keyPath = resolveKeyPath(config.JWT_PRIVATE_KEY_PATH);
     if (!fs.existsSync(keyPath)) {
       throw new Error(`JWT private key file not found at: ${config.JWT_PRIVATE_KEY_PATH}`);
     }
     const raw = fs.readFileSync(keyPath, 'utf-8');
-    return formatAsPem(raw, 'PRIVATE');
+    this.cachedPrivateKey = formatAsPem(raw, 'PRIVATE');
+    return this.cachedPrivateKey;
   }
 
   static generateAccessToken(principal: AuthenticatedPrincipal): string {

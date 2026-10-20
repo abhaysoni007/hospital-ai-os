@@ -5,7 +5,8 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useS
 export type ThemeMode = 'light' | 'dark' | 'system';
 export type ResolvedTheme = 'light' | 'dark';
 
-export const THEME_STORAGE_KEY = 'haios.theme';
+import { THEME_STORAGE_KEY } from './theme-constants';
+export { THEME_STORAGE_KEY };
 
 interface ThemeContextValue {
   /** The user's selection: light, dark, or system. */

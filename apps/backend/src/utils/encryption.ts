@@ -21,9 +21,23 @@ import { createCipheriv, createDecipheriv, createHash, randomBytes } from 'crypt
 const DEV_FALLBACK_KEY_MATERIAL = 'hospital-ai-os-local-development-only-insecure-key';
 const MIN_PRODUCTION_KEY_LENGTH = 32;
 
+let cachedDerivedKey: { secret: string | undefined; nodeEnv: string | undefined; key: Buffer } | null = null;
+
+export function resetEncryptionKeyCache(): void {
+  cachedDerivedKey = null;
+}
+
 function getKey(): Buffer {
   const secret = process.env.ENCRYPTION_KEY;
   const nodeEnv = process.env.NODE_ENV || 'development';
+
+  if (
+    cachedDerivedKey &&
+    cachedDerivedKey.secret === secret &&
+    cachedDerivedKey.nodeEnv === nodeEnv
+  ) {
+    return cachedDerivedKey.key;
+  }
 
   if (!secret || secret.length < MIN_PRODUCTION_KEY_LENGTH) {
     if (nodeEnv === 'production') {
@@ -32,10 +46,14 @@ function getKey(): Buffer {
         `ENCRYPTION_KEY must be set to at least ${MIN_PRODUCTION_KEY_LENGTH} characters in production`,
       );
     }
-    return createHash('sha256').update(DEV_FALLBACK_KEY_MATERIAL).digest();
+    const key = createHash('sha256').update(DEV_FALLBACK_KEY_MATERIAL).digest();
+    cachedDerivedKey = { secret, nodeEnv, key };
+    return key;
   }
 
-  return createHash('sha256').update(secret).digest();
+  const key = createHash('sha256').update(secret).digest();
+  cachedDerivedKey = { secret, nodeEnv, key };
+  return key;
 }
 
 /**

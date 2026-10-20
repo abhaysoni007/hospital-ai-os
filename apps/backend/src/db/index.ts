@@ -11,3 +11,4 @@ const connectionString =
 
 const client = postgres(connectionString, { max: 20 });
 export const db = drizzle(client, { schema });
+export { client as dbClient };

@@ -111,21 +111,21 @@ export function PhysicianDashboard() {
   const loadData = useCallback(async () => {
     if (canReadEncounters) {
       encounterService
-        .getEncounters({ page: 1, status: 'active', pageSize: 100 })
-        .then((res) => {
-          if (mounted.current) setActiveEncounters({ state: 'ready', data: res.data });
-        })
-        .catch(() => {
-          if (mounted.current) setActiveEncounters({ state: 'error', data: null });
-        });
-
-      encounterService
         .getEncounters({ page: 1, pageSize: 100 })
         .then((res) => {
-          if (mounted.current) setEncounterSeries({ state: 'ready', data: res.data });
+          if (mounted.current) {
+            setEncounterSeries({ state: 'ready', data: res.data });
+            setActiveEncounters({
+              state: 'ready',
+              data: res.data.filter((e) => e.status === 'active'),
+            });
+          }
         })
         .catch(() => {
-          if (mounted.current) setEncounterSeries({ state: 'error', data: null });
+          if (mounted.current) {
+            setEncounterSeries({ state: 'error', data: null });
+            setActiveEncounters({ state: 'error', data: null });
+          }
         });
     }
 
