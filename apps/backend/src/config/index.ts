@@ -27,7 +27,7 @@ const configSchema = z.object({
       message:
         'CORS_ORIGIN must be an explicit trusted origin — wildcard is forbidden while credentials are enabled',
     })
-    .default('http://localhost:3000'),
+    .default('http://localhost:3000,https://medora.os.abhaysoni.app'),
 
   JWT_PRIVATE_KEY_PATH: z.string(),
   JWT_PUBLIC_KEY_PATH: z.string(),

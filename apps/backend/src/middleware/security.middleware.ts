@@ -4,28 +4,60 @@ import rateLimit from 'express-rate-limit';
 import { RedisStore } from 'rate-limit-redis';
 import { config } from '../config';
 import { redisService } from '../utils/redis';
+import { logger } from '../logger';
 
 export const securityHeadersMiddleware = helmet();
+
+function normalizeOrigin(origin: string): string {
+  return origin.trim().replace(/^['"]|['"]$/g, '').replace(/\/+$/, '');
+}
+
+const DEFAULT_ALLOWED_ORIGINS = [
+  'http://localhost:3000',
+  'https://medora.os.abhaysoni.app',
+];
 
 // Explicit trusted origins only (comma-separated list supported via CORS_ORIGIN).
 // Wildcards are rejected by the config schema because credentials are enabled
 // (HTTP-only refresh cookie must be scoped to trusted origins).
-const ALLOWED_ORIGINS = config.CORS_ORIGIN.split(',')
-  .map((o) => o.trim())
+const CONFIG_ALLOWED_ORIGINS = config.CORS_ORIGIN.split(',')
+  .map(normalizeOrigin)
   .filter(Boolean);
+
+const ALLOWED_ORIGINS = Array.from(
+  new Set([...DEFAULT_ALLOWED_ORIGINS.map(normalizeOrigin), ...CONFIG_ALLOWED_ORIGINS]),
+);
 
 export const corsMiddleware = cors({
   origin: (requestOrigin, callback) => {
     // Allow same-origin / non-browser requests (no Origin header).
-    if (!requestOrigin || ALLOWED_ORIGINS.includes(requestOrigin)) {
+    if (!requestOrigin) {
+      return callback(null, true);
+    }
+
+    const normalized = normalizeOrigin(requestOrigin);
+    if (ALLOWED_ORIGINS.includes(normalized)) {
       callback(null, true);
     } else {
+      logger.warn(
+        { origin: requestOrigin, allowedOrigins: ALLOWED_ORIGINS },
+        'CORS rejected request from untrusted origin',
+      );
       callback(null, false); // no CORS headers emitted for unknown origins
     }
   },
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'x-request-id'],
+  allowedHeaders: [
+    'Content-Type',
+    'Authorization',
+    'x-request-id',
+    'x-correlation-id',
+    'Accept',
+    'Origin',
+  ],
+  exposedHeaders: ['x-request-id', 'x-correlation-id'],
   credentials: true,
+  maxAge: 86400,
 });
 
 export const rateLimitMiddleware = rateLimit({
